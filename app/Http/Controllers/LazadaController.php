@@ -30,13 +30,27 @@ class LazadaController extends Controller
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','DESC');
         $request->addApiParam('offset','0');
-        $request->addApiParam('limit','10');
+        $request->addApiParam('limit','1');
         $request->addApiParam('created_after','2021-06-10T09:00:00+08:00');
         $request->addApiParam('status','pending');
         
+        //return json_decode($c->execute($request, $accessToken),true);
+
         header('Content-Type: application/json');
         echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
 
+    }
+
+    public function getOrderItem($order_id){
+
+        $accessToken = env('LAZADA_ACCESS_TOKEN');
+        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
+        $request = new LazopRequest('/order/items/get','GET');
+        $request->addApiParam('order_id','31202');
+
+        header('Content-Type: application/json');
+        echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
+        
     }
 
 }

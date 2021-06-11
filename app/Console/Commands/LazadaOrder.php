@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Http\Controllers\LazadaController;
 
 class LazadaOrder extends Command
 {
@@ -37,7 +38,22 @@ class LazadaOrder extends Command
      */
     public function handle()
     {
-        $response = json_decode($c->execute($request, $accessToken),true);
-        echo $response['data']['orders']['0']['order_id'];
+        $lazada = new LazadaController();
+        $response = $lazada->getOrders();
+        
+        $response = Http::post('http://example.com/users', [
+            'form_params' => [
+                'CardCode' => 'c001',
+                'DocDate' => '2021-06-11',
+                'DocDueDate' => '2021-06-13',
+                'DocumentLines' => [
+                    'ItemCode' => 'i001',
+                    'Quantity' => '100',
+                    'UnitPrice' => '30'
+                ]
+            ]
+        ]);
+
+        echo 'order id is '.$response['data']['orders']['0']['order_id'];
     }
 }
