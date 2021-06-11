@@ -8,16 +8,6 @@ use Illuminate\Http\Request;
 
 class LazadaController extends Controller
 {
-    public function getCategoryTree(){
-
-        $accessToken = env('LAZADA_ACCESS_TOKEN');
-        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
-        $request = new LazopRequest('/category/tree/get','GET');
-
-        header('Content-Type: application/json');
-        echo json_encode(json_decode($c->execute($request)),JSON_PRETTY_PRINT);
-    
-    }
 
     public function getProducts(){
 
@@ -41,22 +31,12 @@ class LazadaController extends Controller
         $request->addApiParam('sort_direction','DESC');
         $request->addApiParam('offset','0');
         $request->addApiParam('limit','10');
-        $request->addApiParam('created_after','2021-02-10T09:00:00+08:00');
-        $request->addApiParam('status','shipped');
-
+        $request->addApiParam('created_after','2021-06-10T09:00:00+08:00');
+        $request->addApiParam('status','pending');
+        
         header('Content-Type: application/json');
         echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
 
     }
 
-    public function getSeller(){
-
-        $accessToken = env('LAZADA_ACCESS_TOKEN');
-        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
-        $request = new LazopRequest('/seller/get','GET');
-
-        header('Content-Type: application/json');
-        echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
-    
-    }
 }

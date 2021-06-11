@@ -27,7 +27,5 @@ Route::post('/test/login', [TestController::class, 'login'])->name('test.login')
 Route::post('/test/login2', [TestController::class, 'login2'])->name('test.login2')->middleware('auth');
 
 //Lazada
-Route::get('/lazada/get-category-tree', [LazadaController::class, 'getCategoryTree'])->name('lazada.get_category_tree');
 Route::get('/lazada/get-products', [LazadaController::class, 'getProducts'])->name('lazada.get_products');
 Route::get('/lazada/get-orders', [LazadaController::class, 'getOrders'])->name('lazada.get_orders');
-Route::get('/lazada/get-seller', [LazadaController::class, 'getSeller'])->name('lazada.get_seller');
