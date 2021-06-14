@@ -38,18 +38,6 @@ class LazadaLogin extends Command
      */
     public function handle()
     {
-        $response = Http::withOptions([
-            'verify' => false,
-        ])->post('https://192.168.18.140:50000/b1s/v1/Login', [
-            'CompanyDB' => 'TC_DEV',
-            'Password' => '4021',
-            'UserName' => 'kass',
-        ]);
-
-        if($response){
-            echo 'Login Success';
-        }else{
-            echo 'Login Failed';
-        }
+       
     }
 }

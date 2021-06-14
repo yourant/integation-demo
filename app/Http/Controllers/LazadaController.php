@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use LazopClient;
 use LazopRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class LazadaController extends Controller
 {
@@ -20,6 +21,32 @@ class LazadaController extends Controller
 
         header('Content-Type: application/json');
         echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
+
+    }
+
+    public function getProductItem($sku){
+
+        $accessToken = env('LAZADA_ACCESS_TOKEN');
+        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
+        $request = new LazopRequest('/product/item/get','GET');
+        $request->addApiParam('seller_sku',$sku);
+
+        return json_decode($c->execute($request, $accessToken),true);
+        //header('Content-Type: application/json');
+        //echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
+
+    }
+
+    public function getOrder($orderId){
+
+        $accessToken = env('LAZADA_ACCESS_TOKEN');
+        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
+        $request = new LazopRequest('/order/get','GET');
+        $request->addApiParam('order_id',$orderId);
+
+        return json_decode($c->execute($request, $accessToken),true);
+        //header('Content-Type: application/json');
+        //echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
 
     }
 
@@ -41,16 +68,25 @@ class LazadaController extends Controller
 
     }
 
-    public function getOrderItem($order_id){
+    public function getOrderItem($orderId){
 
         $accessToken = env('LAZADA_ACCESS_TOKEN');
         $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
         $request = new LazopRequest('/order/items/get','GET');
-        $request->addApiParam('order_id','31202');
+        $request->addApiParam('order_id',$orderId);
 
-        header('Content-Type: application/json');
-        echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
+        return json_decode($c->execute($request, $accessToken),true);
+        //header('Content-Type: application/json');
+        //echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
         
+    }
+
+    public function itemExist($itemId){
+        $response = Http::withOptions([
+            'verify' => false
+        ])->get("https://192.168.18.140:50000/b1s/v1/Items"."('".$itemId."')");
+        
+        var_dump($response);
     }
 
 }

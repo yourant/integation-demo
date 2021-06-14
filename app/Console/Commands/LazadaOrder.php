@@ -39,8 +39,17 @@ class LazadaOrder extends Command
     public function handle()
     {
         $lazada = new LazadaController();
-        $response = $lazada->getOrders();
+        //Step 1: Get Order Details
+        $order = $lazada->getOrder('54385627928249');
+        //Step 2: Get Order Item - SKU
+        $sku = $lazada->getOrderItem($order['data']['order_id']);
+        //Step 3: Get Product with SKU parameter
+        $itemId = $lazada->getProductItem($sku['data']['0']['sku']);
+        //Step 4: Check if item exist in DB. If exists, skip the inserting item process otherwise create new Item
+        $itemExist = $lazada->itemExist($itemId['data']['item_id']);
         
+        /**
+        $response = $lazada->getOrders(); 
         $response = Http::post('http://example.com/users', [
             'form_params' => [
                 'CardCode' => 'c001',
@@ -52,8 +61,10 @@ class LazadaOrder extends Command
                     'UnitPrice' => '30'
                 ]
             ]
-        ]);
+        ]); **/
 
-        echo 'order id is '.$response['data']['orders']['0']['order_id'];
+        //echo 'Get Order - Order ID is: '.$order['data']['order_id'].' / ';
+        //echo 'Get Order Item - SKU is: '.$sku['data']['0']['sku'].' / ';
+        //echo 'Product Item - Item ID and Name is:'.$itemId['data']['item_id'].' * '.$itemId['data']['attributes']['name'];
     }
 }
