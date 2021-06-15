@@ -46,19 +46,30 @@ class LazadaOrder extends Command
         //Step 1: Get Order Details
         $order = $lazada->getOrder('54385627928249');
         //Step 2: Get Order Item - SKU
-        $sku = $lazada->getOrderItem($order['data']['order_id']);
+        $orderItem = $lazada->getOrderItem($order['data']['order_id']);
         //Step 3: Get Product with SKU parameter
-        $itemId = $lazada->getProductItem($sku['data']['0']['sku']);
+        $productItem = $lazada->getProductItem($orderItem['data']['0']['sku']);
 
         try {
-            $result = $odataClient->from('Items')->find(''.$itemId['data']['item_id'].'');
+            $result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
 			//$result = $odataClient->from('Items')->find('1360');
-            dd($result);
+            $order = $odataClient->post('Orders', [
+                'CardCode' => 'Lazada_C',
+                'DocDate' => '2021-06-15',
+                'DocDueDate' => '2021-06-15',
+                'DocumentLines' => [
+                    [
+                        'ItemCode' => $productItem['data']['item_id'],
+                        'Quantity' => $order['data']['items_count'],
+                        'UnitPrice' => $orderItem['data']['0']['item_price']
+                    ]
+                ]
+            ]);
 		} catch (\Exception $e) {
             if($e->getCode() == '404'){
                 $insert = $odataClient->post('Items', [
-                    'ItemCode' => $itemId['data']['item_id'],
-                    'ItemName' => $itemId['data']['attributes']['name'],
+                    'ItemCode' => $productItem['data']['item_id'],
+                    'ItemName' => $productItem['data']['attributes']['name'],
                     'ItemType' => 'itItems'
                 ]);
                 dd($insert);
