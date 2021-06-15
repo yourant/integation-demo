@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Http\Controllers\LazadaController;
+use App\Http\Controllers\LazadaLoginController;
 
 class LazadaOrder extends Command
 {
@@ -38,15 +39,19 @@ class LazadaOrder extends Command
      */
     public function handle()
     {
-        $lazada = new LazadaController();
+        $odataClient = (new LazadaLoginController)->login();
+        $result = $odataClient->get('Items');
+        
+        dd($result);
+        //$lazada = new LazadaController();
         //Step 1: Get Order Details
-        $order = $lazada->getOrder('54385627928249');
+        //$order = $lazada->getOrder('54385627928249');
         //Step 2: Get Order Item - SKU
-        $sku = $lazada->getOrderItem($order['data']['order_id']);
+        //$sku = $lazada->getOrderItem($order['data']['order_id']);
         //Step 3: Get Product with SKU parameter
-        $itemId = $lazada->getProductItem($sku['data']['0']['sku']);
+        //$itemId = $lazada->getProductItem($sku['data']['0']['sku']);
         //Step 4: Check if item exist in DB. If exists, skip the inserting item process otherwise create new Item
-        $itemExist = $lazada->itemExist($itemId['data']['item_id']);
+        //$itemExist = $lazada->itemExist($itemId['data']['item_id']);
         
         /**
         $response = $lazada->getOrders(); 

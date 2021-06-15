@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 
 class LazadaController extends Controller
 {
-
+    
     public function getProducts(){
 
         $accessToken = env('LAZADA_ACCESS_TOKEN');
@@ -86,7 +86,7 @@ class LazadaController extends Controller
             'verify' => false
         ])->get("https://192.168.18.140:50000/b1s/v1/Items"."('".$itemId."')");
         
-        var_dump($response);
+        dd($response->body());
     }
 
 }
