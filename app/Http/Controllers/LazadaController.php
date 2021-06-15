@@ -32,8 +32,6 @@ class LazadaController extends Controller
         $request->addApiParam('seller_sku',$sku);
 
         return json_decode($c->execute($request, $accessToken),true);
-        //header('Content-Type: application/json');
-        //echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
 
     }
 
@@ -45,8 +43,6 @@ class LazadaController extends Controller
         $request->addApiParam('order_id',$orderId);
 
         return json_decode($c->execute($request, $accessToken),true);
-        //header('Content-Type: application/json');
-        //echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
 
     }
 
@@ -61,8 +57,6 @@ class LazadaController extends Controller
         $request->addApiParam('created_after','2021-06-10T09:00:00+08:00');
         $request->addApiParam('status','pending');
         
-        //return json_decode($c->execute($request, $accessToken),true);
-
         header('Content-Type: application/json');
         echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
 
@@ -76,17 +70,8 @@ class LazadaController extends Controller
         $request->addApiParam('order_id',$orderId);
 
         return json_decode($c->execute($request, $accessToken),true);
-        //header('Content-Type: application/json');
-        //echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
         
     }
 
-    public function itemExist($itemId){
-        $response = Http::withOptions([
-            'verify' => false
-        ])->get("https://192.168.18.140:50000/b1s/v1/Items"."('".$itemId."')");
-        
-        dd($response->body());
-    }
 
 }
