@@ -41,32 +41,32 @@ class LazadaOrder extends Command
     {
         //SAP odataClient
         $odataClient = (new LazadaLoginController)->login();
-        //Lazada Order
+        //Lazada Controller
         $lazada = new LazadaController();
         //Step 1: Get Order Details
-        $order = $lazada->getOrder('54385627928249');
+        $order = $lazada->getOrder('55042999807587');
         //Step 2: Get Order Item - SKU
-        $orderItem = $lazada->getOrderItem($order['data']['order_id']);
-        //Step 3: Get Product with SKU parameter
-        $productItem = $lazada->getProductItem($orderItem['data']['0']['sku']);
-
+        $orderItems = $lazada->getOrderItem($order['data']['order_id']);
+        //Step 3: Get all items from selected order
+        foreach ($orderItems['data'] as $item) {
+            $product = $lazada->getProductItem($item['sku']);
+            $items[] = [
+                'ItemCode' => $product['data']['item_id'],
+                'Quantity' => '1',//Sample Qty Only
+                'UnitPrice' => $item['item_price']
+            ];
+        }
+        //Step 4: Create Sales Order
         try {
-            $result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
-			//$result = $odataClient->from('Items')->find('1360');
-            $order = $odataClient->post('Orders', [
+            //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
+            $salesOrder = $odataClient->post('Orders', [
                 'CardCode' => 'Lazada_C',
-                'DocDate' => '2021-06-15',
-                'DocDueDate' => '2021-06-15',
-                'DocumentLines' => [
-                    [
-                        'ItemCode' => $productItem['data']['item_id'],
-                        'Quantity' => $order['data']['items_count'],
-                        'UnitPrice' => $orderItem['data']['0']['item_price']
-                    ]
-                ]
+                'DocDate' => '2021-06-20',
+                'DocDueDate' => '2021-06-20',
+                'DocumentLines' => $items
             ]);
 		} catch (\Exception $e) {
-            if($e->getCode() == '404'){
+            /**if($e->getCode() == '404'){
                 $insert = $odataClient->post('Items', [
                     'ItemCode' => $productItem['data']['item_id'],
                     'ItemName' => $productItem['data']['attributes']['name'],
@@ -75,13 +75,9 @@ class LazadaOrder extends Command
                 dd($insert);
             }else{
                 dd($e->getMessage());
-            }
-
+            }**/
+            dd($e->getMessage());
 		}
-        //Step 4: Check if item exist
         
-        //echo 'Get Order - Order ID is: '.$order['data']['order_id'].' / ';
-        //echo 'Get Order Item - SKU is: '.$sku['data']['0']['sku'].' / ';
-        //echo 'Product Item - Item ID and Name is:'.$itemId['data']['item_id'].' * '.$itemId['data']['attributes']['name'];
     }
 }

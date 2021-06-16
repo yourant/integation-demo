@@ -53,8 +53,8 @@ class LazadaController extends Controller
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','DESC');
         $request->addApiParam('offset','0');
-        $request->addApiParam('limit','1');
-        $request->addApiParam('created_after','2021-06-10T09:00:00+08:00');
+        $request->addApiParam('limit','10');
+        $request->addApiParam('created_after','2021-06-01T09:00:00+08:00');
         $request->addApiParam('status','pending');
         
         header('Content-Type: application/json');
