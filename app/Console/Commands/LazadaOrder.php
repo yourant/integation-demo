@@ -44,18 +44,32 @@ class LazadaOrder extends Command
         //Lazada Controller
         $lazada = new LazadaController();
         //Step 1: Get Order Details
-        $order = $lazada->getOrder('55042999807587');
+        $order = $lazada->getOrder('55138310480643');
         //Step 2: Get Order Item - SKU
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
         //Step 3: Get all items from selected order
+        $mergedItem = [];
         foreach ($orderItems['data'] as $item) {
-            $product = $lazada->getProductItem($item['sku']);
+            // echo array_count_values($item['sku']);
+            // $existingItem
+            if(array_key_exists($item['sku'], $mergedItem)){
+                $mergedItem[$item['sku']]['Quantity'] += 1;
+            } else {
+                $mergedItem[$item['sku']]['Quantity'] = 1;
+            }
+            $mergedItem[$item['sku']]['ItemCode'] = $item['sku'];
+            $mergedItem[$item['sku']]['UnitPrice'] = $item['item_price'];
+        }
+
+        foreach ($mergedItem as $item) {
             $items[] = [
-                'ItemCode' => $product['data']['item_id'],
-                'Quantity' => '1',//Sample Qty Only
-                'UnitPrice' => $item['item_price']
+                'ItemCode' => 'TK0001', //sample Item Code only
+                'Quantity' => $item['Quantity'],
+                'UnitPrice' => $item['UnitPrice']
             ];
         }
+
+        print_r($items);
         //Step 4: Create Sales Order
         try {
             //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
@@ -63,6 +77,8 @@ class LazadaOrder extends Command
                 'CardCode' => 'Lazada_C',
                 'DocDate' => '2021-06-20',
                 'DocDueDate' => '2021-06-20',
+                'U_Order_ID' => $order['data']['order_id'],
+                'U_Customer_Name' => 'Kassandra Test',
                 'DocumentLines' => $items
             ]);
 		} catch (\Exception $e) {

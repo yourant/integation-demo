@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\Http;
 class LazadaController extends Controller
 {
     
+    public function refreshToken(){
+        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
+        $request = new LazopRequest('/auth/token/refresh','GET');
+        $request->addApiParam('refresh_token','50001801009qQoraa7ivg13321e86qSh0og9ees7mzxjfIuL3kRxnCbFx2vxUIEn');
+        
+        header('Content-Type: application/json');
+        echo json_encode(json_decode($c->execute($request)),JSON_PRETTY_PRINT);
+    }
     public function getProducts(){
 
         $accessToken = env('LAZADA_ACCESS_TOKEN');
