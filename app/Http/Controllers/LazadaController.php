@@ -54,7 +54,7 @@ class LazadaController extends Controller
 
     }
 
-    public function getOrders(){
+    public function getOrders($status){
 
         $accessToken = env('LAZADA_ACCESS_TOKEN');
         $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
@@ -63,7 +63,7 @@ class LazadaController extends Controller
         $request->addApiParam('offset','0');
         $request->addApiParam('limit','10');
         $request->addApiParam('created_after','2021-06-01T09:00:00+08:00');
-        $request->addApiParam('status','pending');
+        $request->addApiParam('status',$status);
         
         header('Content-Type: application/json');
         echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
