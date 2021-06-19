@@ -39,13 +39,12 @@ class LazadaOrder extends Command
      */
     public function handle()
     {
-        $document = $this->choice('Please choose where to create order document', ['Orders', 'Invoices']);
         //SAP odataClient
         $odataClient = (new LazadaLoginController)->login();
         //Lazada Controller
         $lazada = new LazadaController();
         //Step 1: Get Order Details
-        $order = $lazada->getOrder('55138310480643');
+        $order = $lazada->getOrder('54630739757010');
         //Step 2: Get Order Item - SKU
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
         //Step 3: Get all items from selected order
@@ -64,7 +63,7 @@ class LazadaOrder extends Command
 
         foreach ($mergedItem as $item) {
             $items[] = [
-                'ItemCode' => 'TK0001', //sample Item Code only
+                'ItemCode' => '100344540', //sample Item Code only
                 'Quantity' => $item['Quantity'],
                 "TaxCode" => 'T1',
                 'UnitPrice' => $item['UnitPrice']
@@ -75,12 +74,12 @@ class LazadaOrder extends Command
         //Step 4: Create Sales Order
         try {
             //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
-            $salesOrder = $odataClient->post($document, [
-                'CardCode' => 'Lazada_C',
+            $salesOrder = $odataClient->post('Orders', [
+                'CardCode' => 'c001',
                 'DocDate' => '2021-06-20',
                 'DocDueDate' => '2021-06-20',
                 'U_Order_ID' => $order['data']['order_id'],
-                'U_Customer_Name' => 'Kassandra Test',
+                'U_Customer_Name' => 'Kassandra - Sales Order',
                 'DocumentLines' => $items
             ]);
 		} catch (\Exception $e) {
