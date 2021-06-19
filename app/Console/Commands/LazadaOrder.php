@@ -44,13 +44,12 @@ class LazadaOrder extends Command
         //Lazada Controller
         $lazada = new LazadaController();
         //Step 1: Get Order Details
-        $order = $lazada->getOrder('54630739757010');
+        $order = $lazada->getOrder('54603355336291');
         //Step 2: Get Order Item - SKU
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
         //Step 3: Get all items from selected order
         $mergedItem = [];
         foreach ($orderItems['data'] as $item) {
-            // echo array_count_values($item['sku']);
             // $existingItem
             if(array_key_exists($item['sku'], $mergedItem)){
                 $mergedItem[$item['sku']]['Quantity'] += 1;
@@ -75,7 +74,7 @@ class LazadaOrder extends Command
         try {
             //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
             $salesOrder = $odataClient->post('Orders', [
-                'CardCode' => 'c001',
+                'CardCode' => '754',
                 'DocDate' => '2021-06-20',
                 'DocDueDate' => '2021-06-20',
                 'U_Order_ID' => $order['data']['order_id'],

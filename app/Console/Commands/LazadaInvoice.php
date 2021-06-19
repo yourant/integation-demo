@@ -40,24 +40,27 @@ class LazadaInvoice extends Command
     {
         //SAP odataClient
         $odataClient = (new LazadaLoginController)->login();
-        //Insert invoices
+        //Get order
         $getOrder = $odataClient->from('Orders')
-                                ->where('U_Order_ID','54630739757010')
+                                ->where('U_Order_ID','54603355336291')
                                 ->get();
-        
+        //Count items from Order
+        for($i = 0; $i <= count($getOrder['0']['DocumentLines']) - 1; $i++) {
+            $items[] = [
+                'BaseType' => 17,
+                'BaseEntry' => $getOrder['0']['DocNum'],
+                'BaseLine' => $i
+            ];
+        }
+        //Insert invoice
         $invoice = $odataClient->post('Invoices', [
-            'CardCode' => $getOrder['0']['CardCode'],
-            'DocDate' => $getOrder['0']['DocDate'],
-            'DocDueDate' => $getOrder['0']['DocDueDate'],
-            'PostingDate' => $getOrder['0']['TaxDate'],
-            'DocumentLines' => [
-                [
-                    'BaseType' => 17,
-                    'BaseEntry' => $getOrder['0']['DocNum'],
-                    'BaseLine' => 0
-                ]
+                'CardCode' => $getOrder['0']['CardCode'],
+                'DocDate' => $getOrder['0']['DocDate'],
+                'DocDueDate' => $getOrder['0']['DocDueDate'],
+                'PostingDate' => $getOrder['0']['TaxDate'],
+                'DocumentLines' => $items 
             ]
-        ]);
+        );
         
     }
 }

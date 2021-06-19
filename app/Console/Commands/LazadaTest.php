@@ -41,63 +41,7 @@ class LazadaTest extends Command
      */
     public function handle()
     {
-        $document = $this->choice('Please choose where to create order document', ['Orders', 'Invoices']);
-        //SAP odataClient
-        $odataClient = (new LazadaLoginController)->login();
-        //Lazada Controller
-        $lazada = new LazadaController();
-        //Step 1: Get Order Details
-        $order = $lazada->getOrder('55138310480643');
-        //Step 2: Get Order Item - SKU
-        $orderItems = $lazada->getOrderItem($order['data']['order_id']);
-        //Step 3: Get all items from selected order
-        $mergedItem = [];
-        foreach ($orderItems['data'] as $item) {
-            // echo array_count_values($item['sku']);
-            // $existingItem
-            if(array_key_exists($item['sku'], $mergedItem)){
-                $mergedItem[$item['sku']]['Quantity'] += 1;
-            } else {
-                $mergedItem[$item['sku']]['Quantity'] = 1;
-            }
-            $mergedItem[$item['sku']]['ItemCode'] = $item['sku'];
-            $mergedItem[$item['sku']]['UnitPrice'] = $item['item_price'];
-        }
-
-        foreach ($mergedItem as $item) {
-            $items[] = [
-                'ItemCode' => 'TK0001', //sample Item Code only
-                'Quantity' => $item['Quantity'],
-                "TaxCode" => 'T1',
-                'UnitPrice' => $item['UnitPrice']
-            ];
-        }
-
-        print_r($items);
-        //Step 4: Create Sales Order
-        try {
-            //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
-            $salesOrder = $odataClient->post($document, [
-                'CardCode' => 'Lazada_C',
-                'DocDate' => '2021-06-20',
-                'DocDueDate' => '2021-06-20',
-                'U_Order_ID' => $order['data']['order_id'],
-                'U_Customer_Name' => 'Kassandra Test',
-                'DocumentLines' => $items
-            ]);
-		} catch (\Exception $e) {
-            /**if($e->getCode() == '404'){
-                $insert = $odataClient->post('Items', [
-                    'ItemCode' => $productItem['data']['item_id'],
-                    'ItemName' => $productItem['data']['attributes']['name'],
-                    'ItemType' => 'itItems'
-                ]);
-                dd($insert);
-            }else{
-                dd($e->getMessage());
-            }**/
-            dd($e->getMessage());
-		}
+        
     }
 
         
