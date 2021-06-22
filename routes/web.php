@@ -31,5 +31,5 @@ Route::get('/lazada/refresh-token', [LazadaController::class, 'refreshToken'])->
 Route::get('/lazada/get-products', [LazadaController::class, 'getProducts'])->name('lazada.get_products');
 Route::get('/lazada/get-product-item/{sku}', [LazadaController::class, 'getProductItem'])->name('lazada.get_product_item');
 Route::get('/lazada/get-order/{orderId}', [LazadaController::class, 'getOrder'])->name('lazada.get_order');
-Route::get('/lazada/get-orders/{status}', [LazadaController::class, 'getOrders'])->name('lazada.get_orders');
+Route::get('/lazada/get-orders', [LazadaController::class, 'getOrders'])->name('lazada.get_orders');
 Route::get('/lazada/get-order-item/{orderId}', [LazadaController::class, 'getOrderItem'])->name('lazada.get_order_item');
