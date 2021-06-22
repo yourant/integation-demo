@@ -79,26 +79,16 @@ class LazadaTest extends Command
                 'DocumentLines' => [
                     'ItemCode' => '100344540', //sample Item Code only - suppose to be $item['ItemCode']
                     'Quantity' => $item['Quantity'],
-                    "TaxCode" => 'T1',
+                    'TaxCode' => 'T1',
                     'UnitPrice' => $item['UnitPrice']
                 ]
             ];
         }
 
         try {
-            //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
             $salesOrder = $odataClient->post('Orders',$salesOrders);
 		} catch (\Exception $e) {
-            /**if($e->getCode() == '404'){
-                $insert = $odataClient->post('Items', [
-                    'ItemCode' => $productItem['data']['item_id'],
-                    'ItemName' => $productItem['data']['attributes']['name'],
-                    'ItemType' => 'itItems'
-                ]);
-                dd($insert);
-            }else{
-                dd($e->getMessage());
-            }**/
+            
             dd($e->getMessage());
 		}
         
