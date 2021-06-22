@@ -5,21 +5,21 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Http\Controllers\LazadaLoginController;
 
-class LazadaInvoice extends Command
+class LazadaCreditMemo extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'lazada:invoice';
+    protected $signature = 'lazada:memo';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Lazada Invoice';
+    protected $description = 'Lazada A/R Credit Memo';
 
     /**
      * Create a new command instance.
@@ -40,27 +40,29 @@ class LazadaInvoice extends Command
     {
         //SAP odataClient
         $odataClient = (new LazadaLoginController)->login();
-        //Get order
-        $getOrder = $odataClient->from('Orders')
+        //Get Invoice
+        $getInvoice = $odataClient->from('Invoices')
                                 ->where('U_Order_ID','54603355336291')
                                 ->get();
-        //Count items from Order
-        for($i = 0; $i <= count($getOrder['0']['DocumentLines']) - 1; $i++) {
+        
+         //Count items from Order
+        for($i = 0; $i <= count($getInvoice['0']['DocumentLines']) - 1; $i++) {
             $items[] = [
-                'BaseType' => 17,
-                'BaseEntry' => $getOrder['0']['DocEntry'],
+                'BaseType' => 13,
+                'BaseEntry' => $getInvoice['0']['DocEntry'],
                 'BaseLine' => $i
             ];
         }
-        //Insert invoice
-        $invoice = $odataClient->post('Invoices', [
-                'CardCode' => $getOrder['0']['CardCode'],
-                'DocDate' => $getOrder['0']['DocDate'],
-                'DocDueDate' => $getOrder['0']['DocDueDate'],
-                'PostingDate' => $getOrder['0']['TaxDate'],
-                'DocumentLines' => $items 
-            ]
-        );
         
+        //Insert Memo
+        $memo = $odataClient->post('CreditNotes', [
+            'CardCode' => $getInvoice['0']['CardCode'],
+            'DocDate' => $getInvoice['0']['DocDate'],
+            'DocDueDate' => $getInvoice['0']['DocDueDate'],
+            'PostingDate' => $getInvoice['0']['TaxDate'],
+            'DocumentLines' => $items 
+        ]
+    );
+    
     }
 }
