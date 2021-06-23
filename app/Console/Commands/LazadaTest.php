@@ -44,51 +44,56 @@ class LazadaTest extends Command
         $odataClient = (new LazadaLoginController)->login();
         $lazada = new LazadaController();
         $orders = $lazada->getOrders();
-
+        
         foreach($orders['data']['orders'] as $order){
             $orderIdArray[] = $order['order_id'];
+            
+            $tempSO[$order['order_id']]['CardCode'] = 'Lazada_C';
+            $tempSO[$order['order_id']]['DocDate'] = $order['created_at'];
+            $tempSO[$order['order_id']]['DocDueDate'] = '2021-06-25'; // Not sure for this one
+            $tempSO[$order['order_id']]['U_Order_ID'] = $order['order_id'];
+            $tempSO[$order['order_id']]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
         }
         
         $orderIds = '['.implode(',',$orderIdArray).']';
         $orderItems = $lazada->getMultipleOrderItems($orderIds);
-        $mergedItem = [];
         foreach ($orderItems['data'] as $item) {
             $orderId = $item['order_id'];
-            $sku = $item['order_items']['0']['sku'];
-            $itemPrice = $item['order_items']['0']['item_price'];
-            // $existingItem
-            if(array_key_exists($sku, $mergedItem)){
-                $mergedItem[$sku]['Quantity'] += 1;
-            } else {
-                $mergedItem[$sku]['Quantity'] = 1;
+            $mergedItem[$orderId] = [];
+
+            foreach($item['order_items'] as $orderItem){
+                $sku = $orderItem['sku'];
+                $itemPrice = $orderItem['item_price'];
+                if(array_key_exists($sku, $mergedItem[$orderId])) {
+                    $mergedItem[$orderId][$sku]['Quantity'] += 1;
+                } else {
+                    $mergedItem[$orderId][$sku]['Quantity'] = 1;
+                    $mergedItem[$orderId][$sku]['ItemCode'] = $sku;
+                    $mergedItem[$orderId][$sku]['UnitPrice'] = $itemPrice;
+                }
             }
 
-            $mergedItem[$sku]['OrderId'] = $orderId;
-            $mergedItem[$sku]['ItemCode'] = $sku;
-            $mergedItem[$sku]['UnitPrice'] = $itemPrice;
-        
-        }
-
-        foreach ($mergedItems as $item) {
-            $salesOrders[] = [
-                'CardCode' => '754',
-                'DocDate' => '2021-06-25',
-                'DocDueDate' => '2021-06-25',
-                'U_Order_ID' => $item['OrderId'],
-                'U_Customer_Name' => 'Kassandra - Sales Order',
-                'DocumentLines' => [
-                    'ItemCode' => '100344540', //sample Item Code only - suppose to be $item['ItemCode']
+            foreach ($mergedItem[$orderId] as $item) {
+                $items[$orderId][] = [
+                    'ItemCode' => $item['ItemCode'], //sample Item Code only
                     'Quantity' => $item['Quantity'],
-                    'TaxCode' => 'T1',
+                    "TaxCode" => 'T1',
                     'UnitPrice' => $item['UnitPrice']
-                ]
-            ];
+                ];
+            }
+
+            $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
         }
 
+        $finalSO = [];
+
+        foreach($tempSO as $key => $value){
+            $finalSO[] = $tempSO[$key];
+        }
+               
         try {
-            $salesOrder = $odataClient->post('Orders',$salesOrders);
+            $salesOrder = $odataClient->post('Orders',$finalSO);
 		} catch (\Exception $e) {
-            
             dd($e->getMessage());
 		}
         
