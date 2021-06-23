@@ -44,8 +44,6 @@ class PriceAndStockShopeeUpdate extends Command
 
         //get all the items
         $sapItems = $itemSapService->getOdataClient()->get('Items');
-        // dd($sapItems[6]['properties']['ItemPrices'][9]['Price']);
-        // dd($sapItems[6]['properties']['QuantityOnStock']);
 
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
         
@@ -59,7 +57,7 @@ class PriceAndStockShopeeUpdate extends Command
 
         foreach ($sapItems as $item) {         
             $itemProps = $item['properties'];
-            // dd($itemProps);
+
             if ($itemProps['U_SH_INTEGRATION'] == 'Yes') {
                 $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $accessResponseArr['access_token']);
                 $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
@@ -71,7 +69,6 @@ class PriceAndStockShopeeUpdate extends Command
                         ]
                     ]
                 ]);
-                // dd($shopeePriceUpdateResponse->body());
 
                 $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $accessResponseArr['access_token']);
                 $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
@@ -83,9 +80,7 @@ class PriceAndStockShopeeUpdate extends Command
                         ]
                     ]
                 ]);
-                // dd($shopeeStockUpdateResponse->body());
             }
         }
-        // dd($sapItems);
     }
 }
