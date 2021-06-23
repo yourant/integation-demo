@@ -161,9 +161,13 @@ class TestController extends Controller
         }
         // dd($orderList);
         
+        $shopeeOrderDetail = new ShopeeService('/order/get_order_list', 'shop', $accessResponseArr['access_token']);
+        $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
+            'order_sn_list ' => 'create_time',
+            'response_optional_fields' => 'order_status'
+        ], $shopeeOrderDetail->getShopCommonParameter()));
 
-
-
+        $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
 
 
 
