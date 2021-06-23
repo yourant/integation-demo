@@ -119,6 +119,55 @@ class TestController extends Controller
 
     public function index()
     {
+        $salesOrderSapService = new SapService();
+
+        $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
+
+        $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
+            'code' => $shopeeAccess->getCode(),
+            'partner_id' => $shopeeAccess->getPartnerId(),
+            'shop_id' => $shopeeAccess->getShopId()
+        ]);
+        
+        $accessResponseArr = json_decode($accessResponse->body(), true);
+        
+        $orderList = [];
+        $moreReadyOrders = true;
+        $offset = 0;
+        $pageSize = 2;
+        
+        while ($moreReadyOrders) {
+            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $accessResponseArr['access_token']);
+            $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
+                'time_range_field' => 'create_time',
+                'time_from' => 1623970808,
+                'time_to' => 1624575608,
+                'page_size' => $pageSize,
+                'cursor' => $offset,
+                'response_optional_fields' => 'order_status'
+            ], $shopeeReadyOrders->getShopCommonParameter()));
+
+            $shopeeReadyOrdersResponseArr = json_decode($shopeeReadyOrdersResponse->body(), true);
+
+            foreach ($shopeeReadyOrdersResponseArr['response']['order_list'] as $order) {
+                array_push($orderList, $order['order_sn']);
+            }
+
+            if ($shopeeReadyOrdersResponseArr['response']['more']) {
+                $offset += $pageSize;
+            } else {
+                $moreReadyOrders = false;
+            }   
+        }
+        // dd($orderList);
+        
+
+
+
+
+
+
+
         $timestamp = time();
         $partnerId = 1000909;
         $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
