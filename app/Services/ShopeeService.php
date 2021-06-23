@@ -29,8 +29,8 @@ class ShopeeService
         $this->accessToken = $accessToken;
         
         //temporary solution
-        $this->shopId = 10805;
-        $this->code = '0423932d21b94bbde3b3afb34fa0f00b';
+        $this->shopId = 12498;
+        $this->code = 'c736416f5e5f6c22a23408e37be1eded';
 
         $this->setBaseString($accessLevel);
         $this->setSign($this->baseString);
