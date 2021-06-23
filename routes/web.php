@@ -19,7 +19,7 @@ Auth::routes();
 
 Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
 
-Route::post('/test', [TestController::class, 'index'])->name('test.index')->middleware('auth');
+Route::get('/test', [TestController::class, 'index'])->name('test.index');
 
 
 Route::get('/test/login', [TestController::class, 'form'])->name('test.form');
