@@ -39,61 +39,76 @@ class LazadaOrder extends Command
      */
     public function handle()
     {
-        //SAP odataClient
+        
         $odataClient = (new LazadaLoginController)->login();
-        //Lazada Controller
+        
         $lazada = new LazadaController();
-        //Step 1: Get Order Details
-        $order = $lazada->getOrder('54603355336291');
-        //Step 2: Get Order Item - SKU
+        
+        $order = $lazada->getOrder('54789621886245'); // Different SKU - Will use for demo
+        
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
-        //Step 3: Get all items from selected order
+        
         $mergedItem = [];
         foreach ($orderItems['data'] as $item) {
-            // $existingItem
-            if(array_key_exists($item['sku'], $mergedItem)){
-                $mergedItem[$item['sku']]['Quantity'] += 1;
-            } else {
-                $mergedItem[$item['sku']]['Quantity'] = 1;
-            }
-            $mergedItem[$item['sku']]['ItemCode'] = $item['sku'];
-            $mergedItem[$item['sku']]['UnitPrice'] = $item['item_price'];
-        }
-
-        foreach ($mergedItem as $item) {
+            // Order Items
             $items[] = [
-                'ItemCode' => '100344540', //sample Item Code only
-                'Quantity' => $item['Quantity'],
+                'ItemCode' => $item['sku'],
+                'Quantity' => 1,
                 "TaxCode" => 'T1',
-                'UnitPrice' => $item['UnitPrice']
+                'UnitPrice' => $item['item_price']
+            ];
+            // GRPO Items
+            $goodsReceipt[] = [
+                'ItemCode' => $item['sku'],
+                'Quantity' => 50,
+                "TaxCode" => 'T1',
+                'UnitPrice' => $item['item_price']
             ];
         }
 
-        print_r($items);
-        //Step 4: Create Sales Order
-        try {
-            //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
-            $salesOrder = $odataClient->post('Orders', [
-                'CardCode' => '754',
-                'DocDate' => '2021-06-20',
-                'DocDueDate' => '2021-06-20',
-                'U_Order_ID' => $order['data']['order_id'],
-                'U_Customer_Name' => 'Kassandra - Sales Order',
-                'DocumentLines' => $items
-            ]);
-		} catch (\Exception $e) {
-            /**if($e->getCode() == '404'){
-                $insert = $odataClient->post('Items', [
-                    'ItemCode' => $productItem['data']['item_id'],
-                    'ItemName' => $productItem['data']['attributes']['name'],
-                    'ItemType' => 'itItems'
-                ]);
-                dd($insert);
-            }else{
-                dd($e->getMessage());
-            }**/
-            dd($e->getMessage());
-		}
+        $skuArray = array_column($orderItems['data'],'sku');
+        $skus = '["'.implode('","', $skuArray).'"]';
+        $products = $lazada->getProducts($skus);
+        
+        foreach($products['data']['products'] as $item){
+            $itemName = $item['attributes']['name'];
+            foreach($item['skus'] as $sku){
+                if(in_array($sku['SellerSku'],$skuArray)){
+                    $tempItems[] = [
+                        'ItemCode' => $sku['SellerSku'],
+                        'ItemName' => $itemName,
+                        'ItemType' => 'itItems'
+                    ];
+                }
+            }
+        }
+        //Check if Item exists
+        foreach($tempItems as $key => $value){
+            $itemData = array_slice($tempItems[$key],0);
+            try {
+                $odataClient->from('Items')->find(''.$itemData['ItemCode'].'');
+            }catch (\Exception $e) {
+                if($e->getCode() == '404'){
+                    $odataClient->post('Items',$itemData);
+                }else{
+                    dd($e->getMessage());
+                }
+            }
+        }
+        //Create GRPO
+        $odataClient->post('PurchaseDeliveryNotes',[
+            'CardCode' => 'TV00001',
+            'DocumentLines' => $goodsReceipt
+        ]);
+        //Create Sales Order
+        $odataClient->post('Orders', [
+            'CardCode' => 'Lazada_C',
+            'DocDate' => $order['data']['created_at'],
+            'DocDueDate' => '2021-06-20',
+            'U_Order_ID' => $order['data']['order_id'],
+            'U_Customer_Name' => $order['data']['customer_first_name'].' '.$order['data']['customer_last_name'],
+            'DocumentLines' => $items
+        ]);
         
     }
 }

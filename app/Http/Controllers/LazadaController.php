@@ -13,22 +13,20 @@ class LazadaController extends Controller
     public function refreshToken(){
         $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
         $request = new LazopRequest('/auth/token/refresh','GET');
-        $request->addApiParam('refresh_token','50001801009qQoraa7ivg13321e86qSh0og9ees7mzxjfIuL3kRxnCbFx2vxUIEn');
+        $request->addApiParam('refresh_token','50001800334bQUpacyNfuFKHwvqScc1jvklwZWPHeiBuhK101a2c66W0ltyxMI2s');
         
         header('Content-Type: application/json');
         echo json_encode(json_decode($c->execute($request)),JSON_PRETTY_PRINT);
     }
-    public function getProducts(){
+    public function getProducts($skus){
 
         $accessToken = env('LAZADA_ACCESS_TOKEN');
         $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
         $request = new LazopRequest('/products/get','GET');
         $request->addApiParam('filter','live');
-        $request->addApiParam('create_after','2021-01-01T00:00:00+0800');
-        $request->addApiParam('limit','10');
+        $request->addApiParam('sku_seller_list',$skus);
 
-        header('Content-Type: application/json');
-        echo json_encode(json_decode($c->execute($request, $accessToken)),JSON_PRETTY_PRINT);
+        return json_decode($c->execute($request, $accessToken),true);
 
     }
 
