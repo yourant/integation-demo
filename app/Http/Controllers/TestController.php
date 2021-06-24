@@ -118,8 +118,7 @@ class TestController extends Controller
     }
 
     public function index()
-    {
-        $salesOrderSapService = new SapService();
+    {        
 
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
 
@@ -130,14 +129,15 @@ class TestController extends Controller
         ]);
         
         $accessResponseArr = json_decode($accessResponse->body(), true);
+        $shopeeAccess->setAccessToken($accessResponseArr['access_token']);
         
         $orderList = [];
         $moreReadyOrders = true;
         $offset = 0;
-        $pageSize = 2;
+        $pageSize = 50;
         
         while ($moreReadyOrders) {
-            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $accessResponseArr['access_token']);
+            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeAccess->getAccessToken());
             $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
                 'time_range_field' => 'create_time',
                 'time_from' => 1623970808,
@@ -160,16 +160,61 @@ class TestController extends Controller
             }   
         }
         // dd($orderList);
+        $orderStr = implode(",", $orderList);
+        // dd($orderStr);
         
-        $shopeeOrderDetail = new ShopeeService('/order/get_order_list', 'shop', $accessResponseArr['access_token']);
+        $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeAccess->getAccessToken());
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
-            'order_sn_list ' => 'create_time',
-            'response_optional_fields' => 'order_status'
+            'order_sn_list' => $orderStr,
+            'response_optional_fields' => 'total_amount,item_list,buyer_user_id,buyer_username,recipient_address,estimated_shipping_fee,actual_shipping_fee,actual_shipping_fee_confirmed'
         ], $shopeeOrderDetail->getShopCommonParameter()));
 
         $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
+        $orderListDetails = $shopeeOrderDetailResponseArr['response']['order_list'];
+
+        // dd($shopeeOrderDetailResponseArr['response']['order_list']);
+
+        $salesOrderSapService = new SapService();
+        $salesOrderList = [];
+
+        foreach ($orderListDetails as $order) {
+            // dd(date('Y-m-d', $order['ship_by_date']));
+            // $itemList = [];
+
+            // foreach ($order['item_list'] as $item) {
+            //     $resp = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', '=', $item['item_id'])->get();
+            //     dd($resp);
+            //     $itemList[] = [];
+            // }
+
+            $salesOrderList = [
+                'CardCode' => 'Shopee_C',
+                'DocDate' => date('Y-m-d', $order['create_time']),
+                'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
+                'TaxDate' => date('Y-m-d', $order['create_time']),
+                'DocTotal' => $order['total_amount'],
+                // 'DocumentLines' =>
+            ];
+        }
+        // dd();
+        $sapItems = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+        dd($sapItems);
+        // {
+        //     "CardCode": "c001",
+        //     "DocDueDate": "2014-04-04",
+        //     "DocumentLines": [
+        //         {
+        //             "ItemCode": "i001",
+        //             "Quantity": "100",
+        //             "TaxCode": "T1",
+        //             "UnitPrice": "30"
+        //         }
+        //     ]
+        // }
 
 
+        //add new SO
+        
 
 
         $timestamp = time();
