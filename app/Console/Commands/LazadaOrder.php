@@ -39,54 +39,61 @@ class LazadaOrder extends Command
      */
     public function handle()
     {
+        //SAP odataClient
         $odataClient = (new LazadaLoginController)->login();
+        //Lazada Controller
         $lazada = new LazadaController();
-        $orders = $lazada->getOrders();
-        
-        foreach($orders['data']['orders'] as $order){
-            $orderIdArray[] = $order['order_id'];
-            
-            $tempSO[$order['order_id']]['CardCode'] = 'Lazada_C';
-            $tempSO[$order['order_id']]['DocDate'] = $order['created_at'];
-            $tempSO[$order['order_id']]['DocDueDate'] = '2021-06-25'; // Not sure for this one
-            $tempSO[$order['order_id']]['U_Order_ID'] = $order['order_id'];
-            $tempSO[$order['order_id']]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
-        }
-        
-        $orderIds = '['.implode(',',$orderIdArray).']';
-        $orderItems = $lazada->getMultipleOrderItems($orderIds);
+        //Step 1: Get Order Details
+        $order = $lazada->getOrder('54603355336291');
+        //Step 2: Get Order Item - SKU
+        $orderItems = $lazada->getOrderItem($order['data']['order_id']);
+        //Step 3: Get all items from selected order
+        $mergedItem = [];
         foreach ($orderItems['data'] as $item) {
-            $orderId = $item['order_id'];
-            $mergedItem[$orderId] = [];
-
-            foreach($item['order_items'] as $orderItem){
-                $sku = $orderItem['sku'];
-                $itemPrice = $orderItem['item_price'];
-                if(array_key_exists($sku, $mergedItem[$orderId])) {
-                    $mergedItem[$orderId][$sku]['Quantity'] += 1;
-                } else {
-                    $mergedItem[$orderId][$sku]['Quantity'] = 1;
-                    $mergedItem[$orderId][$sku]['ItemCode'] = $sku;
-                    $mergedItem[$orderId][$sku]['UnitPrice'] = $itemPrice;
-                }
+            // $existingItem
+            if(array_key_exists($item['sku'], $mergedItem)){
+                $mergedItem[$item['sku']]['Quantity'] += 1;
+            } else {
+                $mergedItem[$item['sku']]['Quantity'] = 1;
             }
-
-            foreach ($mergedItem[$orderId] as $item) {
-                $items[$orderId][] = [
-                    'ItemCode' => $item['ItemCode'],
-                    'Quantity' => $item['Quantity'],
-                    "TaxCode" => 'T1',
-                    'UnitPrice' => $item['UnitPrice']
-                ];
-            }
-
-            $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+            $mergedItem[$item['sku']]['ItemCode'] = $item['sku'];
+            $mergedItem[$item['sku']]['UnitPrice'] = $item['item_price'];
         }
 
-        foreach($tempSO as $key => $value){
-            $finalSO = array_slice($tempSO[$key],0);
-            $salesOrder = $odataClient->post('Orders',$finalSO); // Need to refactor this.
+        foreach ($mergedItem as $item) {
+            $items[] = [
+                'ItemCode' => '100344540', //sample Item Code only
+                'Quantity' => $item['Quantity'],
+                "TaxCode" => 'T1',
+                'UnitPrice' => $item['UnitPrice']
+            ];
         }
+
+        print_r($items);
+        //Step 4: Create Sales Order
+        try {
+            //$result = $odataClient->from('Items')->find(''.$productItem['data']['item_id'].'');
+            $salesOrder = $odataClient->post('Orders', [
+                'CardCode' => '754',
+                'DocDate' => '2021-06-20',
+                'DocDueDate' => '2021-06-20',
+                'U_Order_ID' => $order['data']['order_id'],
+                'U_Customer_Name' => 'Kassandra - Sales Order',
+                'DocumentLines' => $items
+            ]);
+		} catch (\Exception $e) {
+            /**if($e->getCode() == '404'){
+                $insert = $odataClient->post('Items', [
+                    'ItemCode' => $productItem['data']['item_id'],
+                    'ItemName' => $productItem['data']['attributes']['name'],
+                    'ItemType' => 'itItems'
+                ]);
+                dd($insert);
+            }else{
+                dd($e->getMessage());
+            }**/
+            dd($e->getMessage());
+		}
         
     }
 }
