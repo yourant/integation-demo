@@ -134,9 +134,9 @@ return [
 
     'sap_db' => env('SAP_DB', 'TC_DEV'),
 
-    'sap_user' => env('SAP_USER', 'kass'),
+    'sap_user' => env('SAP_USER', 'paul'),
 
-    'sap_pword' => env('SAP_PWORD', '4021'),
+    'sap_pword' => env('SAP_PWORD', '1234'),
 
     'sap_path' => env('SAP_PATH', 'https://192.168.18.140:50000/b1s/v1'),
 
