@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use GuzzleHttp\Cookie\CookieJar;
 use SaintSystems\OData\ODataClient;
 use Illuminate\Support\Facades\Http;
 
@@ -55,14 +56,20 @@ class SapService
 
     private function authenticate()
     {
+        $cookies = new CookieJar();
+
         $loginResponse = Http::withOptions([
             'verify' => false,
+            'cookies' => $cookies
         ])->post($this->host . '/Login', [
             'CompanyDB' => $this->db,
             'Password' => $this->password,
             'UserName' => $this->username
         ]);
 
-        $this->cookieStr = $loginResponse->header('Set-Cookie');
+        $b1Session = $cookies->getCookieByName('B1SESSION');
+        $routeId = $cookies->getCookieByName('ROUTEID');
+
+        $this->cookieStr = 'B1SESSION=' . $b1Session->getValue() . '; ROUTEID=' . $routeId->getValue();
     }
 }

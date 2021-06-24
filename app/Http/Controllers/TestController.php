@@ -14,6 +14,7 @@ use App\Traits\SapConnectionTrait;
 use SaintSystems\OData\ODataClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cookie;
+use GuzzleHttp\Exception\ClientException;
 
 class TestController extends Controller
 {
@@ -144,6 +145,7 @@ class TestController extends Controller
                 'time_to' => 1624575608,
                 'page_size' => $pageSize,
                 'cursor' => $offset,
+                'order_status' => 'READY_TO_SHIP',
                 'response_optional_fields' => 'order_status'
             ], $shopeeReadyOrders->getShopCommonParameter()));
 
@@ -179,26 +181,54 @@ class TestController extends Controller
 
         foreach ($orderListDetails as $order) {
             // dd(date('Y-m-d', $order['ship_by_date']));
-            // $itemList = [];
+            // dd($order);
+            $itemList = [];
 
-            // foreach ($order['item_list'] as $item) {
-            //     $resp = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', '=', $item['item_id'])->get();
-            //     dd($resp);
-            //     $itemList[] = [];
-            // }
+            foreach ($order['item_list'] as $item) {
+                
+                // dd(is_string($item['item_id']));
+                try {
+                    $response = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', (string)$item['item_id'])->get();
+                } catch(ClientException $e) {
+                    dd($e->getResponse()->getBody()->getContents());
+                }
+                // dd($response[0]['properties']);
+                $sapItem = $response[0]['properties'];
 
+                $itemList[] = [
+                    'ItemCode' => $sapItem['ItemCode'],
+                    'Quantity' => $item['model_quantity_purchased'],
+                    'TaxCode' => 'T1',
+                    'UnitPrice' => $item['model_discounted_price']
+                ];
+            }
+            // dd('hmmmm');
             $salesOrderList = [
                 'CardCode' => 'Shopee_C',
                 'DocDate' => date('Y-m-d', $order['create_time']),
                 'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
                 'TaxDate' => date('Y-m-d', $order['create_time']),
                 'DocTotal' => $order['total_amount'],
-                // 'DocumentLines' =>
+                'U_Ecommerce_Type' => 'Shopee',
+                'U_Order_ID' => $order['order_sn'],
+                'U_Customer_Name' => $order['buyer_username'],
+                'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
+                'DocumentLines' => $itemList
             ];
+
+            $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+            // try {
+            //     $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+            // } catch(ClientException $e) {
+            //     dd($e->getResponse()->getBody()->getContents());
+            // }
+            
+            // dd($salesOrder);
+            // dd($salesOrderList);
         }
-        // dd();
-        $sapItems = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
-        dd($sapItems);
+        dd('test');
+        // $sapItems = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+        // dd($sapItems);
         // {
         //     "CardCode": "c001",
         //     "DocDueDate": "2014-04-04",
