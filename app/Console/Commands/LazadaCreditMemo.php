@@ -42,7 +42,7 @@ class LazadaCreditMemo extends Command
         $odataClient = (new LazadaLoginController)->login();
         //Get Invoice
         $getInvoice = $odataClient->from('Invoices')
-                                ->where('U_Order_ID','55551144238895') // Different SKU - Will use for demo
+                                ->where('U_Order_ID','55605530582036') // Different SKU - Will use for demo
                                 ->get();
 
         foreach($getInvoice['0']['DocumentLines'] as $item){

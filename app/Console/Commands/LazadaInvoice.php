@@ -42,7 +42,7 @@ class LazadaInvoice extends Command
         $odataClient = (new LazadaLoginController)->login();
         //Get order
         $getOrder = $odataClient->from('Orders')
-                                ->where('U_Order_ID','55551144238895') //Different SKU - Will use for demo
+                                ->where('U_Order_ID','55605530582036') //Different SKU - Will use for demo
                                 ->get();
         //Count items from Order
         for($i = 0; $i <= count($getOrder['0']['DocumentLines']) - 1; $i++) {

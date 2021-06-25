@@ -44,7 +44,7 @@ class LazadaOrder extends Command
         
         $lazada = new LazadaController();
         
-        $order = $lazada->getOrder('55551144238895'); // Different SKU - Will use for demo
+        $order = $lazada->getOrder('55605530582036'); // Different SKU - Will use for demo
         
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
         

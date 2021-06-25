@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         Commands\LazadaOrder::class,
         Commands\LazadaInvoice::class,
         Commands\LazadaCreditMemo::class,
+        Commands\LazadaPriceList::class,
         Commands\LazadaTest::class,
     ];
 
