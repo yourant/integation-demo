@@ -44,7 +44,7 @@ class LazadaOrder extends Command
         
         $lazada = new LazadaController();
         
-        $order = $lazada->getOrder('54789621886245'); // Different SKU - Will use for demo
+        $order = $lazada->getOrder('55551144238895'); // Different SKU - Will use for demo
         
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
         
@@ -104,7 +104,8 @@ class LazadaOrder extends Command
         $odataClient->post('Orders', [
             'CardCode' => 'Lazada_C',
             'DocDate' => $order['data']['created_at'],
-            'DocDueDate' => '2021-06-20',
+            'DocDueDate' => $order['data']['created_at'],
+            'U_Ecommerce_Type' => 'Lazada',
             'U_Order_ID' => $order['data']['order_id'],
             'U_Customer_Name' => $order['data']['customer_first_name'].' '.$order['data']['customer_last_name'],
             'DocumentLines' => $items

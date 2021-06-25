@@ -42,27 +42,26 @@ class LazadaCreditMemo extends Command
         $odataClient = (new LazadaLoginController)->login();
         //Get Invoice
         $getInvoice = $odataClient->from('Invoices')
-                                ->where('U_Order_ID','54789621886245') // Different SKU - Will use for demo
+                                ->where('U_Order_ID','55551144238895') // Different SKU - Will use for demo
                                 ->get();
-        
-         //Count items from Order
-        for($i = 0; $i <= count($getInvoice['0']['DocumentLines']) - 1; $i++) {
+
+        foreach($getInvoice['0']['DocumentLines'] as $item){
             $items[] = [
-                'BaseType' => 13,
-                'BaseEntry' => $getInvoice['0']['DocEntry'],
-                'BaseLine' => $i
+                'ItemCode' => $item['ItemCode'],
+                'Price' => $item['Price'],
+                'Quantity' => 1,
+                'TaxCode' => 'T1'
             ];
         }
-        
         //Insert Memo
-        $memo = $odataClient->post('CreditNotes', [
-            'CardCode' => $getInvoice['0']['CardCode'],
-            'DocDate' => $getInvoice['0']['DocDate'],
-            'DocDueDate' => $getInvoice['0']['DocDueDate'],
-            'PostingDate' => $getInvoice['0']['TaxDate'],
-            'DocumentLines' => $items 
-        ]
-    );
-    
+        $odataClient->post('CreditNotes', [
+                'CardCode' => $getInvoice['0']['CardCode'],
+                'DocDate' => $getInvoice['0']['DocDate'],
+                'DocDueDate' => $getInvoice['0']['DocDueDate'],
+                'PostingDate' => $getInvoice['0']['TaxDate'],
+                'DocumentLines' => $items 
+            ]
+        );
+
     }
 }

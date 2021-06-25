@@ -42,7 +42,7 @@ class LazadaInvoice extends Command
         $odataClient = (new LazadaLoginController)->login();
         //Get order
         $getOrder = $odataClient->from('Orders')
-                                ->where('U_Order_ID','54789621886245') //Different SKU - Will use for demo
+                                ->where('U_Order_ID','55551144238895') //Different SKU - Will use for demo
                                 ->get();
         //Count items from Order
         for($i = 0; $i <= count($getOrder['0']['DocumentLines']) - 1; $i++) {
@@ -53,7 +53,7 @@ class LazadaInvoice extends Command
             ];
         }
         //Insert invoice
-        $invoice = $odataClient->post('Invoices', [
+        $odataClient->post('Invoices', [
                 'CardCode' => $getOrder['0']['CardCode'],
                 'DocDate' => $getOrder['0']['DocDate'],
                 'DocDueDate' => $getOrder['0']['DocDueDate'],
