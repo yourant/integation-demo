@@ -30,7 +30,7 @@ class ShopeeService
         
         //temporary solution
         $this->shopId = 12498;
-        $this->code = 'c736416f5e5f6c22a23408e37be1eded';
+        $this->code = '21f879e0dbd542d0025ce816e3ec9576';
 
         $this->setBaseString($accessLevel);
         $this->setSign($this->baseString);
@@ -123,6 +123,17 @@ class ShopeeService
         );
 
         return '?' . http_build_query($data);
+    }
+
+    public function getShopCommonParameter()
+    {
+        return array(
+            'sign' => $this->sign,
+            'partner_id' => $this->partnerId,
+            'timestamp' => $this->timestamp,
+            'shop_id' => $this->shopId,
+            'access_token' => $this->accessToken
+        );
     }
 
     public function setAccessToken($token)
