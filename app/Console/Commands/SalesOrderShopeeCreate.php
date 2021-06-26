@@ -100,13 +100,11 @@ class SalesOrderShopeeCreate extends Command
         $salesOrderList = [];
 
         foreach ($orderListDetails as $order) {
-            // dd(date('Y-m-d', $order['ship_by_date']));
-            // dd($order);
+
             $itemList = [];
 
             foreach ($order['item_list'] as $item) {
                 
-                // dd(is_string($item['item_id']));
                 try {
                     $response = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', (string)$item['item_id'])->get();
                 } catch(ClientException $e) {
@@ -122,7 +120,7 @@ class SalesOrderShopeeCreate extends Command
                     'UnitPrice' => $item['model_discounted_price']
                 ];
             }
-            // dd('hmmmm');
+           
             $salesOrderList = [
                 'CardCode' => 'Shopee_C',
                 'DocDate' => date('Y-m-d', $order['create_time']),
@@ -132,6 +130,7 @@ class SalesOrderShopeeCreate extends Command
                 'U_Ecommerce_Type' => 'Shopee',
                 'U_Order_ID' => $order['order_sn'],
                 'U_Customer_Name' => $order['buyer_username'],
+                'U_Customer_Phone' => $order['recipient_address']['phone'],
                 'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
                 'DocumentLines' => $itemList
             ];
