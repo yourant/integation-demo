@@ -173,20 +173,51 @@ class TestController extends Controller
 
         // dadas
         foreach ($productList as $product) {
-            
+            dd($product);
             if ($product['has_model']) {
                 // dd('dasdasdas');
-                $ttee = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
-                $tteeResp = Http::get($ttee->getFullPath(), array_merge([
+                $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
+                $shopeeModelsResponse = Http::get($shopeeModels->getFullPath(), array_merge([
                     'item_id' => $product['item_id']
-                ], $ttee->getShopCommonParameter()));
-            }
+                ], $shopeeModels->getShopCommonParameter()));
 
-            $tteeRespArr = json_decode($tteeResp->body(), true);
-            dd($tteeRespArr['response']['model']);
+                // dd('ttt');
+                $shopeeModelsResponseArr = json_decode($shopeeModelsResponse->body(), true);
+                // dd($shopeeModelsResponseArr['response']['model']);
+
+                foreach ($shopeeModelsResponseArr['response']['model'] as $model) {
+                    // dd($model['model_sku']);
+
+                    $sku = $model['model_sku'];
+
+                    $itemSapService = new SapService();
+
+                    try {
+                        // ('U_SH_ITEM_CODE', (string)$item['item_id'])
+                        $response = $itemSapService->getOdataClient()->from('Items')
+                            ->where(function($query) use ($sku) {
+                                $query->where('ItemCode', $sku)
+                                    ->orWhere('U_OLD_SKU', $sku);
+                            })->where('U_SH_INTEGRATION', 'Yes')
+                            ->patch(['U_SH_ITEM_CODE' => $model['model_id']]);
+
+                        // $response = $itemSapService->getOdataClient()->patch("Items("."'".$sku."'".")", [
+                        //     'U_SH_ITEM_CODE' => $lazadaItemId
+                        // ]);
+                    } catch(ClientException $e) {
+                        dd($e->getResponse()->getBody()->getContents());
+                    }
+                    // dd()
+                    // dd($response[0]['properties']);
+                    // $sapItem = $response[0]['properties'];
+                }
+            } else {
+                
+            }
+            
         }
 
-        dd($productList);
+        // dd($productList);
         dd('bound');
 
 

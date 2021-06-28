@@ -30,7 +30,7 @@ class ShopeeService
         
         //temporary solution
         $this->shopId = 12498;
-        $this->code = '21f879e0dbd542d0025ce816e3ec9576';
+        $this->code = '1131d2924af2152982245ac141db1535';
 
         $this->setBaseString($accessLevel);
         $this->setSign($this->baseString);
