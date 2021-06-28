@@ -173,7 +173,7 @@ class TestController extends Controller
 
         // dadas
         foreach ($productList as $product) {
-            dd($product);
+            // dd($product);
             if ($product['has_model']) {
                 // dd('dasdasdas');
                 $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
@@ -212,7 +212,26 @@ class TestController extends Controller
                     // $sapItem = $response[0]['properties'];
                 }
             } else {
-                
+                $sku = $product['item_sku'];
+
+                $itemSapService = new SapService();
+
+                try {
+                    // ('U_SH_ITEM_CODE', (string)$item['item_id'])
+                    $response = $itemSapService->getOdataClient()->from('Items')
+                        ->whereKey
+                        ->where(function($query) use ($sku) {
+                            $query->where('ItemCode', $sku)
+                                ->orWhere('U_OLD_SKU', $sku);
+                        })->where('U_SH_INTEGRATION', 'Yes')
+                        ->patch(['U_SH_ITEM_CODE' => $product['item_id']]);
+
+                    // $response = $itemSapService->getOdataClient()->patch("Items("."'".$sku."'".")", [
+                    //     'U_SH_ITEM_CODE' => $lazadaItemId
+                    // ]);
+                } catch(ClientException $e) {
+                    dd($e->getResponse()->getBody()->getContents());
+                }
             }
             
         }
