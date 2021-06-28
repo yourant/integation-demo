@@ -50,7 +50,7 @@ class LazadaTest extends Command
         $itemId = $getProduct['data']['item_id'];
 
         try {
-            $odataClient->patch("Items("."'".$sku."'".")", [
+            $odataClient->patch("Items("."'".$sku."'".")", [ //Items('12345678a')
                 'U_LAZ_ITEM_CODE' => $itemId,
             ]);
         } catch (\Exception $e) {
