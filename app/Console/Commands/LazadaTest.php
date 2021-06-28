@@ -41,23 +41,7 @@ class LazadaTest extends Command
      */
     public function handle()
     {
-        //SAP odataClient
-        $odataClient = (new LazadaLoginController)->login();
-        $sku = '12345678a';
-        //lazada
-        $lazada = new LazadaController();
-        $getProduct = $lazada->getProductItem($sku);
-        $itemId = $getProduct['data']['item_id'];
-
-        try {
-            $odataClient->patch("Items("."'".$sku."'".")", [ //Items('12345678a')
-                'U_LAZ_ITEM_CODE' => $itemId,
-            ]);
-        } catch (\Exception $e) {
-            print_r($e->getMessage());
-        }
-        
-
+       
     }
 
         
