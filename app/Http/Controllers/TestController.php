@@ -120,6 +120,77 @@ class TestController extends Controller
 
     public function index()
     {        
+        // init
+        $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
+
+        $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
+            'code' => $shopeeAccess->getCode(),
+            'partner_id' => $shopeeAccess->getPartnerId(),
+            'shop_id' => $shopeeAccess->getShopId()
+        ]);
+        
+        $accessResponseArr = json_decode($accessResponse->body(), true);
+        $shopeeAccess->setAccessToken($accessResponseArr['access_token']);
+        
+        // retrieve products with base
+        $productList = [];
+        $moreProducts = true;
+        $offset = 0;
+        $pageSize = 50;
+        
+        while ($moreProducts) {
+            $productSegmentList = [];
+
+            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeAccess->getAccessToken());
+            $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
+                'page_size' => $pageSize,
+                'offset' => $offset,
+                'item_status' => 'NORMAL'
+            ], $shopeeProducts->getShopCommonParameter()));
+
+            $shopeeProductsResponseArr = json_decode($shopeeProductsResponse->body(), true);
+
+            foreach ($shopeeProductsResponseArr['response']['item'] as $item) {
+                array_push($productSegmentList, $item['item_id']);
+            }
+
+            $productStr = implode(",", $productSegmentList);
+            
+            $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeAccess->getAccessToken());
+            $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
+                'item_id_list' => $productStr
+            ], $shopeeProductBase->getShopCommonParameter()));
+
+            $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
+            $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+
+            if ($shopeeProductsResponseArr['response']['has_next_page']) {
+                $offset += $pageSize;
+            } else {
+                $moreProducts = false;
+            }   
+        }
+
+        // dadas
+        foreach ($productList as $product) {
+            
+            if ($product['has_model']) {
+                // dd('dasdasdas');
+                $ttee = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
+                $tteeResp = Http::get($ttee->getFullPath(), array_merge([
+                    'item_id' => $product['item_id']
+                ], $ttee->getShopCommonParameter()));
+            }
+
+            $tteeRespArr = json_decode($tteeResp->body(), true);
+            dd($tteeRespArr['response']['model']);
+        }
+
+        dd($productList);
+        dd('bound');
+
+
+
 
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
 
