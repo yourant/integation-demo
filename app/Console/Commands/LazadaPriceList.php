@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Http\Controllers\LazadaController;
 use App\Http\Controllers\LazadaLoginController;
 
 class LazadaPriceList extends Command
@@ -40,9 +41,30 @@ class LazadaPriceList extends Command
     {
         //1844845298 - Use this Lazada product id for testing purposes. Look this on inactive products tab in Lazada
         $odataClient = (new LazadaLoginController)->login();
-
-        $items = $odataClient->from('Items')->find('TK0001'); // ItemPrices[8]['Price']
-
-        print_r($items);
+        //ItemCode - 12345678a(Sku from Lazada)
+        $item = $odataClient->from('Items')->find('12345678a'); // ItemPrices[8]['Price']
+        //Get item price from Lazada price list
+        $lazadaPrice = $item['ItemPrices']['8']['Price'];
+        //itemCode
+        $itemCode = $item['ItemIntrastatExtension']['ItemCode'];
+        //Lazada Item Code
+        $lazItemCode =$item['U_LAZ_ITEM_CODE'];
+        //payload request
+        $payload = "<Request>
+                        <Product>
+                        <Skus>
+                            <Sku>
+                                <ItemId>".$lazItemCode."</ItemId>
+                                <SellerSku>".$itemCode."</SellerSku>
+                                <Price>".$lazadaPrice."</Price>
+                            </Sku>
+                        </Skus>
+                        </Product>
+                    </Request>";
+        //Lazada
+        $lazada = new LazadaController();
+        //Transfer payload
+        $lazada->updatePriceQuantity($payload);
+        
     }
 }
