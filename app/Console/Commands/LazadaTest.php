@@ -41,43 +41,23 @@ class LazadaTest extends Command
      */
     public function handle()
     {
+        //SAP odataClient
         $odataClient = (new LazadaLoginController)->login();
+        $sku = '12345678a';
+        //lazada
         $lazada = new LazadaController();
-        $orders = $lazada->getOrders();
-        
-        //$orderIds = '['.implode(',',$orderIdArray).']';
-        $orderItems = $lazada->getMultipleOrderItems('[55370180470305,54789621886245]');
-        foreach ($orderItems['data'] as $item) {
-            $orderId = $item['order_id'];
-            $mergedItem[$orderId] = [];
+        $getProduct = $lazada->getProductItem($sku);
+        $itemId = $getProduct['data']['item_id'];
 
-            foreach($item['order_items'] as $orderItem){
-                $sku = $orderItem['sku'];
-                $itemPrice = $orderItem['item_price'];
-                if(array_key_exists($sku, $mergedItem[$orderId])) {
-                    $mergedItem[$orderId][$sku]['Quantity'] += 1;
-                    $mergedItem[$orderId][$sku]['UnitPrice'] += $itemPrice;
-                } else {
-                    $mergedItem[$orderId][$sku]['Quantity'] = 1;
-                    $mergedItem[$orderId][$sku]['ItemCode'] = $sku;
-                    $mergedItem[$orderId][$sku]['UnitPrice'] = $itemPrice;
-                }
-            }
-
-            foreach ($mergedItem[$orderId] as $item) {
-                $items[$orderId][] = [
-                    'ItemCode' => $item['ItemCode'],
-                    'Quantity' => $item['Quantity'],
-                    "TaxCode" => 'T1',
-                    'UnitPrice' => $item['UnitPrice']
-                ];
-            }
-            
+        try {
+            $odataClient->patch("Items("."'".$sku."'".")", [
+                'U_LAZ_ITEM_CODE' => $itemId,
+            ]);
+        } catch (\Exception $e) {
+            print_r($e->getMessage());
         }
-
-        print_r($items);
-
         
+
     }
 
         
