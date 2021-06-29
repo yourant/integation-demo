@@ -119,7 +119,49 @@ class TestController extends Controller
     }
 
     public function index()
-    {        
+    {       
+        $timestamp = time();
+        $partnerId = 1000909;
+        $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
+        $path = '/api/v2/shop/auth_partner';
+        $host = 'https://partner.test-stable.shopeemobile.com';
+        $redirectUrl = 'https://google.com/';
+
+        $baseString = $partnerId . $path . $timestamp;
+        // $fBaseString = utf8_decode($baseString);
+        // $ffBaseString = 'b\'' . $baseString . '\'';
+        // $ffPartnerKey = 'b\'' . $partnerKey . '\'';
+        // dd('b\'' . $baseString . '\'');
+        $sign = hash_hmac("sha256", $baseString, $partnerKey);
+        // dd($sign . ' ' . $timestamp);
+
+        $tokenPath = '/api/v2/auth/token/get';
+
+        $baseString2 = $partnerId . $tokenPath . $timestamp;
+        $sign2 = hash_hmac("sha256", $baseString2, $partnerKey);
+
+        $code = '4257bc889237a08fb3fc8550e1fbdffd';
+        $shopId = 10805;
+
+        $testtresp = Http::get($host . $path, [
+            'partner_id' => $partnerId,
+            'redirect' => $redirectUrl,
+            'sign' => $sign,
+            'timestamp' => $timestamp
+        ]);
+        dd($testtresp);
+
+        dd(json_decode($testtresp->body(), true));
+        
+
+
+
+
+
+
+
+
+
         // init
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
 
@@ -420,30 +462,9 @@ class TestController extends Controller
         
 
 
-        $timestamp = time();
-        $partnerId = 1000909;
-        $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
-        $path = '/api/v2/shop/auth_partner';
-        $host = 'https://partner.test-stable.shopeemobile.com';
-        $redirectUrl = config('app.url') . 'test2';
-
-        $baseString = $partnerId . $path . $timestamp;
-        // $fBaseString = utf8_decode($baseString);
-        // $ffBaseString = 'b\'' . $baseString . '\'';
-        // $ffPartnerKey = 'b\'' . $partnerKey . '\'';
-        // dd('b\'' . $baseString . '\'');
-        $sign = hash_hmac("sha256", $baseString, $partnerKey);
-        // dd($sign . ' ' . $timestamp);
-
-        $tokenPath = '/api/v2/auth/token/get';
-
-        $baseString2 = $partnerId . $tokenPath . $timestamp;
-        $sign2 = hash_hmac("sha256", $baseString2, $partnerKey);
-
-        $code = '4257bc889237a08fb3fc8550e1fbdffd';
-        $shopId = 10805;
-
         
+
+
         // $client = new Client();
         // $promise = $client->requestAsync('GET', $host . $path, [
         //     'query' => [
