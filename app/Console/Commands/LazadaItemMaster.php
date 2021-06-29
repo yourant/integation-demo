@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
+use LazopClient;
+use LazopRequest;
 use App\Services\SapService;
+use App\Services\LazadaService;
 use Illuminate\Console\Command;
 use App\Http\Controllers\SAPLoginController;
 use App\Http\Controllers\LazadaAPIController;
@@ -48,8 +51,11 @@ class LazadaItemMaster extends Command
         $getItems = $odataClient->getOdataClient()->from('Items')
                                                 ->where('U_LAZ_INTEGRATION','Yes')
                                                 ->get();
+        //lazadaAccess
+        $lazService = new LazadaService();
+        $lazClient = new LazopClient($lazService->getAppUrl(),$lazService->getAppKey(),$lazService->getAppSecret());
+        
 
-        print_r($getItems);
        //Loop results
         /**foreach($getItems as $item){
            //Initializations
@@ -79,7 +85,7 @@ class LazadaItemMaster extends Command
                            </Product>
                        </Request>";
        //Run 
-       $lazada->updatePriceQuantity($finalPayload); **/
+       //$lazada->updatePriceQuantity($finalPayload); **/
        
         
     }

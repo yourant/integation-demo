@@ -10,7 +10,7 @@ class LazadaService{
     protected $code;
     protected $accessToken;
 
-    public function __construct($path, $accessToken = null)
+    public function __construct($accessToken = null)
     {
         $this->appUrl = config('app.lazada_app_url');
         $this->appKey = config('app.lazada_app_key');
