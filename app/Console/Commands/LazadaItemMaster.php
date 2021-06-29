@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SapService;
 use Illuminate\Console\Command;
 use App\Http\Controllers\SAPLoginController;
 use App\Http\Controllers\LazadaAPIController;
@@ -40,15 +41,17 @@ class LazadaItemMaster extends Command
     public function handle()
     {
         //SAP odataClient
-        $odataClient = (new SAPLoginController)->login();
+        $odataClient = new SapService();
         //lazada endpoints
         $lazada = new LazadaAPIController();
         //Get items with lazada integration set as yes
-        $getItems = $odataClient->from('Items')
-                               ->where('U_LAZ_INTEGRATION','Yes')
-                               ->get();
+        $getItems = $odataClient->getOdataClient()->from('Items')
+                                                ->where('U_LAZ_INTEGRATION','Yes')
+                                                ->get();
+
+        print_r($getItems);
        //Loop results
-        foreach($getItems as $item){
+        /**foreach($getItems as $item){
            //Initializations
            $itemCode = $item['ItemIntrastatExtension']['ItemCode']; //Sku in lazada
            $sapPrice = $item['ItemPrices']['8']['Price'];
@@ -76,7 +79,8 @@ class LazadaItemMaster extends Command
                            </Product>
                        </Request>";
        //Run 
-       $lazada->updatePriceQuantity($finalPayload);
+       $lazada->updatePriceQuantity($finalPayload); **/
+       
         
     }
 }

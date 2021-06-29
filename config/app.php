@@ -132,14 +132,27 @@ return [
     |
     */
 
-    'sap_db' => env('SAP_DB', 'SBODEMOSG'),
+    'sap_db' => env('SAP_DB', 'TC_DEV'),
 
-    'sap_user' => env('SAP_USER', 'manager'),
+    'sap_user' => env('SAP_USER', 'kass'),
 
-    'sap_pword' => env('SAP_PWORD', ''),
+    'sap_pword' => env('SAP_PWORD', '4021'),
 
-    'sap_path' => env('SAP_PATH', 'https://192.168.18.160:50000/b1s/v1'),
+    'sap_path' => env('SAP_PATH', 'https://192.168.18.140:50000/b1s/v1'),
 
+     /*
+    |--------------------------------------------------------------------------
+    | Lazada Info
+    |--------------------------------------------------------------------------
+    |
+    | This key is used for accessing shopee API
+    |
+    */
+     'lazada_app_url' => env('LAZADA_APP_URL','https://api.lazada.sg/rest'),
+
+     'lazada_app_key' => env('LAZADA_APP_KEY', '121343'),
+
+     'lazada_app_secret' => env('LAZADA_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
     /*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers
