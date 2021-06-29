@@ -42,7 +42,7 @@ class LazadaCreditMemo extends Command
         $odataClient = (new SAPLoginController)->login();
         //Get Invoice
         $getInvoice = $odataClient->from('Invoices')
-                                ->where('U_Order_ID','55275073998631') // Different SKU - Will use for demo
+                                ->where('U_Order_ID','55949912514307') // Different SKU - Will use for demo
                                 ->get();
 
         foreach($getInvoice['0']['DocumentLines'] as $item){
@@ -59,6 +59,10 @@ class LazadaCreditMemo extends Command
                 'DocDate' => $getInvoice['0']['DocDate'],
                 'DocDueDate' => $getInvoice['0']['DocDueDate'],
                 'PostingDate' => $getInvoice['0']['TaxDate'],
+                'NumAtCard' => $getInvoice['0']['order_id'],
+                'U_Ecommerce_Type' => 'Lazada',
+                'U_Order_ID' => $getInvoice['0']['U_Order_ID'],
+                'U_Customer_Name' => $getInvoice['0']['U_Customer_Name'].' '.$getInvoice['0']['U_Customer_Email'],
                 'DocumentLines' => $items 
             ]
         );
