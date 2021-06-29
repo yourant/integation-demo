@@ -55,11 +55,15 @@ class LazadaInvoice extends Command
         }
         //Insert invoice
         $odataClient->post('Invoices', [
-                'CardCode' => $getOrder['0']['CardCode'],
-                'DocDate' => $getOrder['0']['DocDate'],
-                'DocDueDate' => $getOrder['0']['DocDueDate'],
-                'PostingDate' => $getOrder['0']['TaxDate'],
-                'DocumentLines' => $items 
+            'CardCode' => $getOrder['0']['CardCode'],
+            'DocDate' => $getOrder['0']['DocDate'],
+            'DocDueDate' => $getOrder['0']['DocDueDate'],
+            'PostingDate' => $getOrder['0']['TaxDate'],
+            'NumAtCard' => $getOrder['0']['order_id'],
+            'U_Ecommerce_Type' => 'Lazada',
+            'U_Order_ID' => $getOrder['0']['U_Order_ID'],
+            'U_Customer_Name' => $getOrder['0']['U_Customer_Name'].' '.$getOrder['0']['U_Customer_Email'],
+            'DocumentLines' => $items 
             ]
         );
         
