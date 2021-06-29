@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use SaintSystems\OData\ODataClient;
 use Illuminate\Support\Facades\Http;
 
-class LazadaLoginController extends Controller
+class SAPLoginController extends Controller
 {
     public function login(){
 

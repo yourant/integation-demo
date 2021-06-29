@@ -7,7 +7,7 @@ use LazopRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
-class LazadaController extends Controller
+class LazadaAPIController extends Controller
 {
     
     public function refreshToken(){
@@ -88,16 +88,6 @@ class LazadaController extends Controller
         return json_decode($c->execute($request, $accessToken),true);
 
     }
-
-    public function updatePriceQuantity($payload){
-        $accessToken = env('LAZADA_ACCESS_TOKEN');
-        $c = new LazopClient(env('LAZADA_APP_URL'),env('LAZADA_APP_KEY'),env('LAZADA_APP_SECRET'));
-        $request = new LazopRequest('/product/price_quantity/update');
-        $request->addApiParam('payload',$payload);
-
-        return json_decode($c->execute($request, $accessToken),true);
-    }
-
 
 
 }

@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Http\Controllers\LazadaController;
-use App\Http\Controllers\LazadaLoginController;
+use App\Http\Controllers\SAPLoginController;
+use App\Http\Controllers\LazadaAPIController;
 
 class LazadaOrder extends Command
 {
@@ -40,11 +40,11 @@ class LazadaOrder extends Command
     public function handle()
     {
         
-        $odataClient = (new LazadaLoginController)->login();
+        $odataClient = (new SAPLoginController)->login();
         
-        $lazada = new LazadaController();
+        $lazada = new LazadaAPIController();
         
-        $order = $lazada->getOrder('55605530582036'); // Different SKU - Will use for demo
+        $order = $lazada->getOrder('55275073998631'); // Different SKU - Will use for demo
         
         $orderItems = $lazada->getOrderItem($order['data']['order_id']);
         
@@ -74,15 +74,16 @@ class LazadaOrder extends Command
             $itemName = $item['attributes']['name'];
             foreach($item['skus'] as $sku){
                 if(in_array($sku['SellerSku'],$skuArray)){
-                    $tempItems[] = [
+                    $tempItems[] = [ // - Will remove when go live
                         'ItemCode' => $sku['SellerSku'],
                         'ItemName' => $itemName,
-                        'ItemType' => 'itItems'
+                        'ItemType' => 'itItems',
+                        'U_LAZ_INTEGRATION' => 'No'
                     ];
                 }
             }
         }
-        //Check if Item exists
+        //Check if Item exists - Will remove when go live
         foreach($tempItems as $key => $value){
             $itemData = array_slice($tempItems[$key],0);
             try {
@@ -95,7 +96,7 @@ class LazadaOrder extends Command
                 }
             }
         }
-        //Create GRPO
+        //Create GRPO - Will remove when go live
         $odataClient->post('PurchaseDeliveryNotes',[
             'CardCode' => 'TV00001',
             'DocumentLines' => $goodsReceipt

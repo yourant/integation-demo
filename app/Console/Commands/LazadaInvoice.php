@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Http\Controllers\LazadaLoginController;
+use App\Http\Controllers\SAPLoginController;
 
 class LazadaInvoice extends Command
 {
@@ -39,10 +39,10 @@ class LazadaInvoice extends Command
     public function handle()
     {
         //SAP odataClient
-        $odataClient = (new LazadaLoginController)->login();
+        $odataClient = (new SAPLoginController)->login();
         //Get order
         $getOrder = $odataClient->from('Orders')
-                                ->where('U_Order_ID','55605530582036') //Different SKU - Will use for demo
+                                ->where('U_Order_ID','55275073998631') //Different SKU - Will use for demo
                                 ->get();
         //Count items from Order
         for($i = 0; $i <= count($getOrder['0']['DocumentLines']) - 1; $i++) {

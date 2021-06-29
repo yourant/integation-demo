@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Http\Controllers\LazadaLoginController;
+use App\Http\Controllers\SAPLoginController;
 
 class LazadaCreditMemo extends Command
 {
@@ -39,10 +39,10 @@ class LazadaCreditMemo extends Command
     public function handle()
     {
         //SAP odataClient
-        $odataClient = (new LazadaLoginController)->login();
+        $odataClient = (new SAPLoginController)->login();
         //Get Invoice
         $getInvoice = $odataClient->from('Invoices')
-                                ->where('U_Order_ID','55605530582036') // Different SKU - Will use for demo
+                                ->where('U_Order_ID','55275073998631') // Different SKU - Will use for demo
                                 ->get();
 
         foreach($getInvoice['0']['DocumentLines'] as $item){
