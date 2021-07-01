@@ -133,7 +133,7 @@ return [
     */
 
     'sap_db' => env('SAP_DB', 'TC_DEV'),
-
+  
     'sap_user' => env('SAP_USER', 'paul'),
 
     'sap_pword' => env('SAP_PWORD', '1234'),
@@ -157,7 +157,23 @@ return [
 
     'shopee_host' => env('SHOPEE_HOST', 'https://partner.test-stable.shopeemobile.com'),
 
-    /*
+
+     /*
+    |--------------------------------------------------------------------------
+    | Lazada Info
+    |--------------------------------------------------------------------------
+    |
+    | This key is used for accessing shopee API
+    |
+    */
+     'lazada_app_url' => env('LAZADA_APP_URL','https://api.lazada.sg/rest'),
+
+     'lazada_app_key' => env('LAZADA_APP_KEY', '121343'),
+
+     'lazada_app_secret' => env('LAZADA_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
+    
+     'lazada_access_token' => env('LAZADA_ACCESS_TOKEN'),
+     /*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers
     |--------------------------------------------------------------------------

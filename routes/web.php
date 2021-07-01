@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\LazadaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,7 +21,6 @@ Auth::routes();
 Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
 
 Route::get('/test', [TestController::class, 'index'])->name('test.index');
-
 
 Route::get('/test/login', [TestController::class, 'form'])->name('test.form');
 Route::post('/test/login', [TestController::class, 'login'])->name('test.login')->middleware('auth');
