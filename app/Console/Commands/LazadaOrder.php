@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SapService;
 use Illuminate\Console\Command;
-use App\Http\Controllers\SAPLoginController;
 use App\Http\Controllers\LazadaAPIController;
 
 class LazadaOrder extends Command
@@ -13,7 +13,7 @@ class LazadaOrder extends Command
      *
      * @var string
      */
-    protected $signature = 'lazada:order';
+    protected $signature = 'lazada:sales-order';
 
     /**
      * The console command description.
@@ -40,13 +40,13 @@ class LazadaOrder extends Command
     public function handle()
     {
         
-        $odataClient = (new SAPLoginController)->login();
+        $odataClient = new SapService();
         
-        $lazada = new LazadaAPIController();
+        $lazadaAPI = new LazadaAPIController();
         
-        $order = $lazada->getOrder('55949912514307'); // Different SKU - Will use for demo
+        $order = $lazadaAPI->getOrder('55949912514307'); // Different SKU - Will use for demo
         
-        $orderItems = $lazada->getOrderItem($order['data']['order_id']);
+        $orderItems = $lazadaAPI->getOrderItem($order['data']['order_id']);
         
         $mergedItem = [];
         foreach ($orderItems['data'] as $item) {
@@ -68,7 +68,7 @@ class LazadaOrder extends Command
 
         $skuArray = array_column($orderItems['data'],'sku');
         $skus = '["'.implode('","', $skuArray).'"]';
-        $products = $lazada->getProducts($skus);
+        $products = $lazadaAPI->getProducts($skus);
         
         foreach($products['data']['products'] as $item){
             $itemName = $item['attributes']['name'];
@@ -87,22 +87,22 @@ class LazadaOrder extends Command
         foreach($tempItems as $key => $value){
             $itemData = array_slice($tempItems[$key],0);
             try {
-                $odataClient->from('Items')->find(''.$itemData['ItemCode'].'');
+                $odataClient->getOdataClient()->from('Items')->find(''.$itemData['ItemCode'].'');
             }catch (\Exception $e) {
                 if($e->getCode() == '404'){
-                    $odataClient->post('Items',$itemData);
+                    $odataClient->getOdataClient()->post('Items',$itemData);
                 }else{
                     dd($e->getMessage());
                 }
             }
         }
         //Create GRPO - Will remove when go live
-        $odataClient->post('PurchaseDeliveryNotes',[
+        $odataClient->getOdataClient()->post('PurchaseDeliveryNotes',[
             'CardCode' => 'TV00001',
             'DocumentLines' => $goodsReceipt
         ]);
         //Create Sales Order
-        $odataClient->post('Orders', [
+        $odataClient->getOdataClient()->post('Orders', [
             'CardCode' => 'Lazada_C',
             'DocDate' => $order['data']['created_at'],
             'DocDueDate' => $order['data']['created_at'],
@@ -112,6 +112,7 @@ class LazadaOrder extends Command
             'U_Order_ID' => $order['data']['order_id'],
             'U_Customer_Name' => $order['data']['customer_first_name'].' '.$order['data']['customer_last_name'],
             'DocumentLines' => $items
+        
         ]);
         
     }
