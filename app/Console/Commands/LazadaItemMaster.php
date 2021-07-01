@@ -2,12 +2,8 @@
 
 namespace App\Console\Commands;
 
-use LazopClient;
-use LazopRequest;
 use App\Services\SapService;
-use App\Services\LazadaService;
 use Illuminate\Console\Command;
-use App\Http\Controllers\SAPLoginController;
 use App\Http\Controllers\LazadaAPIController;
 
 class LazadaItemMaster extends Command
@@ -45,27 +41,23 @@ class LazadaItemMaster extends Command
     {
         //SAP odataClient
         $odataClient = new SapService();
-        //lazada endpoints
-        $lazada = new LazadaAPIController();
         //Get items with lazada integration set as yes
         $getItems = $odataClient->getOdataClient()->from('Items')
                                                 ->where('U_LAZ_INTEGRATION','Yes')
                                                 ->get();
-        //lazadaAccess
-        $lazService = new LazadaService();
-        $lazClient = new LazopClient($lazService->getAppUrl(),$lazService->getAppKey(),$lazService->getAppSecret());
-        
+        //lazada API
+        $lazadaAPI = new LazadaAPIController();
 
        //Loop results
-        /**foreach($getItems as $item){
+        foreach($getItems as $item){
            //Initializations
            $itemCode = $item['ItemIntrastatExtension']['ItemCode']; //Sku in lazada
            $sapPrice = $item['ItemPrices']['8']['Price'];
            $sapStock = round($item['ItemWarehouseInfoCollection']['0']['InStock']);
            //Update Item Id UDF to SAP B1
-           $getProduct = $lazada->getProductItem($itemCode);
+           $getProduct = $lazadaAPI->getProductItem($itemCode);
            $lazadaItemId = $getProduct['data']['item_id'];
-           $odataClient->patch("Items("."'".$itemCode."'".")", [
+           $odataClient->getOdataClient()->patch("Items("."'".$itemCode."'".")", [
                'U_LAZ_ITEM_CODE' => $lazadaItemId,
            ]);
            //Create SKU Payload
@@ -85,7 +77,7 @@ class LazadaItemMaster extends Command
                            </Product>
                        </Request>";
        //Run 
-       //$lazada->updatePriceQuantity($finalPayload); **/
+       $lazadaAPI->updatePriceQuantity($finalPayload);
        
         
     }

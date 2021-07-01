@@ -10,14 +10,12 @@ class LazadaService{
     protected $code;
     protected $accessToken;
 
-    public function __construct($accessToken = null)
+    public function __construct()
     {
         $this->appUrl = config('app.lazada_app_url');
         $this->appKey = config('app.lazada_app_key');
         $this->appSecret = config('app.lazada_app_secret');
-        $this->accessToken = $accessToken;
-        
-        $this->code = '0_121343_vymRW4nShmAnrG13TfDcOOEQ28591';
+        $this->accessToken = config('app.lazada_access_token');
 
     }
 
@@ -39,11 +37,6 @@ class LazadaService{
     public function getPath()
     {
         return $this->path;
-    }
-
-    public function getCode()
-    {
-        return $this->code;
     }
 
     public function getAccessToken()

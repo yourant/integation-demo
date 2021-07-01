@@ -148,12 +148,14 @@ return [
     | This key is used for accessing shopee API
     |
     */
-     'lazada_app_url' => env('LAZADA_APP_URL','https://api.lazada.com/rest'),
+     'lazada_app_url' => env('LAZADA_APP_URL','https://api.lazada.sg/rest'),
 
      'lazada_app_key' => env('LAZADA_APP_KEY', '121343'),
 
      'lazada_app_secret' => env('LAZADA_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
-    /*
+    
+     'lazada_access_token' => env('LAZADA_ACCESS_TOKEN'),
+     /*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers
     |--------------------------------------------------------------------------
