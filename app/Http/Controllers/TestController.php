@@ -120,38 +120,38 @@ class TestController extends Controller
 
     public function index()
     {       
-        $timestamp = time();
-        $partnerId = 1000909;
-        $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
-        $path = '/api/v2/shop/auth_partner';
-        $host = 'https://partner.test-stable.shopeemobile.com';
-        $redirectUrl = 'https://google.com/';
+        // $timestamp = time();
+        // $partnerId = 1000909;
+        // $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
+        // $path = '/api/v2/shop/auth_partner';
+        // $host = 'https://partner.test-stable.shopeemobile.com';
+        // $redirectUrl = 'https://google.com/';
 
-        $baseString = $partnerId . $path . $timestamp;
-        // $fBaseString = utf8_decode($baseString);
-        // $ffBaseString = 'b\'' . $baseString . '\'';
-        // $ffPartnerKey = 'b\'' . $partnerKey . '\'';
-        // dd('b\'' . $baseString . '\'');
-        $sign = hash_hmac("sha256", $baseString, $partnerKey);
-        // dd($sign . ' ' . $timestamp);
+        // $baseString = $partnerId . $path . $timestamp;
+        // // $fBaseString = utf8_decode($baseString);
+        // // $ffBaseString = 'b\'' . $baseString . '\'';
+        // // $ffPartnerKey = 'b\'' . $partnerKey . '\'';
+        // // dd('b\'' . $baseString . '\'');
+        // $sign = hash_hmac("sha256", $baseString, $partnerKey);
+        // // dd($sign . ' ' . $timestamp);
 
-        $tokenPath = '/api/v2/auth/token/get';
+        // $tokenPath = '/api/v2/auth/token/get';
 
-        $baseString2 = $partnerId . $tokenPath . $timestamp;
-        $sign2 = hash_hmac("sha256", $baseString2, $partnerKey);
+        // $baseString2 = $partnerId . $tokenPath . $timestamp;
+        // $sign2 = hash_hmac("sha256", $baseString2, $partnerKey);
 
-        $code = '4257bc889237a08fb3fc8550e1fbdffd';
-        $shopId = 10805;
+        // $code = '4257bc889237a08fb3fc8550e1fbdffd';
+        // $shopId = 10805;
 
-        $testtresp = Http::get($host . $path, [
-            'partner_id' => $partnerId,
-            'redirect' => $redirectUrl,
-            'sign' => $sign,
-            'timestamp' => $timestamp
-        ]);
-        dd($testtresp);
+        // $testtresp = Http::get($host . $path, [
+        //     'partner_id' => $partnerId,
+        //     'redirect' => $redirectUrl,
+        //     'sign' => $sign,
+        //     'timestamp' => $timestamp
+        // ]);
+        // dd($testtresp);
 
-        dd(json_decode($testtresp->body(), true));
+        // dd(json_decode($testtresp->body(), true));
         
 
 
@@ -219,7 +219,7 @@ class TestController extends Controller
         foreach ($productList as $product) {
             // dd($product);
             // $sku = [];
-
+            // dd($product);
             if ($product['has_model']) {
                 // dd('dasdasdas');
                 $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
@@ -230,16 +230,20 @@ class TestController extends Controller
                 // dd('ttt');
                 $shopeeModelsResponseArr = json_decode($shopeeModelsResponse->body(), true);
                 // dd($shopeeModelsResponseArr['response']['model']);
-                
 
-                foreach ($shopeeModelsResponseArr['response']['model'] as $model) {
+                // dd($shopeeModelsResponseArr['response']);
+                // dd($shopeeModelsResponseArr['response']);
+                foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) {
                     // dd($model['model_sku']);
                     // $sku[] = $model['model_sku'];
                     // $model[] = $model['model_id'];
-                    $sku = $model['model_sku'];
-                    $itemCode = $model['model_id'];
+                    
+                    
 
-                   
+                    $sku = $model['model_sku'];
+                    $shItemCode = $model['model_id'];
+                    //dstapso
+                //    dd($sku . " : " . $shItemCode);
 
                     try {
                         $itemSapService = new SapService();
@@ -250,13 +254,26 @@ class TestController extends Controller
                                     ->orWhere('U_OLD_SKU', $sku);
                             })->where('U_SH_INTEGRATION', 'Yes')
                             ->first();
-                        $tes = $item['properties']['ItemCode'];
+                        
+                        if ($key == 13) {
+                            dd($item);
+                        }
+
+
+                        // $itemCode = $item->ItemCode;
+                        // dd($item);
+                        // dd($item->ItemCode);
+                        // $itemCode = $item['properties'];
+                        // $itemCode = $itemCode['ItemCode'];
                         // dd($tes);
                         
-                        $itemSapService2 = new SapService();
-                        $response1 = $itemSapService2->getOdataClient()->from('Items')
-                            ->whereKey($tes)
-                            ->patch(['U_SH_ITEM_CODE' => $itemCode]);
+                        // $itemSapService2 = new SapService();
+                        if ($item) {
+                            $response1 = $itemSapService->getOdataClient()->from('Items')
+                                ->whereKey($item->ItemCode)
+                                ->patch(['U_SH_ITEM_CODE' => $shItemCode]);
+                        }
+                        
 
                         // dd($response1);
 
@@ -270,12 +287,15 @@ class TestController extends Controller
                     // dd($response[0]['properties']);
                     // $sapItem = $response[0]['properties'];
                 }
+
+                dd('dadsa');
             } else {
                 dd('else');
                 $sku = $product['item_sku'];
-                $itemCode = $product['item_id'];
+                $shItemCode = $product['item_id'];
 
                 try {
+                    $itemSapService = new SapService();
                     // ('U_SH_ITEM_CODE', (string)$item['item_id'])
                     $response = $itemSapService->getOdataClient()->from('Items')
                         ->where(function($query) use ($sku) {
