@@ -133,12 +133,30 @@ return [
     */
 
     'sap_db' => env('SAP_DB', 'TC_DEV'),
+  
+    'sap_user' => env('SAP_USER', 'paul'),
 
-    'sap_user' => env('SAP_USER', 'kass'),
-
-    'sap_pword' => env('SAP_PWORD', '4021'),
+    'sap_pword' => env('SAP_PWORD', '1234'),
 
     'sap_path' => env('SAP_PATH', 'https://192.168.18.140:50000/b1s/v1'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shopee Info
+    |--------------------------------------------------------------------------
+    |
+    | This key is used for accessing shopee API
+    |
+    */
+
+    'shopee_partner_id' => env('SHOPEE_PARTNER_ID', 1000909),
+
+    'shopee_partner_key' => env('SHOPEE_PARTNER_KEY', 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0'),
+    
+    'shopee_api_vers_url' => env('SHOPEE_API_VERS_URL', '/api/v2'),
+
+    'shopee_host' => env('SHOPEE_HOST', 'https://partner.test-stable.shopeemobile.com'),
+
 
      /*
     |--------------------------------------------------------------------------
