@@ -37,32 +37,16 @@ class LazadaAPIController extends Controller
 
     }
 
-    public function getOrder($orderId){
-        $request = new LazopRequest('/order/get','GET');
-        $request->addApiParam('order_id',$orderId);
-
-        return json_decode($this->client->execute($request, $this->accessToken),true);
-
-    }
-
     public function getOrders(){
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','DESC');
         $request->addApiParam('sort_by','created_at');
-        $request->addApiParam('limit','2');
-        $request->addApiParam('created_before','2021-06-01T16:00:00+08:00');
-        $request->addApiParam('created_after','2017-05-31T09:00:00+08:00');
+        $request->addApiParam('offset','0');
+        $request->addApiParam('status','pending');
+        $request->addApiParam('created_after','2021-06-30T23:59:59+08:00');
         
         return json_decode($this->client->execute($request, $this->accessToken),true);
 
-    }
-
-    public function getOrderItem($orderId){
-        $request = new LazopRequest('/order/items/get','GET');
-        $request->addApiParam('order_id',$orderId);
-
-        return json_decode($this->client->execute($request, $this->accessToken),true);
-        
     }
 
     public function getMultipleOrderItems($orderIds){

@@ -39,81 +39,49 @@ class LazadaOrder extends Command
      */
     public function handle()
     {
-        
         $odataClient = new SapService();
-        
         $lazadaAPI = new LazadaAPIController();
+        $orders = $lazadaAPI->getOrders();
         
-        $order = $lazadaAPI->getOrder('55949912514307'); // Different SKU - Will use for demo
-        
-        $orderItems = $lazadaAPI->getOrderItem($order['data']['order_id']);
-        
-        $mergedItem = [];
-        foreach ($orderItems['data'] as $item) {
-            // Order Items
-            $items[] = [
-                'ItemCode' => $item['sku'],
-                'Quantity' => 1,
-                "TaxCode" => 'T1',
-                'UnitPrice' => $item['item_price']
-            ];
-            // GRPO Items
-            $goodsReceipt[] = [
-                'ItemCode' => $item['sku'],
-                'Quantity' => 50,
-                "TaxCode" => 'T1',
-                'UnitPrice' => $item['item_price']
-            ];
+        foreach($orders['data']['orders'] as $order){
+            $orderId = $order['order_id'];
+            $orderIdArray[] = $order['order_id'];
+
+            $tempSO[$orderId]['CardCode'] = 'Lazada_C';
+            $tempSO[$orderId]['DocDate'] = '2021-07-02';
+            $tempSO[$orderId]['DocDueDate'] = '2021-07-02';
+            $tempSO[$orderId]['TaxDate'] = '2021-07-02';
+            $tempSO[$orderId]['NumAtCard'] = $order['order_id'];
+            $tempSO[$orderId]['U_Ecommerce_Type'] = 'Lazada';
+            $tempSO[$orderId]['U_Order_ID'] = '23142';
+            $tempSO[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
+
         }
 
-        $skuArray = array_column($orderItems['data'],'sku');
-        $skus = '["'.implode('","', $skuArray).'"]';
-        $products = $lazadaAPI->getProducts($skus);
+        $orderIds = '['.implode(',',$orderIdArray).']';
+        $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
         
-        foreach($products['data']['products'] as $item){
-            $itemName = $item['attributes']['name'];
-            foreach($item['skus'] as $sku){
-                if(in_array($sku['SellerSku'],$skuArray)){
-                    $tempItems[] = [ // - Will remove when go live
-                        'ItemCode' => $sku['SellerSku'],
-                        'ItemName' => $itemName,
-                        'ItemType' => 'itItems',
-                        'U_LAZ_INTEGRATION' => 'No'
-                    ];
-                }
+        foreach ($orderItems['data'] as $item) {
+            $orderId = $item['order_id'];
+
+            foreach($item['order_items'] as $orderItem){
+                $items[$orderId][] = [
+                    'ItemCode' => $orderItem['sku'],
+                    'Quantity' => 1,
+                    'TaxCode' => 'T1',
+                    'UnitPrice' => $orderItem['item_price']
+                ];
+                
             }
+
+            $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+            
         }
-        //Check if Item exists - Will remove when go live
-        foreach($tempItems as $key => $value){
-            $itemData = array_slice($tempItems[$key],0);
-            try {
-                $odataClient->getOdataClient()->from('Items')->find(''.$itemData['ItemCode'].'');
-            }catch (\Exception $e) {
-                if($e->getCode() == '404'){
-                    $odataClient->getOdataClient()->post('Items',$itemData);
-                }else{
-                    dd($e->getMessage());
-                }
-            }
+
+        foreach($tempSO as $key => $value){
+            $finalSO = array_slice($tempSO[$key],0);
+            $odataClient->getOdataClient()->post('Orders',$finalSO);
         }
-        //Create GRPO - Will remove when go live
-        $odataClient->getOdataClient()->post('PurchaseDeliveryNotes',[
-            'CardCode' => 'TV00001',
-            'DocumentLines' => $goodsReceipt
-        ]);
-        //Create Sales Order
-        $odataClient->getOdataClient()->post('Orders', [
-            'CardCode' => 'Lazada_C',
-            'DocDate' => $order['data']['created_at'],
-            'DocDueDate' => $order['data']['created_at'],
-            'PostingDate' => $order['data']['created_at'],
-            'NumAtCard' => $order['data']['order_id'],
-            'U_Ecommerce_Type' => 'Lazada',
-            'U_Order_ID' => $order['data']['order_id'],
-            'U_Customer_Name' => $order['data']['customer_first_name'].' '.$order['data']['customer_last_name'],
-            'DocumentLines' => $items
-        
-        ]);
         
     }
 }
