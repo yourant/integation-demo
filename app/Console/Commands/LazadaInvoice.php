@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SapService;
 use Illuminate\Console\Command;
 use App\Http\Controllers\SAPLoginController;
 
@@ -12,7 +13,7 @@ class LazadaInvoice extends Command
      *
      * @var string
      */
-    protected $signature = 'lazada:invoice';
+    protected $signature = 'lazada:ar-invoice';
 
     /**
      * The console command description.
@@ -39,10 +40,10 @@ class LazadaInvoice extends Command
     public function handle()
     {
         //SAP odataClient
-        $odataClient = (new SAPLoginController)->login();
+        $odataClient = new SapService();
         //Get order
-        $getOrder = $odataClient->from('Orders')
-                                ->where('U_Order_ID','55949912514307')
+        $getOrder = $odataClient->getOdataClient()->from('Orders')
+                                ->where('U_Order_ID','23142')
                                 ->where('DocumentStatus','bost_Open') //Different SKU - Will use for demo
                                 ->get();
         //Count items from Order
