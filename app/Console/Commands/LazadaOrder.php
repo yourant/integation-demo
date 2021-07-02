@@ -46,15 +46,15 @@ class LazadaOrder extends Command
         if(!empty($orders['data']['orders'])){
             foreach($orders['data']['orders'] as $order){
                 $orderId = $order['order_id'];
-                $orderIdArray[] = $order['order_id'];
+                $orderIdArray[] = $orderId;
     
                 $tempSO[$orderId]['CardCode'] = 'Lazada_C';
-                $tempSO[$orderId]['DocDate'] = '2021-07-02';
-                $tempSO[$orderId]['DocDueDate'] = '2021-07-02';
-                $tempSO[$orderId]['TaxDate'] = '2021-07-02';
-                $tempSO[$orderId]['NumAtCard'] = $order['order_id'];
+                $tempSO[$orderId]['DocDate'] = substr($order['created_at'],0,10);
+                $tempSO[$orderId]['DocDueDate'] = substr($order['created_at'],0,10);
+                $tempSO[$orderId]['TaxDate'] = substr($order['created_at'],0,10);
+                $tempSO[$orderId]['NumAtCard'] = $orderId;
                 $tempSO[$orderId]['U_Ecommerce_Type'] = 'Lazada';
-                $tempSO[$orderId]['U_Order_ID'] = '23142';
+                $tempSO[$orderId]['U_Order_ID'] = $orderId;
                 $tempSO[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
     
             }
@@ -85,7 +85,7 @@ class LazadaOrder extends Command
             }
 
         }else{
-            print_r('No orders for now!');
+            print_r('No pending orders for now!');
         }
         
     }

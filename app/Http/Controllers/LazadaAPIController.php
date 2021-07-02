@@ -40,7 +40,7 @@ class LazadaAPIController extends Controller
 
     public function getPendingOrders(){
         $request = new LazopRequest('/orders/get','GET');
-        $request->addApiParam('sort_direction','DESC');
+        $request->addApiParam('sort_direction','ASC');
         $request->addApiParam('sort_by','created_at');
         $request->addApiParam('offset','0');
         $request->addApiParam('status','pending');
