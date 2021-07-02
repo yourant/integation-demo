@@ -41,46 +41,51 @@ class LazadaOrder extends Command
     {
         $odataClient = new SapService();
         $lazadaAPI = new LazadaAPIController();
-        $orders = $lazadaAPI->getOrders();
+        $orders = $lazadaAPI->getPendingOrders();
         
-        foreach($orders['data']['orders'] as $order){
-            $orderId = $order['order_id'];
-            $orderIdArray[] = $order['order_id'];
-
-            $tempSO[$orderId]['CardCode'] = 'Lazada_C';
-            $tempSO[$orderId]['DocDate'] = '2021-07-02';
-            $tempSO[$orderId]['DocDueDate'] = '2021-07-02';
-            $tempSO[$orderId]['TaxDate'] = '2021-07-02';
-            $tempSO[$orderId]['NumAtCard'] = $order['order_id'];
-            $tempSO[$orderId]['U_Ecommerce_Type'] = 'Lazada';
-            $tempSO[$orderId]['U_Order_ID'] = '23142';
-            $tempSO[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
-
-        }
-
-        $orderIds = '['.implode(',',$orderIdArray).']';
-        $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-        
-        foreach ($orderItems['data'] as $item) {
-            $orderId = $item['order_id'];
-
-            foreach($item['order_items'] as $orderItem){
-                $items[$orderId][] = [
-                    'ItemCode' => $orderItem['sku'],
-                    'Quantity' => 1,
-                    'TaxCode' => 'T1',
-                    'UnitPrice' => $orderItem['item_price']
-                ];
+        if(!empty($orders['data']['orders'])){
+            foreach($orders['data']['orders'] as $order){
+                $orderId = $order['order_id'];
+                $orderIdArray[] = $order['order_id'];
+    
+                $tempSO[$orderId]['CardCode'] = 'Lazada_C';
+                $tempSO[$orderId]['DocDate'] = '2021-07-02';
+                $tempSO[$orderId]['DocDueDate'] = '2021-07-02';
+                $tempSO[$orderId]['TaxDate'] = '2021-07-02';
+                $tempSO[$orderId]['NumAtCard'] = $order['order_id'];
+                $tempSO[$orderId]['U_Ecommerce_Type'] = 'Lazada';
+                $tempSO[$orderId]['U_Order_ID'] = '23142';
+                $tempSO[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
+    
+            }
+    
+            $orderIds = '['.implode(',',$orderIdArray).']';
+            $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
+            
+            foreach ($orderItems['data'] as $item) {
+                $orderId = $item['order_id'];
+    
+                foreach($item['order_items'] as $orderItem){
+                    $items[$orderId][] = [
+                        'ItemCode' => $orderItem['sku'],
+                        'Quantity' => 1,
+                        'TaxCode' => 'T1',
+                        'UnitPrice' => $orderItem['item_price']
+                    ];
+                    
+                }
+    
+                $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
                 
             }
+    
+            foreach($tempSO as $key => $value){
+                $finalSO = array_slice($tempSO[$key],0);
+                $odataClient->getOdataClient()->post('Orders',$finalSO);
+            }
 
-            $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
-            
-        }
-
-        foreach($tempSO as $key => $value){
-            $finalSO = array_slice($tempSO[$key],0);
-            $odataClient->getOdataClient()->post('Orders',$finalSO);
+        }else{
+            print_r('No orders for now!');
         }
         
     }
