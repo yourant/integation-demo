@@ -56,34 +56,35 @@ class LazadaInvoice extends Command
                                     ->where('U_Order_ID',(string)$id)
                                     ->get();
     
-                /**if(!empty($getSO['0'])){
-                    //Count items from Order
-                    if($getSO['0']['DocumentStatus'] == 'bost_Open'){
-                        for($i = 0; $i <= count($getSO['0']['DocumentLines']) - 1; $i++) {
-                            $items[] = [
-                                'BaseType' => 17,
-                                'BaseEntry' => $getSO['0']['DocEntry'],
-                                'BaseLine' => $i
-                            ];
+                if(!empty($getSO['0'])){
+                    foreach($getSO as $So){
+                        if($So['DocumentStatus'] == 'bost_Open'){// For duplicate order ids - Testing purposes
+                            for($i = 0; $i <= count($So['DocumentLines']) - 1; $i++) {
+                                $items[] = [
+                                    'BaseType' => 17,
+                                    'BaseEntry' => $So['DocEntry'],
+                                    'BaseLine' => $i
+                                ];
+                            }
+                            //Insert invoice
+                            $odataClient->getOdataClient()->post('Invoices', [
+                                'CardCode' => $So['CardCode'],
+                                'DocDate' => $So['DocDate'],
+                                'DocDueDate' => $So['DocDueDate'],
+                                'PostingDate' => $So['TaxDate'],
+                                'NumAtCard' => $So['NumAtCard'],
+                                'U_Ecommerce_Type' => $So['U_Ecommerce_Type'],
+                                'U_Order_ID' => $So['U_Order_ID'],
+                                'U_Customer_Name' => $So['U_Customer_Name'].' '.$So['U_Customer_Email'],
+                                'DocumentLines' => $items 
+                                ]
+                            );
                         }
-                        //Insert invoice
-                        $odataClient->getOdataClient()->post('Invoices', [
-                            'CardCode' => $getSO['0']['CardCode'],
-                            'DocDate' => $getSO['0']['DocDate'],
-                            'DocDueDate' => $getSO['0']['DocDueDate'],
-                            'PostingDate' => $getSO['0']['TaxDate'],
-                            'NumAtCard' => $getSO['0']['NumAtCard'],
-                            'U_Ecommerce_Type' => $getSO['0']['U_Ecommerce_Type'],
-                            'U_Order_ID' => $getSO['0']['U_Order_ID'],
-                            'U_Customer_Name' => $getSO['0']['U_Customer_Name'].' '.$getSO['0']['U_Customer_Email'],
-                            'DocumentLines' => $items 
-                            ]
-                        );
                     }
                 }else{
-                    print_r('The order '.$id.' is already closed or not found in server. Please check');
-                } **/
-                
+                    print_r('No available sales order for order_id '.$id);
+                    echo '<br/>';
+                }
                 
             }
 
