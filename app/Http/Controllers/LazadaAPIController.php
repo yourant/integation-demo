@@ -50,6 +50,17 @@ class LazadaAPIController extends Controller
 
     }
 
+    public function getReadyToShipOrders(){
+        $request = new LazopRequest('/orders/get','GET');
+        $request->addApiParam('sort_direction','ASC');
+        $request->addApiParam('sort_by','created_at');
+        $request->addApiParam('offset','0');
+        $request->addApiParam('status','ready_to_ship');
+        $request->addApiParam('created_after','2021-06-29T23:59:59+08:00');
+        
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
     public function getReturnedOrders(){
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','DESC');
