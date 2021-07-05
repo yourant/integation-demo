@@ -67,7 +67,7 @@ class LazadaCreditMemo extends Command
     
                 foreach($item['order_items'] as $orderItem){
                     $items[$orderId][] = [
-                        'ItemCode' => $orderItem['sku'],
+                        'ItemCode' => '101619PB2034',//$orderItem['sku'],
                         'Quantity' => 1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $orderItem['item_price']
@@ -81,7 +81,17 @@ class LazadaCreditMemo extends Command
     
             foreach($tempCM as $key => $value){
                 $finalCM = array_slice($tempCM[$key],0);
-                $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
+                $getCM = $odataClient->getOdataClient()->from('CreditNotes')
+                                ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
+                                ->where('DocumentStatus','bost_Open')
+                                ->get();
+
+                if(empty($getCM['0'])){
+                    $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
+                }else{
+                    unset($finalCM);
+                }
+                
             }
 
         }else{

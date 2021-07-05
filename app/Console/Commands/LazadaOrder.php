@@ -78,10 +78,19 @@ class LazadaOrder extends Command
                 $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
                 
             }
-    
+            
             foreach($tempSO as $key => $value){
                 $finalSO = array_slice($tempSO[$key],0);
-                $odataClient->getOdataClient()->post('Orders',$finalSO);
+                $getSO = $odataClient->getOdataClient()->from('Orders')
+                                ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
+                                ->where('DocumentStatus','bost_Open')
+                                ->get();
+
+                if(empty($getSO['0'])){
+                    $odataClient->getOdataClient()->post('Orders',$finalSO);
+                }else{
+                    unset($finalSO);
+                }
             }
 
         }else{
