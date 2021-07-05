@@ -67,7 +67,7 @@ class LazadaInvoice extends Command
                                 ];
                             }
                             //Insert invoice
-                            $odataClient->getOdataClient()->post('Invoices', [
+                            $invoice = [
                                 'CardCode' => $So['CardCode'],
                                 'DocDate' => $So['DocDate'],
                                 'DocDueDate' => $So['DocDueDate'],
@@ -77,9 +77,14 @@ class LazadaInvoice extends Command
                                 'U_Order_ID' => $So['U_Order_ID'],
                                 'U_Customer_Name' => $So['U_Customer_Name'].' '.$So['U_Customer_Email'],
                                 'DocumentLines' => $items 
-                                ]
-                            );
+                            ];
+
+                            $odataClient->getOdataClient()->post('Invoices',$invoice);
+
+                            unset($items);
+                            
                         }
+                        
                     }
                 }else{
                     print_r('No available sales order for order_id '.$id);

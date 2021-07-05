@@ -57,6 +57,7 @@ class LazadaAPIController extends Controller
         $request->addApiParam('offset','0');
         $request->addApiParam('status','ready_to_ship');
         $request->addApiParam('created_after','2021-06-29T23:59:59+08:00');
+        $request->addApiParam('created_before','2021-07-01T12:00:00+08:00');
         
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }
