@@ -191,7 +191,7 @@ class TestController extends Controller
             ], $shopeeProducts->getShopCommonParameter()));
 
             $shopeeProductsResponseArr = json_decode($shopeeProductsResponse->body(), true);
-
+            // dd($shopeeProductsResponseArr);
             foreach ($shopeeProductsResponseArr['response']['item'] as $item) {
                 array_push($productSegmentList, $item['item_id']);
             }
@@ -202,8 +202,9 @@ class TestController extends Controller
             $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
                 'item_id_list' => $productStr
             ], $shopeeProductBase->getShopCommonParameter()));
-
+            
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
+            // dd($shopeeProductBaseResponseArr);
             $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
@@ -213,37 +214,34 @@ class TestController extends Controller
             }   
         }
 
-        // dadas
-        
+        // list   
         
         foreach ($productList as $product) {
             // dd($product);
-            // $sku = [];
-            // dd($product);
+            $sku = $product['item_sku'];
+            $shItemCode = $product['item_id'];
+            $shPrice = $product['price_info']['current_price'];
+            $shStock = $product['stock_info']['current_stock'];
+
             if ($product['has_model']) {
-                // dd('dasdasdas');
                 $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
                 $shopeeModelsResponse = Http::get($shopeeModels->getFullPath(), array_merge([
                     'item_id' => $product['item_id']
                 ], $shopeeModels->getShopCommonParameter()));
 
-                // dd('ttt');
                 $shopeeModelsResponseArr = json_decode($shopeeModelsResponse->body(), true);
                 // dd($shopeeModelsResponseArr['response']['model']);
-
-                // dd($shopeeModelsResponseArr['response']);
-                // dd($shopeeModelsResponseArr['response']);
-                foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) {
-                    // dd($model['model_sku']);
-                    // $sku[] = $model['model_sku'];
-                    // $model[] = $model['model_id'];
-                    
-                    
+                foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) {                                
 
                     $sku = $model['model_sku'];
                     $shItemCode = $model['model_id'];
-                    //dstapso
-                //    dd($sku . " : " . $shItemCode);
+                    $shPrice = $model['price_info']['current_price'];
+
+                    foreach ($model['stockinfo'] as $stock) {
+                        if ($stock['stock_type'] == 2) {
+                            $shStock = $stock['current_stock'];
+                        }
+                    }
 
                     try {
                         $itemSapService = new SapService();
@@ -255,103 +253,70 @@ class TestController extends Controller
                             })->where('U_SH_INTEGRATION', 'Yes')
                             ->first();
                         
-                        if ($key == 13) {
-                            dd($item);
-                        }
-
-
-                        // $itemCode = $item->ItemCode;
-                        // dd($item);
-                        // dd($item->ItemCode);
-                        // $itemCode = $item['properties'];
-                        // $itemCode = $itemCode['ItemCode'];
-                        // dd($tes);
+                        // if ($key == 13) {
+                        //     dd($item);
+                        // }
                         
-                        // $itemSapService2 = new SapService();
                         if ($item) {
                             $response1 = $itemSapService->getOdataClient()->from('Items')
                                 ->whereKey($item->ItemCode)
-                                ->patch(['U_SH_ITEM_CODE' => $shItemCode]);
+                                ->patch([
+                                    'U_SH_ITEM_CODE' => $shItemCode,
+                                    'QuantityOnStock' => $shStock,
+                                    'ItemPrices' => [
+                                        9 => [
+                                            'Price' => $shPrice
+                                        ]
+                                    ]
+                                ]);
                         }
-                        
-
-                        // dd($response1);
-
-
-                            // ->patch(['U_SH_ITEM_CODE' => $itemCode]);
-
                     } catch(ClientException $e) {
                         dd($e->getResponse()->getBody()->getContents());
                     }
-                    // dd()
-                    // dd($response[0]['properties']);
-                    // $sapItem = $response[0]['properties'];
                 }
 
-                dd('dadsa');
+                // dd('endif');
             } else {
-                dd('else');
-                $sku = $product['item_sku'];
-                $shItemCode = $product['item_id'];
+                // dd('else');
+                // $sku = $product['item_sku'];
+                // $shItemCode = $product['item_id'];
 
                 try {
                     $itemSapService = new SapService();
-                    // ('U_SH_ITEM_CODE', (string)$item['item_id'])
-                    $response = $itemSapService->getOdataClient()->from('Items')
-                        ->where(function($query) use ($sku) {
+                        // ('U_SH_ITEM_CODE', (string)$item['item_id'])
+                  
+                    $item = $itemSapService->getOdataClient()->from('Items')
+                        ->whereNested(function($query) use ($sku) {
                             $query->where('ItemCode', $sku)
                                 ->orWhere('U_OLD_SKU', $sku);
                         })->where('U_SH_INTEGRATION', 'Yes')
-                        ->patch(['U_SH_ITEM_CODE' => $itemCode]);
+                        ->first();
+                    
+                    // if ($key == 13) {
+                    //     dd($item);
+                    // }
 
-                    // $response = $itemSapService->getOdataClient()->patch("Items("."'".$sku."'".")", [
-                    //     'U_SH_ITEM_CODE' => $lazadaItemId
-                    // ]);
+                    if ($item) {
+                        $response1 = $itemSapService->getOdataClient()->from('Items')
+                            ->whereKey($item->ItemCode)
+                            ->patch([
+                                'U_SH_ITEM_CODE' => $shItemCode,
+                                'QuantityOnStock' => $shStock,
+                                'ItemPrices' => [
+                                    9 => [
+                                        'Price' => $shPrice
+                                    ]
+                                ]
+
+                            ]);
+                    }
                 } catch(ClientException $e) {
                     dd($e->getResponse()->getBody()->getContents());
                 }
-                // $itemSapService = new SapService();
-
-                // try {
-                //     // ('U_SH_ITEM_CODE', (string)$item['item_id'])
-                //     $response = $itemSapService->getOdataClient()->from('Items')
-                //         ->whereKey
-                //         ->where(function($query) use ($sku) {
-                //             $query->where('ItemCode', $sku)
-                //                 ->orWhere('U_OLD_SKU', $sku);
-                //         })->where('U_SH_INTEGRATION', 'Yes')
-                //         ->patch(['U_SH_ITEM_CODE' => $product['item_id']]);
-
-                //     // $response = $itemSapService->getOdataClient()->patch("Items("."'".$sku."'".")", [
-                //     //     'U_SH_ITEM_CODE' => $lazadaItemId
-                //     // ]);
-                // } catch(ClientException $e) {
-                //     dd($e->getResponse()->getBody()->getContents());
-                // }
             }
-
-            // $itemSapService = new SapService();
-
-            // try {
-            //     // ('U_SH_ITEM_CODE', (string)$item['item_id'])
-            //     $response = $itemSapService->getOdataClient()->from('Items')
-            //         ->where(function($query) use ($sku) {
-            //             $query->whereIn('ItemCode', $sku)
-            //                 ->orWhereIn('U_OLD_SKU', $sku);
-            //         })->where('U_SH_INTEGRATION', 'Yes')
-            //         ->patch(['U_SH_ITEM_CODE' => $model['model_id']]);
-
-            //     // $response = $itemSapService->getOdataClient()->patch("Items("."'".$sku."'".")", [
-            //     //     'U_SH_ITEM_CODE' => $lazadaItemId
-            //     // ]);
-            // } catch(ClientException $e) {
-            //     dd($e->getResponse()->getBody()->getContents());
-            // }
-            
         }
 
-        // dd($productList);
-        dd('bound');
+        dd('end');
 
 
 
