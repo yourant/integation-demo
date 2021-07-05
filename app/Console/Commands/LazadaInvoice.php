@@ -59,6 +59,7 @@ class LazadaInvoice extends Command
                 if(!empty($getSO['0'])){
                     foreach($getSO as $So){
                         if($So['DocumentStatus'] == 'bost_Open'){// For duplicate order ids - Testing purposes
+                            //Loop items
                             for($i = 0; $i <= count($So['DocumentLines']) - 1; $i++) {
                                 $items[] = [
                                     'BaseType' => 17,
@@ -66,8 +67,8 @@ class LazadaInvoice extends Command
                                     'BaseLine' => $i
                                 ];
                             }
-                            //Insert invoice
-                            $invoice = [
+                            //Copy sales order to invoice
+                            $odataClient->getOdataClient()->post('Invoices',[
                                 'CardCode' => $So['CardCode'],
                                 'DocDate' => $So['DocDate'],
                                 'DocDueDate' => $So['DocDueDate'],
@@ -77,18 +78,14 @@ class LazadaInvoice extends Command
                                 'U_Order_ID' => $So['U_Order_ID'],
                                 'U_Customer_Name' => $So['U_Customer_Name'].' '.$So['U_Customer_Email'],
                                 'DocumentLines' => $items 
-                            ];
-
-                            $odataClient->getOdataClient()->post('Invoices',$invoice);
-
+                            ]);
+                            //Unset 'items' variable to avoid error "One of the base documents has already been closed"
                             unset($items);
-                            
                         }
                         
                     }
                 }else{
                     print_r('No available sales order for order_id '.$id);
-                    echo '<br/>';
                 }
                 
             }
