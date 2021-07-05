@@ -67,7 +67,7 @@ class LazadaCreditMemo extends Command
     
                 foreach($item['order_items'] as $orderItem){
                     $items[$orderId][] = [
-                        'ItemCode' => '101619PB2034',//$orderItem['sku'],
+                        'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $orderItem['item_price']
