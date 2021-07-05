@@ -54,38 +54,37 @@ class LazadaInvoice extends Command
             foreach($orderArray as $id){
                 $getSO = $odataClient->getOdataClient()->from('Orders')
                                     ->where('U_Order_ID',(string)$id)
+                                    ->where('DocumentStatus','bost_Open')
                                     ->get();
     
                 if(!empty($getSO['0'])){
                     foreach($getSO as $So){
-                        if($So['DocumentStatus'] == 'bost_Open'){// For duplicate order ids - Testing purposes
-                            //Loop items
-                            for($i = 0; $i <= count($So['DocumentLines']) - 1; $i++) {
-                                $items[] = [
-                                    'BaseType' => 17,
-                                    'BaseEntry' => $So['DocEntry'],
-                                    'BaseLine' => $i
-                                ];
-                            }
-                            //Copy sales order to invoice
-                            $odataClient->getOdataClient()->post('Invoices',[
-                                'CardCode' => $So['CardCode'],
-                                'DocDate' => $So['DocDate'],
-                                'DocDueDate' => $So['DocDueDate'],
-                                'PostingDate' => $So['TaxDate'],
-                                'NumAtCard' => $So['NumAtCard'],
-                                'U_Ecommerce_Type' => $So['U_Ecommerce_Type'],
-                                'U_Order_ID' => $So['U_Order_ID'],
-                                'U_Customer_Name' => $So['U_Customer_Name'].' '.$So['U_Customer_Email'],
-                                'DocumentLines' => $items 
-                            ]);
-                            //Unset 'items' variable to avoid error "One of the base documents has already been closed"
-                            unset($items);
+                        //Loop items
+                        for($i = 0; $i <= count($So['DocumentLines']) - 1; $i++) {
+                            $items[] = [
+                                'BaseType' => 17,
+                                'BaseEntry' => $So['DocEntry'],
+                                'BaseLine' => $i
+                            ];
                         }
+                        //Copy sales order to invoice
+                        $odataClient->getOdataClient()->post('Invoices',[
+                            'CardCode' => $So['CardCode'],
+                            'DocDate' => $So['DocDate'],
+                            'DocDueDate' => $So['DocDueDate'],
+                            'PostingDate' => $So['TaxDate'],
+                            'NumAtCard' => $So['NumAtCard'],
+                            'U_Ecommerce_Type' => $So['U_Ecommerce_Type'],
+                            'U_Order_ID' => $So['U_Order_ID'],
+                            'U_Customer_Name' => $So['U_Customer_Name'].' '.$So['U_Customer_Email'],
+                            'DocumentLines' => $items 
+                        ]);
+                        //Unset 'items' variable to avoid error "One of the base documents has already been closed"
+                        unset($items);
                         
                     }
                 }else{
-                    print_r('No available sales order for order_id '.$id);
+                    print_r("The sales order for ".$id." is already close\n");
                 }
                 
             }
