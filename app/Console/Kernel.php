@@ -13,9 +13,12 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
+        Commands\LazadaRefreshToken::class,
+        Commands\LazadaItemMaster::class,
         Commands\LazadaOrder::class,
         Commands\LazadaInvoice::class,
         Commands\LazadaCreditMemo::class,
+        Commands\PriceAndStockShopeeUpdate::class,
     ];
 
     /**

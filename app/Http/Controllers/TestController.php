@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SapService;
+use App\Services\ShopeeService;
 use Exception;
 use Illuminate\Http\Request;
+use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Cookie\SetCookie;
+use GuzzleHttp\TransferStats;
 use App\Traits\SapConnectionTrait;
 use SaintSystems\OData\ODataClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cookie;
+use GuzzleHttp\Exception\ClientException;
 
 class TestController extends Controller
 {
@@ -114,19 +119,306 @@ class TestController extends Controller
     }
 
     public function index()
-    {
-        // dd(time());
-        $path = '/api/v2/shop/auth_partner';
+    {        
+
+        $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
+
+        $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
+            'code' => $shopeeAccess->getCode(),
+            'partner_id' => $shopeeAccess->getPartnerId(),
+            'shop_id' => $shopeeAccess->getShopId()
+        ]);
+        
+        $accessResponseArr = json_decode($accessResponse->body(), true);
+        $shopeeAccess->setAccessToken($accessResponseArr['access_token']);
+        
+        $orderList = [];
+        $moreReadyOrders = true;
+        $offset = 0;
+        $pageSize = 50;
+        
+        while ($moreReadyOrders) {
+            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeAccess->getAccessToken());
+            $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
+                'time_range_field' => 'create_time',
+                'time_from' => 1623970808,
+                'time_to' => 1624575608,
+                'page_size' => $pageSize,
+                'cursor' => $offset,
+                'order_status' => 'READY_TO_SHIP',
+                'response_optional_fields' => 'order_status'
+            ], $shopeeReadyOrders->getShopCommonParameter()));
+
+            $shopeeReadyOrdersResponseArr = json_decode($shopeeReadyOrdersResponse->body(), true);
+
+            foreach ($shopeeReadyOrdersResponseArr['response']['order_list'] as $order) {
+                array_push($orderList, $order['order_sn']);
+            }
+
+            if ($shopeeReadyOrdersResponseArr['response']['more']) {
+                $offset += $pageSize;
+            } else {
+                $moreReadyOrders = false;
+            }   
+        }
+        // dd($orderList);
+        $orderStr = implode(",", $orderList);
+        // dd($orderStr);
+        
+        $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeAccess->getAccessToken());
+        $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
+            'order_sn_list' => $orderStr,
+            'response_optional_fields' => 'total_amount,item_list,buyer_user_id,buyer_username,recipient_address,estimated_shipping_fee,actual_shipping_fee,actual_shipping_fee_confirmed'
+        ], $shopeeOrderDetail->getShopCommonParameter()));
+
+        $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
+        $orderListDetails = $shopeeOrderDetailResponseArr['response']['order_list'];
+
+        // dd($shopeeOrderDetailResponseArr['response']['order_list']);
+
+        $salesOrderSapService = new SapService();
+        $salesOrderList = [];
+
+        foreach ($orderListDetails as $order) {
+            // dd(date('Y-m-d', $order['ship_by_date']));
+            // dd($order);
+            $itemList = [];
+
+            foreach ($order['item_list'] as $item) {
+                
+                // dd(is_string($item['item_id']));
+                try {
+                    $response = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', (string)$item['item_id'])->get();
+                } catch(ClientException $e) {
+                    dd($e->getResponse()->getBody()->getContents());
+                }
+                // dd($response[0]['properties']);
+                $sapItem = $response[0]['properties'];
+
+                $itemList[] = [
+                    'ItemCode' => $sapItem['ItemCode'],
+                    'Quantity' => $item['model_quantity_purchased'],
+                    'TaxCode' => 'T1',
+                    'UnitPrice' => $item['model_discounted_price']
+                ];
+            }
+            // dd('hmmmm');
+            $salesOrderList = [
+                'CardCode' => 'Shopee_C',
+                'DocDate' => date('Y-m-d', $order['create_time']),
+                'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
+                'TaxDate' => date('Y-m-d', $order['create_time']),
+                'DocTotal' => $order['total_amount'],
+                'U_Ecommerce_Type' => 'Shopee',
+                'U_Order_ID' => $order['order_sn'],
+                'U_Customer_Name' => $order['buyer_username'],
+                'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
+                'DocumentLines' => $itemList
+            ];
+
+            $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+            // try {
+            //     $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+            // } catch(ClientException $e) {
+            //     dd($e->getResponse()->getBody()->getContents());
+            // }
+            
+            // dd($salesOrder);
+            // dd($salesOrderList);
+        }
+        dd('test');
+        // $sapItems = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+        // dd($sapItems);
+        // {
+        //     "CardCode": "c001",
+        //     "DocDueDate": "2014-04-04",
+        //     "DocumentLines": [
+        //         {
+        //             "ItemCode": "i001",
+        //             "Quantity": "100",
+        //             "TaxCode": "T1",
+        //             "UnitPrice": "30"
+        //         }
+        //     ]
+        // }
+
+
+        //add new SO
+        
+
+
         $timestamp = time();
-        $partnerId = '1000909';
+        $partnerId = 1000909;
         $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
+        $path = '/api/v2/shop/auth_partner';
+        $host = 'https://partner.test-stable.shopeemobile.com';
+        $redirectUrl = config('app.url') . 'test2';
 
         $baseString = $partnerId . $path . $timestamp;
+        // $fBaseString = utf8_decode($baseString);
+        // $ffBaseString = 'b\'' . $baseString . '\'';
+        // $ffPartnerKey = 'b\'' . $partnerKey . '\'';
+        // dd('b\'' . $baseString . '\'');
+        $sign = hash_hmac("sha256", $baseString, $partnerKey);
+        // dd($sign . ' ' . $timestamp);
 
-        $sign = hash_hmac('sha256', $baseString, $partnerKey);
+        $tokenPath = '/api/v2/auth/token/get';
+
+        $baseString2 = $partnerId . $tokenPath . $timestamp;
+        $sign2 = hash_hmac("sha256", $baseString2, $partnerKey);
+
+        $code = '4257bc889237a08fb3fc8550e1fbdffd';
+        $shopId = 10805;
+
         
-        dd(hash_hmac('sha256', $baseString, $partnerKey));
+        // $client = new Client();
+        // $promise = $client->requestAsync('GET', $host . $path, [
+        //     'query' => [
+        //         'partner_id' => $partnerId,
+        //         'timestamp' => $timestamp,
+        //         'sign' => $sign,
+        //         'redirect' => $redirectUrl
+        //     ]
+        // ]);
+        // $response = $promise->wait();
+        // dd($response->getBody());
+        // $promise->then(function ($response) {
+        //     dd($response);
+        //     echo 'Got a response! ' . $response->getStatusCode();
+        // });
 
-        return view('test.index');
+        
+        // authenticate
+        // $response = Http::withOptions([
+        //     'verify' => false,
+        // ])->post('https://192.168.18.140:50000/b1s/v1/Login', [
+        //     'CompanyDB' => 'TC_DEV',
+        //     'Password' => '4021',
+        //     'UserName' => 'kass'
+        // ]);
+        // // dd( $response->header('Set-Cookie'));
+        // $odataClient = new ODataClient(config('app.sap_path'), function($request) use($response) {
+        //     //set the header Set-cookie (from the authentication route) as cookie in the next request
+        //     $request->headers['Cookie'] = $response->header('Set-Cookie');
+        // });
+
+        // $httpProvider = $odataClient->getHttpProvider();
+        // $httpProvider->setExtraOptions([
+        //     'verify' => false
+        // ]);
+
+
+
+        $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
+        
+        $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
+            'code' => $shopeeAccess->getCode(),
+            'partner_id' => $shopeeAccess->getPartnerId(),
+            'shop_id' => $shopeeAccess->getShopId()
+        ]);
+        
+        $accessResponseArr = json_decode($accessResponse->body(), true);
+        // dd($accessResponseArr);
+        
+      
+        
+        $shopeeShopInfo = new ShopeeService('/shop/get_shop_info', 'shop', $accessResponseArr['access_token']);
+
+        $shopInfoResponse = Http::get($shopeeShopInfo->getFullPath(), [
+            'partner_id' => $shopeeShopInfo->getPartnerId(),
+            'timestamp' => $shopeeShopInfo->getTimestamp(),
+            'access_token' => $shopeeShopInfo->getAccessToken(),
+            'shop_id' => $shopeeShopInfo->getShopId(),
+            'sign' => $shopeeShopInfo->getSign()
+        ]);
+
+        dd($shopInfoResponse->body());
+
+
+
+
+        $tokenAccessUrl = 'https://partner.test-stable.shopeemobile.com/api/v2/auth/token/get';
+        $query = '?sign=' . $sign2 . '&partner_id=' . $partnerId . '&timestamp=' . (string) $timestamp;
+
+        $response3 = Http::post($tokenAccessUrl . $query, [
+                'code' => $code,
+                'partner_id' => $partnerId,
+                'shop_id' => $shopId
+        ]);
+        // dd();
+        $hmmmmmm = $response3->body();
+        $getTokenResponse = json_decode($hmmmmmm, true);
+        // dd($getTokenResponse);
+
+
+        $authHost = 'https://partner.test-stable.shopeemobile.com';
+        $authPath = '/api/v2/shop/get_shop_info';
+
+        $baseString3 = $partnerId . $authPath . $timestamp . $getTokenResponse['access_token'] . $shopId;
+        $sign3 = hash_hmac("sha256", $baseString3, $partnerKey);
+        // $authUrl = 'https://partner.test-stable.shopeemobile.com/api/v2/shop/get_shop_info';
+
+        $response11 = Http::get('https://partner.test-stable.shopeemobile.com/api/v2/shop/get_shop_info', [
+            'partner_id' => $partnerId,
+            'timestamp' => $timestamp,
+            'access_token' => $getTokenResponse['access_token'],
+            'shop_id' => $shopId,
+            'sign' => $sign3
+        ]);
+        dd($response11->body());
+
+
+
+        // $client = new Client();
+
+        // $response = $client->request('GET', $host . $path, [
+        //     'query' => [
+        //         'partner_id' => $partnerId,
+        //         'timestamp' => $timestamp,
+        //         'sign' => $sign,
+        //         'redirect' => $redirectUrl
+        //     ]
+        // ]);
+        // $data = $response;
+        // dd($data);
+
+        $response = Http::withOptions([
+            'allow_redirects' => [
+                'max'             => 10,        // allow at most 10 redirects.
+                // 'referer'         => true,      // add a Referer header
+                'track_redirects' => true,
+            ]
+        ])->get($host . $path, [
+            'partner_id' => $partnerId,
+            'timestamp' => (string) $timestamp,
+            'sign' => $sign,
+            'redirect' => $redirectUrl
+        ]);
+
+        // dd($response);
+        // dd($response->getHeaderLine('X-Guzzle-Redirect-History'));
+        // dd($response->transferStats->getEffectiveUri());
+        // dd($response->transferStats->getEffectiveUri()->getQuery());
+        // dd(hash_hmac('sha256', $baseString, $partnerKey));
+
+        parse_str($response->transferStats->getEffectiveUri()->getQuery(), $queryArr);
+
+        $authUrl = 'https://open.test-stable.shopee.com/authorize';
+
+        $response5 = Http::get($authUrl, [
+            'isRedirect' => true,
+            'auth_shop' => true,
+            'id' => $queryArr['id'],
+            'random' => $queryArr['random']
+        ]);
+        dd($response5->body());
+
+        // $newUrl = (string) $response->transferStats->getEffectiveUri();
+
+        // $response2 = Http::get($newUrl);
+        // // dd($response->body());
+        // dd((string) $response2->transferStats->getEffectiveUri() . ' ' . (string) $response->transferStats->getEffectiveUri());
+   
+        // return view('test.index');
     }
 }
