@@ -82,7 +82,7 @@ class ShopeeFirstScheduler extends Command
             ], $shopeeProductBase->getShopCommonParameter()));
             
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
-            dd($shopeeProductBaseResponseArr);
+            // dd($shopeeProductBaseResponseArr);
             $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
@@ -109,7 +109,7 @@ class ShopeeFirstScheduler extends Command
                 $shopeeModelsResponseArr = json_decode($shopeeModelsResponse->body(), true);
                 // dd($shopeeModelsResponseArr['response']['model']);
                 foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) {                                
-                    $shItemId = $shItemCode;
+                    $shItemId = $product['item_id'];
                     $sku = $model['model_sku'];
                     $shItemCode = $model['model_id'];
                     // $shPrice = $model['price_info']['current_price'];
