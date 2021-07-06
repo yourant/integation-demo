@@ -59,20 +59,23 @@ class LazadaOrder extends Command
                     'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
                 ];
                 
-                $fees[$orderId] =[
-                    [
+                if($order['shipping_fee'] != 0.00){
+                    $fees[$orderId][] = [
                         'ItemCode' => 'TransportCharges',
                         'Quantity' => 1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $order['shipping_fee']
-                    ],
-                    [
+                    ];
+                }
+
+                if($order['voucher'] != 0.00){
+                    $fees[$orderId][] = [
                         'ItemCode' => 'SellerVoucher',
-                        'Quantity' => -1,
+                        'Quantity' => 1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $order['voucher']
-                    ]
-                ];
+                    ];
+                }
 
             }
     
@@ -84,18 +87,22 @@ class LazadaOrder extends Command
     
                 foreach($item['order_items'] as $orderItem){
                     $items[$orderId][] = [
-                        'ItemCode' => $orderItem['sku'],
+                        'ItemCode' => 'i001',//$orderItem['sku'],
                         'Quantity' => 1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $orderItem['item_price']
                     ];
                     
                 }
-    
-                $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+
+                if(!empty($fees[$orderId])){
+                    $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                }else{
+                    $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+                }
+
             }
 
-            
             foreach($tempSO as $key => $value){
                 $finalSO = array_slice($tempSO[$key],0);
                 $getSO = $odataClient->getOdataClient()->from('Orders')
@@ -108,6 +115,7 @@ class LazadaOrder extends Command
                 }else{
                     unset($finalSO);
                 }
+
             }
 
         }else{
