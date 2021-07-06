@@ -157,11 +157,6 @@ class TestController extends Controller
 
 
 
-
-
-
-
-
         // init
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
 
@@ -211,17 +206,16 @@ class TestController extends Controller
                 $offset += $pageSize;
             } else {
                 $moreProducts = false;
-            }   
+            }
         }
 
         // list   
         
         foreach ($productList as $product) {
-            // dd($product);
             $sku = $product['item_sku'];
             $shItemCode = $product['item_id'];
-            $shPrice = $product['price_info']['current_price'];
-            $shStock = $product['stock_info']['current_stock'];
+            // $shPrice = $product['price_info']['current_price'];
+            // $shStock = $product['stock_info']['current_stock'];
 
             if ($product['has_model']) {
                 $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
@@ -232,16 +226,15 @@ class TestController extends Controller
                 $shopeeModelsResponseArr = json_decode($shopeeModelsResponse->body(), true);
                 // dd($shopeeModelsResponseArr['response']['model']);
                 foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) {                                
-
+                    $shItemId = $shItemCode;
                     $sku = $model['model_sku'];
                     $shItemCode = $model['model_id'];
-                    $shPrice = $model['price_info']['current_price'];
-
-                    foreach ($model['stockinfo'] as $stock) {
-                        if ($stock['stock_type'] == 2) {
-                            $shStock = $stock['current_stock'];
-                        }
-                    }
+                    // $shPrice = $model['price_info']['current_price'];
+                    // foreach ($model['stockinfo'] as $stock) {
+                    //     if ($stock['stock_type'] == 2) {
+                    //         $shStock = $stock['current_stock'];
+                    //     }
+                    // }
 
                     try {
                         $itemSapService = new SapService();
@@ -253,22 +246,37 @@ class TestController extends Controller
                             })->where('U_SH_INTEGRATION', 'Yes')
                             ->first();
                         
-                        // if ($key == 13) {
-                        //     dd($item);
-                        // }
-                        
                         if ($item) {
                             $response1 = $itemSapService->getOdataClient()->from('Items')
                                 ->whereKey($item->ItemCode)
                                 ->patch([
-                                    'U_SH_ITEM_CODE' => $shItemCode,
-                                    'QuantityOnStock' => $shStock,
-                                    'ItemPrices' => [
-                                        9 => [
-                                            'Price' => $shPrice
-                                        ]
-                                    ]
+                                    'U_SH_ITEM_CODE' => $shItemCode
                                 ]);
+
+                            $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $accessResponseArr['access_token']);
+                            $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
+                                'item_id' => (int) $shItemId,
+                                'price_list' => [
+                                    [
+                                        'model_id' => (int) $shItemCode,
+                                        'original_price' => (int) $item['ItemPrices'][9]['Price']
+                                    ]
+                                ]
+                            ]);
+
+                            $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $accessResponseArr['access_token']);
+                            $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
+                                'item_id' => (int) $shItemId,
+                                'stock_list' => [
+                                    [
+                                        'model_id' => (int) $shItemCode,
+                                        'normal_stock' => (int) $item['QuantityOnStock']
+                                    ]
+                                ]
+                            ]);
+
+                            // dd($shopeePriceUpdateResponse);
+                            // dd($shopeeStockUpdateResponse);
                         }
                     } catch(ClientException $e) {
                         dd($e->getResponse()->getBody()->getContents());
@@ -278,8 +286,6 @@ class TestController extends Controller
                 // dd('endif');
             } else {
                 // dd('else');
-                // $sku = $product['item_sku'];
-                // $shItemCode = $product['item_id'];
 
                 try {
                     $itemSapService = new SapService();
@@ -300,15 +306,33 @@ class TestController extends Controller
                         $response1 = $itemSapService->getOdataClient()->from('Items')
                             ->whereKey($item->ItemCode)
                             ->patch([
-                                'U_SH_ITEM_CODE' => $shItemCode,
-                                'QuantityOnStock' => $shStock,
-                                'ItemPrices' => [
-                                    9 => [
-                                        'Price' => $shPrice
-                                    ]
+                                'U_SH_ITEM_CODE' => $shItemCode
+                            ]);    
+                            
+                        $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $accessResponseArr['access_token']);
+                        $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
+                            'item_id' => (int) $shItemCode,
+                            'price_list' => [
+                                [
+                                    'model_id' => 0,
+                                    'original_price' => (int) $item['ItemPrices'][9]['Price']
                                 ]
+                            ]
+                        ]);
 
-                            ]);
+                        $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $accessResponseArr['access_token']);
+                        $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
+                            'item_id' => (int) $shItemCode,
+                            'stock_list' => [
+                                [
+                                    'model_id' => 0,
+                                    'normal_stock' => (int) $item['QuantityOnStock']
+                                ]
+                            ]
+                        ]);
+
+                        // dd($shopeePriceUpdateResponse);
+                        // dd($shopeeStockUpdateResponse);
                     }
                 } catch(ClientException $e) {
                     dd($e->getResponse()->getBody()->getContents());
@@ -317,6 +341,24 @@ class TestController extends Controller
         }
 
         dd('end');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
