@@ -58,8 +58,8 @@ class LazadaOrder extends Command
                     'U_Order_ID' => $orderId,
                     'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
                 ];
-
-                $otherFees[$orderId] = [
+                
+                $fees[$orderId] =[
                     [
                         'ItemCode' => 'TransportCharges',
                         'Quantity' => 1,
@@ -92,14 +92,13 @@ class LazadaOrder extends Command
                     
                 }
     
-                $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+                $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
             }
 
             
             foreach($tempSO as $key => $value){
-                $tempSO[$key]['DocumentLines'][] = $otherFees[$key];
                 $finalSO = array_slice($tempSO[$key],0);
-                /**$getSO = $odataClient->getOdataClient()->from('Orders')
+                $getSO = $odataClient->getOdataClient()->from('Orders')
                                 ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
                                 ->where('DocumentStatus','bost_Open')
                                 ->get();
@@ -108,10 +107,7 @@ class LazadaOrder extends Command
                     $odataClient->getOdataClient()->post('Orders',$finalSO);
                 }else{
                     unset($finalSO);
-                }**/
-                print_r($finalSO);
-
-
+                }
             }
 
         }else{
