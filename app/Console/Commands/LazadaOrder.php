@@ -41,7 +41,7 @@ class LazadaOrder extends Command
     {
         $odataClient = new SapService();
         $lazadaAPI = new LazadaAPIController();
-        $orders = $lazadaAPI->getReadyToShipOrders();
+        $orders = $lazadaAPI->getPendingOrders();
         
         if(!empty($orders['data']['orders'])){
             foreach($orders['data']['orders'] as $order){
@@ -87,7 +87,7 @@ class LazadaOrder extends Command
     
                 foreach($item['order_items'] as $orderItem){
                     $items[$orderId][] = [
-                        'ItemCode' => 'i001',//$orderItem['sku'],
+                        'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $orderItem['item_price']
