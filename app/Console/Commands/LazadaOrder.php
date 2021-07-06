@@ -41,22 +41,39 @@ class LazadaOrder extends Command
     {
         $odataClient = new SapService();
         $lazadaAPI = new LazadaAPIController();
-        $orders = $lazadaAPI->getPendingOrders();
+        $orders = $lazadaAPI->getReadyToShipOrders();
         
         if(!empty($orders['data']['orders'])){
             foreach($orders['data']['orders'] as $order){
                 $orderId = $order['order_id'];
                 $orderIdArray[] = $orderId;
-    
-                $tempSO[$orderId]['CardCode'] = 'Lazada_C';
-                $tempSO[$orderId]['DocDate'] = substr($order['created_at'],0,10);
-                $tempSO[$orderId]['DocDueDate'] = substr($order['created_at'],0,10);
-                $tempSO[$orderId]['TaxDate'] = substr($order['created_at'],0,10);
-                $tempSO[$orderId]['NumAtCard'] = $orderId;
-                $tempSO[$orderId]['U_Ecommerce_Type'] = 'Lazada';
-                $tempSO[$orderId]['U_Order_ID'] = $orderId;
-                $tempSO[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
-    
+                
+                $tempSO[$orderId] = [
+                    'CardCode' => 'Lazada_C',
+                    'DocDate' => substr($order['created_at'],0,10),
+                    'DocDueDate' => substr($order['created_at'],0,10),
+                    'TaxDate' => substr($order['created_at'],0,10),
+                    'NumAtCard' => $orderId,
+                    'U_Ecommerce_Type' => 'Lazada',
+                    'U_Order_ID' => $orderId,
+                    'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                ];
+
+                $otherFees[$orderId] = [
+                    [
+                        'ItemCode' => 'TransportCharges',
+                        'Quantity' => 1,
+                        'TaxCode' => 'T1',
+                        'UnitPrice' => $order['shipping_fee']
+                    ],
+                    [
+                        'ItemCode' => 'SellerVoucher',
+                        'Quantity' => -1,
+                        'TaxCode' => 'T1',
+                        'UnitPrice' => $order['voucher']
+                    ]
+                ];
+
             }
     
             $orderIds = '['.implode(',',$orderIdArray).']';
@@ -76,12 +93,13 @@ class LazadaOrder extends Command
                 }
     
                 $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
-                
             }
+
             
             foreach($tempSO as $key => $value){
+                $tempSO[$key]['DocumentLines'][] = $otherFees[$key];
                 $finalSO = array_slice($tempSO[$key],0);
-                $getSO = $odataClient->getOdataClient()->from('Orders')
+                /**$getSO = $odataClient->getOdataClient()->from('Orders')
                                 ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
                                 ->where('DocumentStatus','bost_Open')
                                 ->get();
@@ -90,7 +108,10 @@ class LazadaOrder extends Command
                     $odataClient->getOdataClient()->post('Orders',$finalSO);
                 }else{
                     unset($finalSO);
-                }
+                }**/
+                print_r($finalSO);
+
+
             }
 
         }else{
