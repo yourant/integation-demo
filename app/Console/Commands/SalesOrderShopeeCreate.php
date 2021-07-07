@@ -41,6 +41,9 @@ class SalesOrderShopeeCreate extends Command
      */
     public function handle()
     {
+        // $salesOrderSapService = new SapService();
+        // $existedSO = $salesOrderSapService->getOdataClient()->from('U_ECM')->where('Code', 'LAZADA_CUSTOMER')->first();
+        // dd($existedSO);
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
 
         $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
@@ -93,7 +96,7 @@ class SalesOrderShopeeCreate extends Command
 
         $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
         $orderListDetails = $shopeeOrderDetailResponseArr['response']['order_list'];
-
+        // dd($orderListDetails);
         // dd($shopeeOrderDetailResponseArr['response']['order_list']);
 
         $salesOrderSapService = new SapService();
@@ -101,44 +104,54 @@ class SalesOrderShopeeCreate extends Command
 
         foreach ($orderListDetails as $order) {
 
-            $itemList = [];
+            $existedSO = $salesOrderSapService->getOdataClient()->from('Orders')
+                            ->where('U_Order_ID', (string)$order['order_sn'])
+                            ->first();
 
-            foreach ($order['item_list'] as $item) {
-                
-                try {
-                    $response = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', (string)$item['item_id'])->get();
-                } catch(ClientException $e) {
-                    dd($e->getResponse()->getBody()->getContents());
+            if (!$existedSO) {
+                $pay = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeAccess->getAccessToken());
+                $payResponse = Http::get($pay->getFullPath(), array_merge([
+                    'order_sn' => $order['order_sn']
+                ], $pay->getShopCommonParameter()));
+                $payResponseArr = json_decode($payResponse->body(), true);
+                dd($payResponseArr);
+
+                $itemList = [];
+
+                foreach ($order['item_list'] as $item) {                   
+                    try {
+                        $response = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', (string)$item['item_id'])->first();
+                    } catch(ClientException $e) {
+                        dd($e->getResponse()->getBody()->getContents());
+                    }
+                    dd($response);
+                    $sapItem = $response['properties'];
+
+                    $itemList[] = [
+                        'ItemCode' => $sapItem['ItemCode'],
+                        'Quantity' => $item['model_quantity_purchased'],
+                        'TaxCode' => 'T1',
+                        'UnitPrice' => $item['model_discounted_price']
+                    ];
                 }
-                // dd($response[0]['properties']);
-                $sapItem = $response[0]['properties'];
-
-                $itemList[] = [
-                    'ItemCode' => $sapItem['ItemCode'],
-                    'Quantity' => $item['model_quantity_purchased'],
-                    'TaxCode' => 'T1',
-                    'UnitPrice' => $item['model_discounted_price']
-                ];
-            }
-           
-            $salesOrderList = [
-                'CardCode' => 'Shopee_C',
-                'DocDate' => date('Y-m-d', $order['create_time']),
-                'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
-                'TaxDate' => date('Y-m-d', $order['create_time']),
-                'DocTotal' => $order['total_amount'],
-                'U_Ecommerce_Type' => 'Shopee',
-                'U_Order_ID' => $order['order_sn'],
-                'U_Customer_Name' => $order['buyer_username'],
-                'U_Customer_Phone' => $order['recipient_address']['phone'],
-                'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
-                'DocumentLines' => $itemList
-            ];
-
-            $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
             
-            // dd($salesOrder);
-            // dd($salesOrderList);
+                $salesOrderList = [
+                    'CardCode' => 'Shopee_C',
+                    'NumAtCard' => $order['order_sn'],
+                    'DocDate' => date('Y-m-d', $order['create_time']),
+                    'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
+                    'TaxDate' => date('Y-m-d', $order['create_time']),
+                    'DocTotal' => $order['total_amount'],
+                    'U_Ecommerce_Type' => 'Shopee',
+                    'U_Order_ID' => $order['order_sn'],
+                    'U_Customer_Name' => $order['buyer_username'],
+                    'U_Customer_Phone' => $order['recipient_address']['phone'],
+                    'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
+                    'DocumentLines' => $itemList
+                ];
+
+                $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+            }        
         }
     }
 }
