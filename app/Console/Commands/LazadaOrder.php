@@ -40,6 +40,11 @@ class LazadaOrder extends Command
     public function handle()
     {
         $odataClient = new SapService();
+        
+        $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
+        $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
+        $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+        
         $lazadaAPI = new LazadaAPIController();
         $orders = $lazadaAPI->getPendingOrders();
         
@@ -49,7 +54,7 @@ class LazadaOrder extends Command
                 $orderIdArray[] = $orderId;
                 
                 $tempSO[$orderId] = [
-                    'CardCode' => 'Lazada_C',
+                    'CardCode' => $lazadaCustomer->Name,
                     'DocDate' => substr($order['created_at'],0,10),
                     'DocDueDate' => substr($order['created_at'],0,10),
                     'TaxDate' => substr($order['created_at'],0,10),
@@ -61,7 +66,7 @@ class LazadaOrder extends Command
                 
                 if($order['shipping_fee'] != 0.00){
                     $fees[$orderId][] = [
-                        'ItemCode' => 'TransportCharges',
+                        'ItemCode' => $shippingFee->Name,
                         'Quantity' => 1,
                         'TaxCode' => 'ZR',
                         'UnitPrice' => $order['shipping_fee']
@@ -70,7 +75,7 @@ class LazadaOrder extends Command
 
                 if($order['voucher'] != 0.00){
                     $fees[$orderId][] = [
-                        'ItemCode' => 'SellerVoucher',
+                        'ItemCode' => $sellerVoucher->Name,
                         'Quantity' => -1,
                         'TaxCode' => 'ZR',
                         'UnitPrice' => $order['voucher']
