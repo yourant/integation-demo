@@ -63,7 +63,7 @@ class LazadaOrder extends Command
                     $fees[$orderId][] = [
                         'ItemCode' => 'TransportCharges',
                         'Quantity' => 1,
-                        'TaxCode' => 'T1',
+                        'TaxCode' => 'ZR',
                         'UnitPrice' => $order['shipping_fee']
                     ];
                 }
@@ -72,7 +72,7 @@ class LazadaOrder extends Command
                     $fees[$orderId][] = [
                         'ItemCode' => 'SellerVoucher',
                         'Quantity' => -1,
-                        'TaxCode' => 'T1',
+                        'TaxCode' => 'ZR',
                         'UnitPrice' => $order['voucher']
                     ];
                 }
@@ -89,7 +89,7 @@ class LazadaOrder extends Command
                     $items[$orderId][] = [
                         'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
-                        'TaxCode' => 'T1',
+                        'TaxCode' => 'ZR',
                         'UnitPrice' => $orderItem['item_price']
                     ];
                     
