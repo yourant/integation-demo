@@ -41,9 +41,6 @@ class SalesOrderShopeeCreate extends Command
      */
     public function handle()
     {
-        // $salesOrderSapService = new SapService();
-        // $existedSO = $salesOrderSapService->getOdataClient()->from('U_ECM')->where('Code', 'LAZADA_CUSTOMER')->first();
-        // dd($existedSO);
         $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
 
         $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
@@ -102,20 +99,32 @@ class SalesOrderShopeeCreate extends Command
         $salesOrderSapService = new SapService();
         $salesOrderList = [];
 
-        foreach ($orderListDetails as $order) {
+        foreach ($orderListDetails as $key2 => $order) {
 
             $existedSO = $salesOrderSapService->getOdataClient()->from('Orders')
-                            ->where('U_Order_ID', (string)$order['order_sn'])
-                            ->first();
+                ->where('U_Order_ID', (string)$order['order_sn'])
+                ->first();
 
             if (!$existedSO) {
-                $pay = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeAccess->getAccessToken());
-                $payResponse = Http::get($pay->getFullPath(), array_merge([
+                $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeAccess->getAccessToken());
+                $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
                     'order_sn' => $order['order_sn']
-                ], $pay->getShopCommonParameter()));
-                $payResponseArr = json_decode($payResponse->body(), true);
-                dd($payResponseArr);
+                ], $escrowDetail->getShopCommonParameter()));
+                $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
+                $escrow = $escrowDetailResponseArr['response'];
+                // dd($escrowDetailResponseArr);
 
+                $ecm = $salesOrderSapService->getOdataClient()->from('U_ECM')->get();
+                foreach ($ecm as $ecmItem) {
+                    if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
+                        $shopeeCust = $ecmItem['properties']['Name'];
+                    } elseif ($ecmItem['properties']['Code'] == 'SHIPPING_FEE') {
+                        $shippingItem = $ecmItem['properties']['Name'];
+                    } elseif ($ecmItem['properties']['Code'] == 'SELLER_VOUCHER') {
+                        $sellerVoucherItem = $ecmItem['properties']['Name'];
+                    }      
+                }
+                    
                 $itemList = [];
 
                 foreach ($order['item_list'] as $item) {                   
@@ -124,7 +133,7 @@ class SalesOrderShopeeCreate extends Command
                     } catch(ClientException $e) {
                         dd($e->getResponse()->getBody()->getContents());
                     }
-                    dd($response);
+                    // dd($response);
                     $sapItem = $response['properties'];
 
                     $itemList[] = [
@@ -134,7 +143,25 @@ class SalesOrderShopeeCreate extends Command
                         'UnitPrice' => $item['model_discounted_price']
                     ];
                 }
-            
+
+                if ($escrow['order_income']['buyer_paid_shipping_fee']) {
+                    $itemList[] = [
+                        'ItemCode' => $shippingItem,
+                        'Quantity' => 1,
+                        'TaxCode' => 'T1',
+                        'UnitPrice' => $escrow['order_income']['buyer_paid_shipping_fee']
+                    ];           
+                }
+
+                if ($escrow['order_income']['voucher_from_seller']) {
+                    $itemList[] = [
+                        'ItemCode' => $sellerVoucherItem,
+                        'Quantity' => -1,
+                        'TaxCode' => 'T1',
+                        'UnitPrice' => $escrow['order_income']['voucher_from_seller']
+                    ];           
+                }
+                // dd($itemList);
                 $salesOrderList = [
                     'CardCode' => 'Shopee_C',
                     'NumAtCard' => $order['order_sn'],
