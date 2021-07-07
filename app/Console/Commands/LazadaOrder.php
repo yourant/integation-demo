@@ -71,7 +71,7 @@ class LazadaOrder extends Command
                 if($order['voucher'] != 0.00){
                     $fees[$orderId][] = [
                         'ItemCode' => 'SellerVoucher',
-                        'Quantity' => 1,
+                        'Quantity' => -1,
                         'TaxCode' => 'T1',
                         'UnitPrice' => $order['voucher']
                     ];
