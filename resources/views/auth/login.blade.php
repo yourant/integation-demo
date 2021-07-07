@@ -12,20 +12,6 @@
                         @csrf
 
                         <div class="form-group row">
-                            <label for="db" class="col-md-4 col-form-label text-md-right">Database</label>
-
-                            <div class="col-md-6">
-                                <input id="db" type="text" class="form-control @error('db') is-invalid @enderror" name="db" value="{{ old('db') }}" required autocomplete="database" autofocus>
-
-                                @error('db')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="form-group row">
                             <label for="user_code" class="col-md-4 col-form-label text-md-right">Username</label>
 
                             <div class="col-md-6">
