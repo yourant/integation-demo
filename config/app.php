@@ -157,6 +157,8 @@ return [
     'lazada_app_secret' => env('LAZADA_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
    
     'lazada_access_token' => env('LAZADA_ACCESS_TOKEN'),
+
+    'lazada_refresh_token' => env('LAZADA_REFRESH_TOKEN'),
     /*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers

@@ -45,9 +45,23 @@ class LazadaRefreshToken extends Command
         //Lazada SDK
         $lazClient = new LazopClient($lazService->getAppUrl(),$lazService->getAppKey(),$lazService->getAppSecret());
         $lazRequest = new LazopRequest('/auth/token/refresh','GET');
-        $lazRequest->addApiParam('refresh_token','50001801123yHrbZ0owelyCzxcaEdt6ot1g141d0e72mdyHalxTEGWnvxoeSbCAo');
+        $lazRequest->addApiParam('refresh_token',config('app.lazada_refresh_token'));
+        $response = json_decode($lazClient->execute($lazRequest));
+        $path = base_path('.env');
         
-        print_r(json_decode($lazClient->execute($lazRequest)));
+        if(file_exists($path)){
+            file_put_contents($path, str_replace(
+                'LAZADA_REFRESH_TOKEN='.config('app.lazada_refresh_token'), 'LAZADA_REFRESH_TOKEN='.$response->refresh_token, file_get_contents($path)
+            ));
+            file_put_contents($path, str_replace(
+                'LAZADA_ACCESS_TOKEN='.config('app.lazada_access_token'), 'LAZADA_ACCESS_TOKEN='.$response->access_token, file_get_contents($path)
+            ));
+        }else{
+            echo 'File does not exist';
+        }
+        
+        echo json_encode($response,JSON_PRETTY_PRINT);
+
 
     }
 }
