@@ -2,10 +2,12 @@
 
 namespace App\Console\Commands;
 
+use DateTime;
 use LazopClient;
 use LazopRequest;
 use App\Services\LazadaService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 
 class LazadaRefreshToken extends Command
 {
@@ -56,11 +58,14 @@ class LazadaRefreshToken extends Command
             file_put_contents($path, str_replace(
                 'LAZADA_ACCESS_TOKEN='.config('app.lazada_access_token'), 'LAZADA_ACCESS_TOKEN='.$response->access_token, file_get_contents($path)
             ));
+            $now = new DateTime();
+            $filename = 'token_'.$now->format('Y-m-d_hisv').'.txt';
+            Storage::disk('local')->put('lazada_tokens/'.$filename,json_encode($response,JSON_PRETTY_PRINT));
+            echo 'New refresh and access token generated';
+            
         }else{
             echo 'File does not exist';
         }
-        
-        echo json_encode($response,JSON_PRETTY_PRINT);
 
 
     }
