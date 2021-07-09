@@ -15,11 +15,20 @@ class AccessTokenSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('access_tokens')->insert([
-            'platform' => 'shopee',
-            'token' => null,
-            'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
-            'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
-        ]);
+        DB::table('access_tokens')->insert(
+            [
+                'platform' => 'shopee',
+                'refresh_token' => null,
+                'access_token' => null,
+                'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
+            ], [
+                'platform' => 'lazada',
+                'refresh_token' => null,
+                'access_token' => null,
+                'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
+            ]
+        );
     }
 }

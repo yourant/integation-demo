@@ -16,7 +16,8 @@ class CreateAccessTokensTable extends Migration
         Schema::create('access_tokens', function (Blueprint $table) {
             $table->id();
             $table->string('platform', 100);
-            $table->string('token', 256)->nullable();
+            $table->string('refresh_token', 256)->nullable();
+            $table->string('access_token', 256)->nullable();
             $table->timestamps();
         });
     }
