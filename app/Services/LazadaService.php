@@ -48,11 +48,4 @@ class LazadaService{
     {
         $this->accessToken = $token;
     }
-<<<<<<< HEAD
-=======
-
-
-
-
->>>>>>> dev
 }
