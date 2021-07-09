@@ -57,6 +57,24 @@ class LazadaCreditMemo extends Command
                 $tempCM[$orderId]['U_Order_ID'] = $orderId;
                 $tempCM[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
     
+                if($order['shipping_fee'] != 0.00){
+                    $fees[$orderId][] = [
+                        'ItemCode' => 'TransportCharges',
+                        'Quantity' => 1,
+                        'TaxCode' => 'ZR',
+                        'UnitPrice' => $order['shipping_fee']
+                    ];
+                }
+
+                if($order['voucher'] != 0.00){
+                    $fees[$orderId][] = [
+                        'ItemCode' => 'SellerVoucher',
+                        'Quantity' => -1,
+                        'TaxCode' => 'ZR',
+                        'UnitPrice' => $order['voucher']
+                    ];
+                }
+            
             }
     
             $orderIds = '['.implode(',',$orderIdArray).']';
@@ -69,13 +87,17 @@ class LazadaCreditMemo extends Command
                     $items[$orderId][] = [
                         'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
-                        'TaxCode' => 'T1',
+                        'TaxCode' => 'ZR',
                         'UnitPrice' => $orderItem['item_price']
                     ];
                     
                 }
     
-                $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
+                if(!empty($fees[$orderId])){
+                    $tempCM[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                }else{
+                    $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
+                }
                 
             }
     

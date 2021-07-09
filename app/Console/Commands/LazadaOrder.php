@@ -47,16 +47,36 @@ class LazadaOrder extends Command
             foreach($orders['data']['orders'] as $order){
                 $orderId = $order['order_id'];
                 $orderIdArray[] = $orderId;
-    
-                $tempSO[$orderId]['CardCode'] = 'Lazada_C';
-                $tempSO[$orderId]['DocDate'] = substr($order['created_at'],0,10);
-                $tempSO[$orderId]['DocDueDate'] = substr($order['created_at'],0,10);
-                $tempSO[$orderId]['TaxDate'] = substr($order['created_at'],0,10);
-                $tempSO[$orderId]['NumAtCard'] = $orderId;
-                $tempSO[$orderId]['U_Ecommerce_Type'] = 'Lazada';
-                $tempSO[$orderId]['U_Order_ID'] = $orderId;
-                $tempSO[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
-    
+                
+                $tempSO[$orderId] = [
+                    'CardCode' => 'Lazada_C',
+                    'DocDate' => substr($order['created_at'],0,10),
+                    'DocDueDate' => substr($order['created_at'],0,10),
+                    'TaxDate' => substr($order['created_at'],0,10),
+                    'NumAtCard' => $orderId,
+                    'U_Ecommerce_Type' => 'Lazada',
+                    'U_Order_ID' => $orderId,
+                    'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                ];
+                
+                if($order['shipping_fee'] != 0.00){
+                    $fees[$orderId][] = [
+                        'ItemCode' => 'TransportCharges',
+                        'Quantity' => 1,
+                        'TaxCode' => 'ZR',
+                        'UnitPrice' => $order['shipping_fee']
+                    ];
+                }
+
+                if($order['voucher'] != 0.00){
+                    $fees[$orderId][] = [
+                        'ItemCode' => 'SellerVoucher',
+                        'Quantity' => -1,
+                        'TaxCode' => 'ZR',
+                        'UnitPrice' => $order['voucher']
+                    ];
+                }
+
             }
     
             $orderIds = '['.implode(',',$orderIdArray).']';
@@ -69,16 +89,20 @@ class LazadaOrder extends Command
                     $items[$orderId][] = [
                         'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
-                        'TaxCode' => 'T1',
+                        'TaxCode' => 'ZR',
                         'UnitPrice' => $orderItem['item_price']
                     ];
                     
                 }
-    
-                $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
-                
+
+                if(!empty($fees[$orderId])){
+                    $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                }else{
+                    $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+                }
+
             }
-            
+
             foreach($tempSO as $key => $value){
                 $finalSO = array_slice($tempSO[$key],0);
                 $getSO = $odataClient->getOdataClient()->from('Orders')
@@ -91,6 +115,7 @@ class LazadaOrder extends Command
                 }else{
                     unset($finalSO);
                 }
+
             }
 
         }else{
