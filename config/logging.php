@@ -2,6 +2,7 @@
 
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
+use App\Logging\CustomizeFormatter;
 use Monolog\Handler\SyslogUdpHandler;
 
 return [
@@ -100,6 +101,14 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+        'lazada' => [
+            'refresh_token' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada/refresh_token.log'),
+                'level' => 'debug'
+            ]
+        ]
     ],
 
 ];
