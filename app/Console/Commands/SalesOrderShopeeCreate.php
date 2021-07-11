@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AccessToken;
 use App\Services\SapService;
 use App\Services\ShopeeService;
 use Illuminate\Console\Command;
@@ -41,16 +42,7 @@ class SalesOrderShopeeCreate extends Command
      */
     public function handle()
     {
-        $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
-
-        $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
-            'code' => $shopeeAccess->getCode(),
-            'partner_id' => $shopeeAccess->getPartnerId(),
-            'shop_id' => $shopeeAccess->getShopId()
-        ]);
-        
-        $accessResponseArr = json_decode($accessResponse->body(), true);
-        $shopeeAccess->setAccessToken($accessResponseArr['access_token']);
+        $shopeeToken = AccessToken::where('platform', 'shopee')->first();
         
         $orderList = [];
         $moreReadyOrders = true;
@@ -58,7 +50,7 @@ class SalesOrderShopeeCreate extends Command
         $pageSize = 50;
         
         while ($moreReadyOrders) {
-            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeAccess->getAccessToken());
+            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
             $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
                 'time_range_field' => 'create_time',
                 'time_from' => 1623970808,
@@ -85,7 +77,7 @@ class SalesOrderShopeeCreate extends Command
         $orderStr = implode(",", $orderList);
         // dd($orderStr);
         
-        $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeAccess->getAccessToken());
+        $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
             'order_sn_list' => $orderStr,
             'response_optional_fields' => 'total_amount,item_list,buyer_user_id,buyer_username,recipient_address,estimated_shipping_fee,actual_shipping_fee,actual_shipping_fee_confirmed'
@@ -106,7 +98,7 @@ class SalesOrderShopeeCreate extends Command
                 ->first();
 
             if (!$existedSO) {
-                $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeAccess->getAccessToken());
+                $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
                 $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
                     'order_sn' => $order['order_sn']
                 ], $escrowDetail->getShopCommonParameter()));

@@ -15,6 +15,8 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\PriceAndStockShopeeUpdate::class,
         Commands\ShopeeFirstScheduler::class,
+        Commands\SalesOrderShopeeCreate::class,
+        Commands\InvoiceShopeeCreate::class,
     ];
 
     /**

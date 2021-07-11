@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AccessToken;
 use App\Services\SapService;
 use App\Services\ShopeeService;
 use Illuminate\Console\Command;
@@ -41,17 +42,8 @@ class ShopeeFirstScheduler extends Command
      */
     public function handle()
     {
-        $shopeeAccess = new ShopeeService('/auth/token/get', 'public');
-
-        $accessResponse = Http::post($shopeeAccess->getFullPath() . $shopeeAccess->getAccessTokenQueryString(), [
-            'code' => $shopeeAccess->getCode(),
-            'partner_id' => $shopeeAccess->getPartnerId(),
-            'shop_id' => $shopeeAccess->getShopId()
-        ]);
-        
-        $accessResponseArr = json_decode($accessResponse->body(), true);
-        $shopeeAccess->setAccessToken($accessResponseArr['access_token']);
-        
+        $shopeeToken = AccessToken::where('platform', 'shopee')->first();
+       
         // retrieve products with base
         $productList = [];
         $moreProducts = true;
@@ -61,7 +53,7 @@ class ShopeeFirstScheduler extends Command
         while ($moreProducts) {
             $productSegmentList = [];
 
-            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeAccess->getAccessToken());
+            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeToken->access_token);
             $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
                 'page_size' => $pageSize,
                 'offset' => $offset,
@@ -76,7 +68,7 @@ class ShopeeFirstScheduler extends Command
 
             $productStr = implode(",", $productSegmentList);
             
-            $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeAccess->getAccessToken());
+            $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
             $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
                 'item_id_list' => $productStr
             ], $shopeeProductBase->getShopCommonParameter()));
@@ -101,7 +93,7 @@ class ShopeeFirstScheduler extends Command
             // $shStock = $product['stock_info']['current_stock'];
 
             if ($product['has_model']) {
-                $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeAccess->getAccessToken());
+                $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeToken->access_token);
                 $shopeeModelsResponse = Http::get($shopeeModels->getFullPath(), array_merge([
                     'item_id' => $product['item_id']
                 ], $shopeeModels->getShopCommonParameter()));
@@ -136,7 +128,7 @@ class ShopeeFirstScheduler extends Command
                                     'U_SH_ITEM_CODE' => $shItemCode
                                 ]);
 
-                            $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $accessResponseArr['access_token']);
+                            $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
                             $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
                                 'item_id' => (int) $shItemId,
                                 'price_list' => [
@@ -147,7 +139,7 @@ class ShopeeFirstScheduler extends Command
                                 ]
                             ]);
 
-                            $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $accessResponseArr['access_token']);
+                            $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
                             $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
                                 'item_id' => (int) $shItemId,
                                 'stock_list' => [
@@ -192,7 +184,7 @@ class ShopeeFirstScheduler extends Command
                                 'U_SH_ITEM_CODE' => $shItemCode
                             ]);    
                             
-                        $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $accessResponseArr['access_token']);
+                        $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
                         $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
                             'item_id' => (int) $shItemCode,
                             'price_list' => [
@@ -203,7 +195,7 @@ class ShopeeFirstScheduler extends Command
                             ]
                         ]);
 
-                        $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $accessResponseArr['access_token']);
+                        $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
                         $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
                             'item_id' => (int) $shItemCode,
                             'stock_list' => [
