@@ -67,7 +67,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Singapore',
 
     /*
     |--------------------------------------------------------------------------
@@ -138,7 +138,7 @@ return [
 
     'sap_pword' => env('SAP_PWORD', '1234'),
 
-    'sap_path' => env('SAP_PATH', 'https://192.168.18.140:50000/b1s/v1'),
+    'sap_path' => env('SAP_PATH', 'https://192.168.1.250:50000/b1s/v1'),
 
     /*
     |--------------------------------------------------------------------------
@@ -156,6 +156,10 @@ return [
     'shopee_api_vers_url' => env('SHOPEE_API_VERS_URL', '/api/v2'),
 
     'shopee_host' => env('SHOPEE_HOST', 'https://partner.test-stable.shopeemobile.com'),
+
+    'shopee_code' => env('SHOPEE_CODE', '8179b136247f8d791c84803f9828b048'),
+
+    'shopee_shop_id' => env('SHOPEE_SHOP_ID', '12498'),
 
     /*
     |--------------------------------------------------------------------------
