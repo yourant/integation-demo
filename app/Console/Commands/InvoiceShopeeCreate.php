@@ -129,7 +129,6 @@ class InvoiceShopeeCreate extends Command
                     'DocDate' => $salesOrder['DocDate'],
                     'DocDueDate' => $salesOrder['DocDueDate'],
                     'TaxDate' => $salesOrder['TaxDate'],
-                    'DocTotal' => $salesOrder['DocTotal'],
                     'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
                     'U_Order_ID' => $salesOrder['U_Order_ID'],
                     'U_Customer_Name' => $salesOrder['U_Customer_Name'],
@@ -140,11 +139,11 @@ class InvoiceShopeeCreate extends Command
  
                 $salesOrder = $salesOrderSapService->getOdataClient()->post('Invoices', $finalInvoice);
 
-                if ($salesOrder) {
-                    dd('Successfully created invoices');
-                } else {
-                    dd('Failed to create invoices');
-                }
+                // if ($salesOrder) {
+                //     dd('Successfully created invoices');
+                // } else {
+                //     dd('Failed to create invoices');
+                // }
               
                 // $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
                 // $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([

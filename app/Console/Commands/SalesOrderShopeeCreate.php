@@ -171,6 +171,12 @@ class SalesOrderShopeeCreate extends Command
                 ];
 
                 $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+
+                // if ($salesOrder) {
+                //     dd('Successfully created sales order');
+                // } else {
+                //     dd('Failed to create sales order');
+                // }
             }        
         }
     }
