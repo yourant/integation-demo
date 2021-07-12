@@ -42,7 +42,7 @@ class LazadaInvoice extends Command
     {
         $odataClient = new SapService();
         $lazadaAPI = new LazadaAPIController();
-        $orders = $lazadaAPI->getPendingOrders();
+        $orders = $lazadaAPI->getReadyToShipOrders();
         $orderArray = [];
 
         if(!empty($orders['data']['orders'])){
@@ -53,12 +53,12 @@ class LazadaInvoice extends Command
 
             foreach($orderArray as $id){
                 $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
-                                            ->where('U_Order_ID',(string)$id)
-                                            ->first();
-                $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
-                $getInv = $odataClient->getOdataClient()->from('Invoices')
                                     ->where('U_Order_ID',(string)$id)
                                     ->first();
+                $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
+                $getInv = $odataClient->getOdataClient()->from('Invoices')
+                            ->where('U_Order_ID',(string)$id)
+                            ->first();
                 if($getSO && !$getInv){
                     $items = [];
                     foreach ($getSO['DocumentLines'] as $key => $value) {
