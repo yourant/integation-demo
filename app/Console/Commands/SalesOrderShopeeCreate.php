@@ -93,10 +93,12 @@ class SalesOrderShopeeCreate extends Command
 
         foreach ($orderListDetails as $key2 => $order) {
 
-            $existedSO = $salesOrderSapService->getOdataClient()->from('Orders')
+            $existedSO = $salesOrderSapService->getOdataClient()
+                ->select('DocNum')
+                ->from('Orders')
                 ->where('U_Order_ID', (string)$order['order_sn'])
                 ->first();
-
+            
             if (!$existedSO) {
                 $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
                 $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
@@ -125,13 +127,13 @@ class SalesOrderShopeeCreate extends Command
                     } catch(ClientException $e) {
                         dd($e->getResponse()->getBody()->getContents());
                     }
-                    // dd($response);
+
                     $sapItem = $response['properties'];
 
                     $itemList[] = [
                         'ItemCode' => $sapItem['ItemCode'],
                         'Quantity' => $item['model_quantity_purchased'],
-                        'TaxCode' => 'T1',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $item['model_discounted_price']
                     ];
                 }
@@ -140,7 +142,7 @@ class SalesOrderShopeeCreate extends Command
                     $itemList[] = [
                         'ItemCode' => $shippingItem,
                         'Quantity' => 1,
-                        'TaxCode' => 'T1',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $escrow['order_income']['buyer_paid_shipping_fee']
                     ];           
                 }
@@ -149,18 +151,17 @@ class SalesOrderShopeeCreate extends Command
                     $itemList[] = [
                         'ItemCode' => $sellerVoucherItem,
                         'Quantity' => -1,
-                        'TaxCode' => 'T1',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $escrow['order_income']['voucher_from_seller']
                     ];           
                 }
-                // dd($itemList);
+
                 $salesOrderList = [
-                    'CardCode' => 'Shopee_C',
+                    'CardCode' => $shopeeCust,
                     'NumAtCard' => $order['order_sn'],
                     'DocDate' => date('Y-m-d', $order['create_time']),
                     'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
                     'TaxDate' => date('Y-m-d', $order['create_time']),
-                    'DocTotal' => $order['total_amount'],
                     'U_Ecommerce_Type' => 'Shopee',
                     'U_Order_ID' => $order['order_sn'],
                     'U_Customer_Name' => $order['buyer_username'],
