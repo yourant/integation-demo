@@ -68,7 +68,7 @@ class LazadaCreditMemo extends Command
                     $fees[$orderId][] = [
                         'ItemCode' => $shippingFee->Name,
                         'Quantity' => 1,
-                        'TaxCode' => 'ZR',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $order['shipping_fee']
                     ];
                 }
@@ -77,7 +77,7 @@ class LazadaCreditMemo extends Command
                     $fees[$orderId][] = [
                         'ItemCode' => $sellerVoucher->Name,
                         'Quantity' => -1,
-                        'TaxCode' => 'ZR',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $order['voucher']
                     ];
                 }
@@ -94,7 +94,7 @@ class LazadaCreditMemo extends Command
                     $items[$orderId][] = [
                         'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
-                        'TaxCode' => 'ZR',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $orderItem['item_price']
                     ];
                     
