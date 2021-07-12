@@ -40,6 +40,11 @@ class LazadaCreditMemo extends Command
     public function handle()
     {
         $odataClient = new SapService();
+        
+        $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
+        $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
+        $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+        
         $lazadaAPI = new LazadaAPIController();
         $orders = $lazadaAPI->getReturnedOrders();
         
@@ -47,30 +52,32 @@ class LazadaCreditMemo extends Command
             foreach($orders['data']['orders'] as $order){
                 $orderId = $order['order_id'];
                 $orderIdArray[] = $orderId;
-    
-                $tempCM[$orderId]['CardCode'] = 'Lazada_C';
-                $tempCM[$orderId]['DocDate'] = substr($order['created_at'],0,10);
-                $tempCM[$orderId]['DocDueDate'] = substr($order['created_at'],0,10);
-                $tempCM[$orderId]['TaxDate'] = substr($order['created_at'],0,10);
-                $tempCM[$orderId]['NumAtCard'] = $orderId;
-                $tempCM[$orderId]['U_Ecommerce_Type'] = 'Lazada';
-                $tempCM[$orderId]['U_Order_ID'] = $orderId;
-                $tempCM[$orderId]['U_Customer_Name'] = $order['customer_first_name'].' '.$order['customer_last_name'];
+                
+                $tempCM[$orderId] = [
+                    'CardCode' => $lazadaCustomer->Name,
+                    'DocDate' => substr($order['created_at'],0,10),
+                    'DocDueDate' => substr($order['created_at'],0,10),
+                    'TaxDate' => substr($order['created_at'],0,10),
+                    'NumAtCard' => $orderId,
+                    'U_Ecommerce_Type' => 'Lazada',
+                    'U_Order_ID' => $orderId,
+                    'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name']
+                ];
     
                 if($order['shipping_fee'] != 0.00){
                     $fees[$orderId][] = [
-                        'ItemCode' => 'TransportCharges',
+                        'ItemCode' => $shippingFee->Name,
                         'Quantity' => 1,
-                        'TaxCode' => 'ZR',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $order['shipping_fee']
                     ];
                 }
 
                 if($order['voucher'] != 0.00){
                     $fees[$orderId][] = [
-                        'ItemCode' => 'SellerVoucher',
+                        'ItemCode' => $sellerVoucher->Name,
                         'Quantity' => -1,
-                        'TaxCode' => 'ZR',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $order['voucher']
                     ];
                 }
@@ -87,7 +94,7 @@ class LazadaCreditMemo extends Command
                     $items[$orderId][] = [
                         'ItemCode' => $orderItem['sku'],
                         'Quantity' => 1,
-                        'TaxCode' => 'ZR',
+                        'VatGroup' => 'ZR',
                         'UnitPrice' => $orderItem['item_price']
                     ];
                     
