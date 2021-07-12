@@ -52,37 +52,46 @@ class LazadaInvoice extends Command
             }
 
             foreach($orderArray as $id){
-                $getSO = $odataClient->getOdataClient()->from('Orders')
+                $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                     ->where('U_Order_ID',(string)$id)
-                                    ->where('DocumentStatus','bost_Open')
-                                    ->get();
-    
-                if(!empty($getSO['0'])){
-                    foreach($getSO as $So){
-                        //Loop items
-                        for($i = 0; $i <= count($So['DocumentLines']) - 1; $i++) {
-                            $items[] = [
-                                'BaseType' => 17,
-                                'BaseEntry' => $So['DocEntry'],
-                                'BaseLine' => $i
-                            ];
+                                    ->first();
+                $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
+                $getInv = $odataClient->getOdataClient()->from('Invoices')
+                            ->where('U_Order_ID',(string)$id)
+                            ->first();
+                if($getSO && !$getInv){
+                    $items = [];
+                    foreach ($getSO['DocumentLines'] as $key => $value) {
+                        $batchList = [];
+                        if($value['BatchNumbers']) {                  
+                            foreach ($value['BatchNumbers'] as $batch) {
+                                $batchList[] = [
+                                    'BatchNumber' => $batch['BatchNumber'],
+                                    'Quantity' => $batch['Quantity']
+                                ];
+                            }
                         }
-                        //Copy sales order to invoice
-                        $odataClient->getOdataClient()->post('Invoices',[
-                            'CardCode' => $So['CardCode'],
-                            'DocDate' => $So['DocDate'],
-                            'DocDueDate' => $So['DocDueDate'],
-                            'PostingDate' => $So['TaxDate'],
-                            'NumAtCard' => $So['NumAtCard'],
-                            'U_Ecommerce_Type' => $So['U_Ecommerce_Type'],
-                            'U_Order_ID' => $So['U_Order_ID'],
-                            'U_Customer_Name' => $So['U_Customer_Name'].' '.$So['U_Customer_Email'],
-                            'DocumentLines' => $items 
-                        ]);
-                        //Unset 'items' variable to avoid error "One of the base documents has already been closed"
-                        unset($items);
-                        
+    
+                        $items[] = [
+                            'BaseType' => 17,
+                            'BaseEntry' => $getSO['DocEntry'],
+                            'BaseLine' => $key,
+                            'BatchNumbers' => $batchList
+                        ];
                     }
+                    //Copy sales order to invoice
+                    $odataClient->getOdataClient()->post('Invoices',[
+                        'CardCode' => $getSO['CardCode'],
+                        'DocDate' => $getSO['DocDate'],
+                        'DocDueDate' => $getSO['DocDueDate'],
+                        'PostingDate' => $getSO['TaxDate'],
+                        'NumAtCard' => $getSO['NumAtCard'],
+                        'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
+                        'U_Order_ID' => $getSO['U_Order_ID'],
+                        'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
+                        'DocumentLines' => $items 
+                    ]);
+                    
                 }else{
                     print_r("The sales order for ".$id." is already close\n");
                 }
@@ -92,6 +101,7 @@ class LazadaInvoice extends Command
         }else{
             print_r('No ready to ship orders for now!');
         }
+        
         
     }
 }
