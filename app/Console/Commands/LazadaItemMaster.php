@@ -46,8 +46,8 @@ class LazadaItemMaster extends Command
             $odataClient = new SapService();
             //Get items with lazada integration set as yes
             $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Yes')
-                                                    ->get();
+                                                ->where('U_LAZ_INTEGRATION','Yes')
+                                                ->get();
             if(!empty($getItems['0'])){
                 //lazada API
                 $lazadaAPI = new LazadaAPIController();
@@ -82,10 +82,10 @@ class LazadaItemMaster extends Command
                 //Run 
                 $lazadaAPI->updatePriceQuantity($finalPayload);
                 
-                Log::channel('lazada.update_price_qty')->info('Items stocks and price updated.');
+                Log::channel('lazada.update_price_qty')->info('Items stock and price updated.');
             
             }else{
-                Log::channel('lazada.update_price_qty')->info('No Lazada items available.');
+                Log::channel('lazada.update_price_qty')->warning('No Lazada items available.');
             }
 
         } catch (\Exception $e) {
