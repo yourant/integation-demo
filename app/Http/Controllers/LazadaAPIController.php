@@ -56,7 +56,7 @@ class LazadaAPIController extends Controller
         $request->addApiParam('sort_by','created_at');
         $request->addApiParam('offset','0');
         $request->addApiParam('status','ready_to_ship');
-        $request->addApiParam('updated_after',$this->dateStart);
+        $request->addApiParam('update_after',$this->dateStart);
 
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }
@@ -67,7 +67,7 @@ class LazadaAPIController extends Controller
         $request->addApiParam('sort_by','created_at');
         $request->addApiParam('offset','0');
         $request->addApiParam('status','returned');
-        $request->addApiParam('updated_after',$this->dateStart);
+        $request->addApiParam('update_after',$this->dateStart);
         
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }

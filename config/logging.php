@@ -107,6 +107,11 @@ return [
                 'driver' => 'single',
                 'path' => storage_path('logs/lazada/refresh_token.log'),
                 'level' => 'debug'
+            ],
+            'update_price_qty' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada/update_price_qty.log'),
+                'level' => 'debug'
             ]
         ]
     ],
