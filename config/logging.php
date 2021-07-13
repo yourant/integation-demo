@@ -112,6 +112,21 @@ return [
                 'driver' => 'single',
                 'path' => storage_path('logs/lazada/update_price_qty.log'),
                 'level' => 'debug'
+            ],
+            'sales_order' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada/sales_order.log'),
+                'level' => 'debug'
+            ],
+            'ar_invoice' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada/ar_invoice.log'),
+                'level' => 'debug'
+            ],
+            'credit_memo' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada/credit_memo.log'),
+                'level' => 'debug'
             ]
         ]
     ],
