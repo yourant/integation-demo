@@ -1,6 +1,8 @@
 <?php
 namespace App\Services;
 
+use App\Models\AccessToken;
+
 class LazadaService{
 
     protected $appUrl;
@@ -12,10 +14,12 @@ class LazadaService{
 
     public function __construct()
     {
+        $lazadaToken = AccessToken::where('platform','lazada')->first();
+
         $this->appUrl = config('app.lazada_app_url');
         $this->appKey = config('app.lazada_app_key');
         $this->appSecret = config('app.lazada_app_secret');
-        $this->accessToken = config('app.lazada_access_token');
+        $this->accessToken = $lazadaToken->access_token;
 
     }
 
