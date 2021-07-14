@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use DateTime;
 use LazopClient;
 use LazopRequest;
+use Carbon\Carbon;
 use App\Models\AccessToken;
 use App\Services\LazadaService;
 use Illuminate\Console\Command;
@@ -47,24 +48,27 @@ class LazadaRefreshToken extends Command
         try
         {
             $lazadaToken = AccessToken::where('platform','lazada')->first();
-            //Lazada Service
-            $lazService = new LazadaService();
-            //Lazada SDK
-            $lazClient = new LazopClient($lazService->getAppUrl(),$lazService->getAppKey(),$lazService->getAppSecret());
-            $lazRequest = new LazopRequest('/auth/token/refresh');
-            $lazRequest->addApiParam('refresh_token',$lazadaToken->refresh_token);
-            $response = json_decode($lazClient->execute($lazRequest));
-             //Update Token
-            $updatedToken = AccessToken::where('platform', 'lazada')
-                    ->update([
-                        'refresh_token' => $response->refresh_token,
-                        'access_token' => $response->access_token
-                    ]);
+            $date = date('Y-m-d',strtotime($lazadaToken->updated_at->format('Y-m-d'). ' + 5 days'));
+            if($date == Carbon::now()->format('Y-m-d')) {
+                //Lazada Service
+                $lazService = new LazadaService();
+                //Lazada SDK
+                $lazClient = new LazopClient($lazService->getAppUrl(),$lazService->getAppKey(),$lazService->getAppSecret());
+                $lazRequest = new LazopRequest('/auth/token/refresh');
+                $lazRequest->addApiParam('refresh_token',$lazadaToken->refresh_token);
+                $response = json_decode($lazClient->execute($lazRequest));
+                //Update Token
+                $updatedToken = AccessToken::where('platform', 'lazada')
+                        ->update([
+                            'refresh_token' => $response->refresh_token,
+                            'access_token' => $response->access_token
+                        ]);
 
-            if($updatedToken) {
-                Log::channel('lazada.refresh_token')->info('New tokens generated.');
-            } else {
-                Log::channel('lazada.refresh_token')->info('Problem while generating tokens.');
+                if($updatedToken) {
+                    Log::channel('lazada.refresh_token')->info('New tokens generated.');
+                } else {
+                    Log::channel('lazada.refresh_token')->info('Problem while generating tokens.');
+                }
             }
         }
 
@@ -72,7 +76,7 @@ class LazadaRefreshToken extends Command
         {
             Log::channel('lazada.refresh_token')->emergency($e->getMessage());
         }
-
+        
 
     }
 }
