@@ -48,8 +48,10 @@ class LazadaRefreshToken extends Command
         try
         {
             $lazadaToken = AccessToken::where('platform','lazada')->first();
-            $date = date('Y-m-d',strtotime($lazadaToken->updated_at->format('Y-m-d'). ' + 5 days'));
-            if($date == Carbon::now()->format('Y-m-d')) {
+            $updatedAt = $lazadaToken->updated_at->format('Y-m-d');
+            $checkDate = date('Y-m-d',strtotime($updatedAt. ' + 5 days'));
+            $now = Carbon::now()->format('Y-m-d');
+            if($updatedAt != $now && $checkDate == $now){
                 //Lazada Service
                 $lazService = new LazadaService();
                 //Lazada SDK
@@ -69,7 +71,9 @@ class LazadaRefreshToken extends Command
                 } else {
                     Log::channel('lazada.refresh_token')->info('Problem while generating tokens.');
                 }
+                
             }
+            
         }
 
         catch(\Exception $e)
