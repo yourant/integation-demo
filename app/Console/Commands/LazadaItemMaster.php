@@ -83,27 +83,36 @@ class LazadaItemMaster extends Command
                                     ]);
                         }
                     }
-                    //Create SKU Payload
-                    $skuPayload[] = "<Sku>
-                                        <ItemId>".$lazadaItemId."</ItemId>
-                                        <SellerSku>".$finalSku."</SellerSku>
-                                        <Quantity>".$sapStock."</Quantity>
-                                        <Price>".$sapPrice."</Price>
-                                    </Sku>";
+
+                    if(!empty($lazadaItemId) && !empty($finalSku)){
+                         //Create SKU Payload
+                        $skuPayload[] = "<Sku>
+                                            <ItemId>".$lazadaItemId."</ItemId>
+                                            <SellerSku>".$finalSku."</SellerSku>
+                                            <Quantity>".$sapStock."</Quantity>
+                                            <Price>".$sapPrice."</Price>
+                                        </Sku>";
+                    }
                     
                 }
+
+                if(!empty($skuPayload)){
+                    $finalPayload = "<Request>
+                                        <Product>
+                                            <Skus>
+                                                ".implode('',$skuPayload)."
+                                            </Skus>
+                                        </Product>
+                                    </Request>";
+                    //Run 
+                    $lazadaAPI->updatePriceQuantity($finalPayload);
+                    
+                    Log::channel('lazada.update_price_qty')->info('Items stock and price updated.');
+
+                }else{
+                    Log::channel('lazada.update_price_qty')->info('No Items stock and price to be updated.');
+                }
                 
-                $finalPayload = "<Request>
-                                <Product>
-                                <Skus>
-                                    ".implode('',$skuPayload)."
-                                </Skus>
-                                </Product>
-                            </Request>";
-                //Run 
-                $lazadaAPI->updatePriceQuantity($finalPayload);
-                
-                Log::channel('lazada.update_price_qty')->info('Items stock and price updated.');
             
             }else{
                 Log::channel('lazada.update_price_qty')->warning('No Lazada items available.');
