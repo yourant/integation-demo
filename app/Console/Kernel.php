@@ -29,7 +29,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        //Lazada Commands
+        $schedule->command('lazada:refresh-token');
+        $schedule->command('lazada:item-master');
+        $schedule->command('lazada:sales-order');
+        $schedule->command('lazada:ar-invoice');
+        $schedule->command('lazada:credit-memo');
     }
 
     /**
