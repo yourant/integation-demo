@@ -114,7 +114,6 @@ class LazadaCreditMemo extends Command
                     $finalCM = array_slice($tempCM[$key],0);
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
                                     ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
-                                    ->where('DocumentStatus','bost_Open')
                                     ->first();
 
                     if(!$getCM){
