@@ -2,12 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Models\User;
 use Illuminate\Http\Request;
-use App\Traits\SapConnectionTrait;
 use App\Http\Controllers\Controller;
-use App\Models\SapUser;
-use Illuminate\Support\Facades\Auth;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
@@ -24,7 +20,7 @@ class LoginController extends Controller
     |
     */
 
-    use AuthenticatesUsers, SapConnectionTrait;
+    use AuthenticatesUsers;
 
     /**
      * Where to redirect users after login.
@@ -44,56 +40,23 @@ class LoginController extends Controller
     }
 
     /**
-     * Handle an authentication attempt.
+     * Get the login username to be used by the controller.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return string
      */
-    public function login(Request $request)
+    public function username()
     {
-        $credentials = $this->validateLogin($request);
-
-        if ($this->attemptConnection($credentials)) {
-            $sapUser = SapUser::getCurrentUser($this->getConnection(), $credentials['user_code']);
-
-            $user = User::updateOrCreate(
-                ['user_code' => $credentials['user_code']],
-                [
-                    'id' => $sapUser['InternalKey'], 
-                    'user_name' => $sapUser['UserName'],
-                    'email' => $sapUser['eMail'],
-                    'mobile_phone_number' => $sapUser['MobilePhoneNumber'],
-                    'is_superuser' => User::IS_SUPERUSER[$sapUser['Superuser']],
-                ]
-            );
-
-            if (Auth::login($user)) {
-                $request->session()->regenerate();
-
-                return redirect()->intended('/');
-            }
-        }
-
-        return back()->withErrors([
-            'db' => 'The provided credentials do not match our records.',
-        ]);
+        return 'username';
     }
 
     /**
-     * Log the user out of the application.
+     * Get the password for the user.
      *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @return string
      */
-    public function logout(Request $request)
+    public function getAuthPassword()
     {
-        Auth::logout();
-        
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
-
-        return redirect('/');
+        return $this->password;
     }
 
     /**
@@ -107,9 +70,8 @@ class LoginController extends Controller
     public function validateLogin(Request $request)
     {
         return $request->validate([
-            'db' => ['required'],
-            'user_code' => ['required'],
-            'pword' => ['required'],
+            'username' => ['required'],
+            'password' => ['required'],
         ]);
     }
 }

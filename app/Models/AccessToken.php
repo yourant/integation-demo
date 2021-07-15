@@ -9,6 +9,11 @@ class AccessToken extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
         'refresh_token',
         'access_token',

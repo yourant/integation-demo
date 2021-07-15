@@ -19,6 +19,9 @@ class Kernel extends ConsoleKernel
         Commands\LazadaInvoice::class,
         Commands\LazadaCreditMemo::class,
         Commands\PriceAndStockShopeeUpdate::class,
+        Commands\ShopeeFirstScheduler::class,
+        Commands\SalesOrderShopeeCreate::class,
+        Commands\InvoiceShopeeCreate::class,
     ];
 
     /**

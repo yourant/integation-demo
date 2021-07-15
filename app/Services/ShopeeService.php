@@ -27,10 +27,8 @@ class ShopeeService
         $this->host = config('app.shopee_host');
         $this->path = $path;
         $this->accessToken = $accessToken;
-        
-        //temporary solution
-        $this->shopId = 12498;
-        $this->code = '21f879e0dbd542d0025ce816e3ec9576';
+        $this->shopId = (int) config('app.shopee_shop_id');
+        $this->code = config('app.shopee_code');
 
         $this->setBaseString($accessLevel);
         $this->setSign($this->baseString);
