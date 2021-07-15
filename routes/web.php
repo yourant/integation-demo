@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaController;
 
 /*
@@ -18,10 +19,22 @@ use App\Http\Controllers\LazadaController;
 
 Auth::routes();
 
-Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
+Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
+    // Dashboard
+    Route::get('/',[ShopeeController::class, 'index'])->name('shopee.dashboard');
+    // Events
+    // Route::get('/fetch-events',[HrCalendarController::class,'fetchEvents'])->name('hr_calendar.fetch_events');
+    // Route::post('/store-event',[HrCalendarController::class, 'storeEvent'])->name('hr_calendar.store_event');
+});
 
-Route::get('/test', [TestController::class, 'index'])->name('test.index');
+Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
+    // Test Route for lazada
+    Route::get('/',[ShopeeController::class, 'index2'])->name('lazada.dashboard');
+});
 
-Route::get('/test/login', [TestController::class, 'form'])->name('test.form');
-Route::post('/test/login', [TestController::class, 'login'])->name('test.login')->middleware('auth');
-Route::post('/test/login2', [TestController::class, 'login2'])->name('test.login2')->middleware('auth');
+// Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
+
+// Route::get('/test', [TestController::class, 'index'])->name('test.index');
+// Route::get('/test/login', [TestController::class, 'form'])->name('test.form');
+// Route::post('/test/login', [TestController::class, 'login'])->name('test.login')->middleware('auth');
+// Route::post('/test/login2', [TestController::class, 'login2'])->name('test.login2')->middleware('auth');
