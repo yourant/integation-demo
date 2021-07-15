@@ -114,7 +114,6 @@ class LazadaOrder extends Command
                     $finalSO = array_slice($tempSO[$key],0);
                     $getSO = $odataClient->getOdataClient()->from('Orders')
                                     ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
-                                    ->where('DocumentStatus','bost_Open')
                                     ->first();
 
                     if(!$getSO){
