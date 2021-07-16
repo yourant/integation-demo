@@ -22,6 +22,11 @@ Auth::routes();
 Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
     // Dashboard
     Route::get('/',[ShopeeController::class, 'index'])->name('shopee.dashboard');
+    Route::post('/product/sync',[ShopeeController::class, 'syncProduct'])->name('shopee.product.sync');
+    Route::post('/price/update',[ShopeeController::class, 'updatePrice'])->name('shopee.price.update');
+    Route::post('/stock/update',[ShopeeController::class, 'updateStock'])->name('shopee.stock.update');
+    Route::post('/salesorder/generate',[ShopeeController::class, 'generateSalesorder'])->name('shopee.salesorder.generate');
+    Route::post('/invoice/generate',[ShopeeController::class, 'generateInvoice'])->name('shopee.invoice.generate');
     // Events
     // Route::get('/fetch-events',[HrCalendarController::class,'fetchEvents'])->name('hr_calendar.fetch_events');
     // Route::post('/store-event',[HrCalendarController::class, 'storeEvent'])->name('hr_calendar.store_event');
