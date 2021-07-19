@@ -128,6 +128,34 @@ return [
                 'path' => storage_path('logs/lazada/credit_memo.log'),
                 'level' => 'debug'
             ]
+        ],
+        
+        'lazada2' => [
+            'refresh_token' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada2/refresh_token.log'),
+                'level' => 'debug'
+            ],
+            'update_price_qty' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada2/update_price_qty.log'),
+                'level' => 'debug'
+            ],
+            'sales_order' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada2/sales_order.log'),
+                'level' => 'debug'
+            ],
+            'ar_invoice' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada2/ar_invoice.log'),
+                'level' => 'debug'
+            ],
+            'credit_memo' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/lazada2/credit_memo.log'),
+                'level' => 'debug'
+            ]
         ]
     ],
 

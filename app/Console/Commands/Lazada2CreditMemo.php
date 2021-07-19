@@ -2,26 +2,24 @@
 
 namespace App\Console\Commands;
 
-use App\Services\SapService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\LazadaAPIController;
+use App\Http\Controllers\Lazada2APIController;
 
-class LazadaCreditMemo extends Command
+class Lazada2CreditMemo extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'lazada:credit-memo';
+    protected $signature = 'lazada2:credit-memo';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Lazada A/R Credit Memo';
+    protected $description = 'Lazada 2 Credit Memo';
 
     /**
      * Create a new command instance.
@@ -47,7 +45,7 @@ class LazadaCreditMemo extends Command
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             
-            $lazadaAPI = new LazadaAPIController();
+            $lazadaAPI = new Lazada2APIController();
             $orders = $lazadaAPI->getReturnedOrders();
             
             if(!empty($orders['data']['orders'])){

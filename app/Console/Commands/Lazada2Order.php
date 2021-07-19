@@ -2,26 +2,24 @@
 
 namespace App\Console\Commands;
 
-use App\Services\SapService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\LazadaAPIController;
+use App\Http\Controllers\Lazada2APIController;
 
-class LazadaCreditMemo extends Command
+class Lazada2Order extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'lazada:credit-memo';
+    protected $signature = 'lazada2:sales-order';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Lazada A/R Credit Memo';
+    protected $description = 'Lazada Order';
 
     /**
      * Create a new command instance.
@@ -42,20 +40,20 @@ class LazadaCreditMemo extends Command
     {
         try {
             $odataClient = new SapService();
-        
+
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
-            
-            $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getReturnedOrders();
-            
+
+            $lazadaAPI = new Lazada2APIController();
+            $orders = $lazadaAPI->getPendingOrders();
+
             if(!empty($orders['data']['orders'])){
                 foreach($orders['data']['orders'] as $order){
                     $orderId = $order['order_id'];
                     $orderIdArray[] = $orderId;
                     
-                    $tempCM[$orderId] = [
+                    $tempSO[$orderId] = [
                         'CardCode' => $lazadaCustomer->Name,
                         'DocDate' => substr($order['created_at'],0,10),
                         'DocDueDate' => substr($order['created_at'],0,10),
@@ -63,9 +61,9 @@ class LazadaCreditMemo extends Command
                         'NumAtCard' => $orderId,
                         'U_Ecommerce_Type' => 'Lazada',
                         'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name']
+                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
                     ];
-        
+                    
                     if($order['shipping_fee'] != 0.00){
                         $fees[$orderId][] = [
                             'ItemCode' => $shippingFee->Name,
@@ -83,7 +81,7 @@ class LazadaCreditMemo extends Command
                             'UnitPrice' => $order['voucher']
                         ];
                     }
-                
+
                 }
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
@@ -101,38 +99,38 @@ class LazadaCreditMemo extends Command
                         ];
                         
                     }
-        
+
                     if(!empty($fees[$orderId])){
-                        $tempCM[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                        $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
                     }else{
-                        $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
+                        $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
                     }
-                    
+
                 }
-        
-                foreach($tempCM as $key => $value){
-                    $finalCM = array_slice($tempCM[$key],0);
-                    $getCM = $odataClient->getOdataClient()->from('CreditNotes')
-                                    ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
+
+                foreach($tempSO as $key => $value){
+                    $finalSO = array_slice($tempSO[$key],0);
+                    $getSO = $odataClient->getOdataClient()->from('Orders')
+                                    ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
                                     ->where('DocumentStatus','bost_Open')
                                     ->first();
 
-                    if(!$getCM){
-                        $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
+                    if(!$getSO){
+                        $odataClient->getOdataClient()->post('Orders',$finalSO);
                         
-                        Log::channel('lazada2.credit_memo')->info('Credit memo for Lazada order:'.$finalCM['U_Order_ID'].' created successfully.');
+                        Log::channel('lazada2.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
                     }else{
-                        unset($finalCM);
+                        unset($finalSO);
                     }
-                    
+
                 }
 
             }else{
-                Log::channel('lazada2.credit_memo')->info('No returned orders for now.');
+                Log::channel('lazada2.sales_order')->info('No pending orders for now.');
             }
-        } catch (\Exception $e) {
-            Log::channel('lazada2.credit_memo')->emergency($e->getMessage());
-        }
 
+        } catch (\Exception $e) {
+            Log::channel('lazada2.sales_order')->emergency($e->getMessage());
+        }
     }
 }
