@@ -64,14 +64,15 @@ class LazadaOrder extends Command
                         'U_Ecommerce_Type' => 'Lazada',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
                     
                     if($order['shipping_fee'] != 0.00){
                         $fees[$orderId][] = [
                             'ItemCode' => $shippingFee->Name,
                             'Quantity' => 1,
-                            'VatGroup' => 'ZR',
-                            'UnitPrice' => $order['shipping_fee']
+                            'VatGroup' => 'SR',
+                            'UnitPrice' => $order['shipping_fee'] / 1.07
                         ];
                     }
 
@@ -79,8 +80,8 @@ class LazadaOrder extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $sellerVoucher->Name,
                             'Quantity' => -1,
-                            'VatGroup' => 'ZR',
-                            'UnitPrice' => $order['voucher']
+                            'VatGroup' => 'SR',
+                            'UnitPrice' => $order['voucher'] / 1.07
                         ];
                     }
 
@@ -96,8 +97,8 @@ class LazadaOrder extends Command
                         $items[$orderId][] = [
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
-                            'VatGroup' => 'ZR',
-                            'UnitPrice' => $orderItem['item_price']
+                            'VatGroup' => 'SR',
+                            'UnitPrice' => $orderItem['item_price'] / 1.07
                         ];
                         
                     }
@@ -132,6 +133,7 @@ class LazadaOrder extends Command
         } catch (\Exception $e) {
             Log::channel('lazada.sales_order')->emergency($e->getMessage());
         }
+       
         
     }
 }
