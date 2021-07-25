@@ -3,7 +3,6 @@
 /public/storage
 /storage/*.key
 /vendor
-/app/LazadaSDK/logs
 .env
 .env.backup
 .phpunit.result.cache
