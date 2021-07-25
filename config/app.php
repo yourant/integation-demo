@@ -175,8 +175,22 @@ return [
     'lazada_app_key' => env('LAZADA_APP_KEY', '121343'),
 
     'lazada_app_secret' => env('LAZADA_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lazada 2nd Account Info
+    |--------------------------------------------------------------------------
+    |
+    | This key is used for accessing lazada API for 2nd account
+    |
+    */
+  
+    'lazada2_app_url' => env('LAZADA2_APP_URL','https://api.lazada.sg/rest'),
+
+    'lazada2_app_key' => env('LAZADA2_APP_KEY', '121343'),
+
+    'lazada2_app_secret' => env('LAZADA2_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
     
-    'lazada_access_token' => env('LAZADA_ACCESS_TOKEN'),
   
     /*
     |--------------------------------------------------------------------------
