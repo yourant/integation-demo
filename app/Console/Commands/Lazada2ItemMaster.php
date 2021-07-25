@@ -65,7 +65,7 @@ class Lazada2ItemMaster extends Command
                         $odataClient->getOdataClient()->from('Items')
                                 ->whereKey($newSku)
                                 ->patch([
-                                    'U_LAZ_ITEM_CODE' => $lazadaItemId,
+                                    'U_LAZ2_ITEM_CODE' => $lazadaItemId,
                                 ]);
                     }else if($oldSku != null){
                         $getByOldSku = $lazadaAPI->getProductItem($oldSku);
@@ -78,7 +78,7 @@ class Lazada2ItemMaster extends Command
                             $odataClient->getOdataClient()->from('Items')
                                     ->whereKey($oldSkuItemCode->ItemCode)
                                     ->patch([
-                                        'U_LAZ_ITEM_CODE' => $lazadaItemId,
+                                        'U_LAZ2_ITEM_CODE' => $lazadaItemId,
                                     ]);
                         }
                     }
