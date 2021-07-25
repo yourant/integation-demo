@@ -120,7 +120,7 @@ class LazadaCreditMemo extends Command
                     if(!$getCM){
                         $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
                         
-                        Log::channel('lazada2.credit_memo')->info('Credit memo for Lazada order:'.$finalCM['U_Order_ID'].' created successfully.');
+                        Log::channel('lazada.credit_memo')->info('Credit memo for Lazada order:'.$finalCM['U_Order_ID'].' created successfully.');
                     }else{
                         unset($finalCM);
                     }
@@ -128,10 +128,10 @@ class LazadaCreditMemo extends Command
                 }
 
             }else{
-                Log::channel('lazada2.credit_memo')->info('No returned orders for now.');
+                Log::channel('lazada.credit_memo')->info('No returned orders for now.');
             }
         } catch (\Exception $e) {
-            Log::channel('lazada2.credit_memo')->emergency($e->getMessage());
+            Log::channel('lazada.credit_memo')->emergency($e->getMessage());
         }
 
     }
