@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SapService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Lazada2APIController;
 
 class Lazada2Order extends Command
