@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\SapService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Lazada2APIController;
 
 class Lazada2Invoice extends Command
@@ -54,11 +55,9 @@ class Lazada2Invoice extends Command
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
-                                        ->where('DocumentStatus','bost_Open')
                                         ->first();
                     $getInv = $odataClient->getOdataClient()->from('Invoices')
                                         ->where('U_Order_ID',(string)$id)
-                                        ->where('DocumentStatus','bost_Open')
                                         ->first();
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
