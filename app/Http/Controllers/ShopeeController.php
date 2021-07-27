@@ -99,7 +99,7 @@ class ShopeeController extends Controller
         ]);
 
         $shopeePriceUpdateResponseArr = json_decode($shopeePriceUpdateResponse->body(), true);
-        // dd($shopeePriceUpdateResponseArr['response']['item_id']);
+        // dd($shopeePriceUpdateResponseArr);
 
         $itemSapService = new SapService();
 
@@ -121,22 +121,11 @@ class ShopeeController extends Controller
 
         $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
         $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-            'item_id' => (int) 129541,
+            'item_id' => (int) 100022158,
             'price_list' => [
                 [
                     'model_id' => (int) 0,
-                    'original_price' => (float) 30
-                ]
-            ]
-        ]);
-
-        $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
-        $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-            'item_id' => (int) 129531,
-            'price_list' => [
-                [
-                    'model_id' => (int) 0,
-                    'original_price' => (float) 50
+                    'original_price' => (float) 113
                 ]
             ]
         ]);
@@ -148,55 +137,147 @@ class ShopeeController extends Controller
         
         $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
         $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-            'item_id' => (int) 129541,
+            'item_id' => (int) 100022158,
             'stock_list' => [
                 [
                     'model_id' => (int) 0,
-                    'normal_stock' => (int) 10
+                    'normal_stock' => (int) 15
                 ]
             ]
         ]);
+    } 
 
-        $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
-        $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-            'item_id' => (int) 129531,
-            'stock_list' => [
+    public function generateSalesorder()
+    {
+        $salesOrderSapService = new SapService();
+
+        $salesOrderList = [
+            'CardCode' => 'Shopee_C',
+            'NumAtCard' => '2106220W8P0PSK',
+            'DocDate' => date('Y-m-d', 1624332509),
+            'DocDueDate' => date('Y-m-d', 1624505315),
+            'TaxDate' => date('Y-m-d', 1624332509),
+            'U_Ecommerce_Type' => 'Shopee',
+            'U_Order_ID' => '2106220W8P0PSK',
+            'U_Customer_Name' => 'Paul Jao',
+            'U_Customer_Phone' => '639457505051',
+            'U_Customer_Shipping_Address' => 'Makiling Street, Bermuda, Pamplona Uno Las Pinas, Pamplona Uno, Las Pinas City, Metro Manila, Metro Manila, 1742',
+            'DocumentLines' => [
                 [
-                    'model_id' => (int) 0,
-                    'normal_stock' => (int) 50
+                    'ItemCode' => 'SH00002',
+                    'Quantity' => 1,
+                    'VatGroup' => 'SR',
+                    'UnitPrice' => 1000 / 1.07
+                ], [
+                    'ItemCode' => 'TransportCharges',
+                    'Quantity' => 1,
+                    'VatGroup' => 'SR',
+                    'UnitPrice' => 155 / 1.07
                 ]
             ]
-        ]);
+        ];
+
+        $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+
+        $salesOrderList = [
+            'CardCode' => 'Shopee_C',
+            'NumAtCard' => '2106221AMAAJ6X',
+            'DocDate' => date('Y-m-d', 1624332509),
+            'DocDueDate' => date('Y-m-d', 1624505315),
+            'TaxDate' => date('Y-m-d', 1624332509),
+            'U_Ecommerce_Type' => 'Shopee',
+            'U_Order_ID' => '2106221AMAAJ6X',
+            'U_Customer_Name' => 'Paul Jao',
+            'U_Customer_Phone' => '639457505051',
+            'U_Customer_Shipping_Address' => 'Makiling Street, Bermuda, Pamplona Uno Las Pinas, Pamplona Uno, Las Pinas City, Metro Manila, Metro Manila, 1742',
+            'DocumentLines' => [
+                [
+                    'ItemCode' => 'SH00003',
+                    'Quantity' => 1,
+                    'VatGroup' => 'SR',
+                    'UnitPrice' => 9999 / 1.07
+                ], [
+                    'ItemCode' => 'SH00002',
+                    'Quantity' => 2,
+                    'VatGroup' => 'SR',
+                    'UnitPrice' => 1000 / 1.07
+                ]
+            ]
+        ];
+
+        $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+
+        // $salesOrderList = [
+        //     'CardCode' => 'Shopee_C',
+        //     'NumAtCard' => '2106221FDBDPG4',
+        //     'DocDate' => date('Y-m-d', 1624351992),
+        //     'DocDueDate' => date('Y-m-d', 1624524805),
+        //     'TaxDate' => date('Y-m-d', 1624351992),
+        //     'U_Ecommerce_Type' => 'Shopee',
+        //     'U_Order_ID' => '2106221FDBDPG4',
+        //     'U_Customer_Name' => 'Paul Jao',
+        //     'U_Customer_Phone' => '639457505051',
+        //     'U_Customer_Shipping_Address' => 'Makiling Street, Bermuda, Pamplona Uno Las Pinas, Pamplona Uno, Las Pinas City, Metro Manila, Metro Manila, 1742',
+        //     'DocumentLines' => [
+        //         [
+        //             'ItemCode' => 'SH00002',
+        //             'Quantity' => 2,
+        //             'VatGroup' => 'SR',
+        //             'UnitPrice' => 1000 / 1.07
+        //         ], [
+        //             'ItemCode' => 'SH00001',
+        //             'Quantity' => 1,
+        //             'VatGroup' => 'SR',
+        //             'UnitPrice' => 200 / 1.07
+        //         ], [
+        //             'ItemCode' => 'TransportCharges',
+        //             'Quantity' => 1,
+        //             'VatGroup' => 'SR',
+        //             'UnitPrice' => 375 / 1.07
+        //         ]
+        //     ]
+        // ];
+
+        // $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
+    }
+
+    public function generateInvoice()
+    {
+        $salesOrderSapService = new SapService();
+
+        $salesOrderList = [
+            'CardCode' => 'Shopee_C',
+            'NumAtCard' => '2106221FDBDPG4',
+            'DocDate' => date('Y-m-d', 1624351992),
+            'DocDueDate' => date('Y-m-d', 1624524805),
+            'TaxDate' => date('Y-m-d', 1624351992),
+            'U_Ecommerce_Type' => 'Shopee',
+            'U_Order_ID' => '2106221FDBDPG4',
+            'U_Customer_Name' => 'Paul Jao',
+            'U_Customer_Phone' => '639457505051',
+            'U_Customer_Shipping_Address' => 'Makiling Street, Bermuda, Pamplona Uno Las Pinas, Pamplona Uno, Las Pinas City, Metro Manila, Metro Manila, 1742',
+            'DocumentLines' => [
+                [
+                    'BaseType' => 17,
+                    'BaseEntry' => 199,
+                    'BaseLine' => 0
+                ], [
+                    'BaseType' => 17,
+                    'BaseEntry' => 199,
+                    'BaseLine' => 1
+                ], [
+                    'BaseType' => 17,
+                    'BaseEntry' => 199,
+                    'BaseLine' => 2
+                ]
+            ]
+        ];
+
+        $salesOrder = $salesOrderSapService->getOdataClient()->post('Invoices', $salesOrderList);
     }
 
     public function index2()
     {
         return view('lazada.dashboard');
-    }  
-    
-    public function syncProduct()
-    {
-
     }
-
-    public function updatePrice()
-    {
-
-    }
-
-    public function updateStock()
-    {
-
-    }
-
-    public function generateSalesorder()
-    {
-
-    }
-
-    public function generateInvoice()
-    {
-
-    }
-
 }

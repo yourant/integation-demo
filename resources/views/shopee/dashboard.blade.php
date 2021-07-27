@@ -94,7 +94,7 @@
                     </div>
 
                     <div class="row mt-4">
-                        <div class="col-md-4">
+                        {{-- <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
                                     <center>Generate Sales Orders</center>
@@ -127,7 +127,7 @@
                                     </center>
                                 </div>
                             </div>
-                        </div>
+                        </div> --}}
                         {{-- <div class="col-md-4">
                             <div class="card">
                                 
@@ -282,7 +282,7 @@
                     isLoading = true;
 
                     $.ajax({
-                        url: "{{ route('shopee.sync-item') }}",
+                        url: "{{ route('shopee.salesorder-generate') }}",
                         method: "POST",
                         success: function(data, status) {
                             $("#success-msg").text('');
@@ -312,7 +312,7 @@
                     isLoading = true;
 
                     $.ajax({
-                        url: "{{ route('shopee.sync-item') }}",
+                        url: "{{ route('shopee.invoice-generate') }}",
                         method: "POST",
                         success: function(data, status) {
                             $("#success-msg").text('');
@@ -329,60 +329,6 @@
                     })                 
                 }
             });
-
-            // $('#syncItemBtn').submit(function (e){
-            //     e.preventDefault();
-            //     var url = $(this).attr('action');
-            //     var method = $(this).attr('method');
-            //     var data = $(this).serialize();
-
-            //     $.ajax({
-            //         url: url,
-            //         data: data,
-            //         method: method,
-            //         beforeSend: function() { 
-            //             $(".help-block").remove();
-            //             $( ".form-control" ).removeClass("is-invalid");
-            //             $(".btn-submit").attr("disabled", true);
-            //             $(".btn-submit").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...`);
-            //         },
-            //         success: function(data){
-            //           if(data.success == false)
-            //           {
-            //             $('.form-check-label').after('<div class="invalid-feedback d-block">Please confirm if all data are correct</div>');
-            //           }
-            //           else
-            //           {
-            //             window.location.reload();
-            //           }
-            //         },
-            //         error: function(response){
-            //             var errors = response.responseJSON;
-            //             $.each(errors.errors, function (index, value) {
-            //                 var id = $("#"+index);
-            //                 id.closest('.form-control')
-            //                 .addClass('is-invalid');
-                            
-            //                 if(id.next('.select2-container').length > 0){
-            //                     id.next('.select2-container').after('<div class="help-block text-danger">'+value+'</div>');
-            //                 }else{
-            //                     id.after('<div class="help-block text-danger">'+value+'</div>');
-            //                 }
-            //             });
-                        
-            //             if($(".is-invalid").length) {
-            //                 $('html, body').animate({
-            //                         scrollTop: ($(".is-invalid").first().offset().top - 95)
-            //                 },500);
-            //             }
-                        
-            //         },
-            //         complete: function() {
-            //             $(".btn-submit").attr("disabled", false);
-            //             $(".btn-submit").html('Submit');
-            //         }
-            //     })
-            // })
         });
 
     </script>
