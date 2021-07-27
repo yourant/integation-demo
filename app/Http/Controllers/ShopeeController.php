@@ -18,8 +18,8 @@ class ShopeeController extends Controller
     public function shopAuth()
     {
         $timestamp = time();
-        $partnerId = 1000909;
-        $partnerKey = 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0';
+        $partnerId = 1002240;
+        $partnerKey = 'b711f065377c659dd528ecd08c95c132a78168a7cfc4cdcc71cb97d542e47fc7';
         $path = '/api/v2/shop/auth_partner';
         $host = 'https://partner.test-stable.shopeemobile.com';
         $redirectUrl = route('shopee.init-token');
@@ -74,13 +74,13 @@ class ShopeeController extends Controller
         
         $shopeePriceUpdate = new ShopeeService('/product/add_item', 'shop', $shopeeToken->access_token);
         $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-            'item_name' => "GAX 18V-30 Multi-Charger (10.8V - 18V)",
-            'description' => "Dual bay charger takes 10.8V and 18V batteries.",
-            'original_price' => 113,
+            'item_name' => "LD030P Laser Measurement (30M)",
+            'description' => "Robust and ideal for simple applications.",
+            'original_price' => 119,
             'normal_stock' => 15,
             'weight' => 3.0,
             'category_id' => 100482,
-            'item_sku' => "101600A011AB",
+            'item_sku' => "1815845004",
             'brand' => [
                 'brand_id' => 0
             ],
@@ -104,7 +104,7 @@ class ShopeeController extends Controller
         $itemSapService = new SapService();
 
         $response1 = $itemSapService->getOdataClient()->from('Items')
-            ->whereKey('101600A011AB')
+            ->whereKey('1815845004')
             ->patch([
                 'U_SH_ITEM_CODE' => $shopeePriceUpdateResponseArr['response']['item_id']
             ]); 
@@ -121,7 +121,7 @@ class ShopeeController extends Controller
 
         $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
         $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-            'item_id' => (int) 100022158,
+            'item_id' => (int) 100022317,
             'price_list' => [
                 [
                     'model_id' => (int) 0,
@@ -137,7 +137,7 @@ class ShopeeController extends Controller
         
         $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
         $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-            'item_id' => (int) 100022158,
+            'item_id' => (int) 100022317,
             'stock_list' => [
                 [
                     'model_id' => (int) 0,
