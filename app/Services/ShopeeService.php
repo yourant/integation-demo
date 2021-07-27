@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\AccessToken;
+
 class ShopeeService
 {
     protected $timestamp;
@@ -19,6 +21,8 @@ class ShopeeService
 
     public function __construct($path, $accessLevel, $accessToken = null)
     {
+        $shopeeConfig = AccessToken::where('platform', 'shopee')->first();
+
         $this->timestamp = time();
         $this->partnerId = (int) config('app.shopee_partner_id');
         $this->partnerKey = config('app.shopee_partner_key');
@@ -27,8 +31,8 @@ class ShopeeService
         $this->host = config('app.shopee_host');
         $this->path = $path;
         $this->accessToken = $accessToken;
-        $this->shopId = (int) config('app.shopee_shop_id');
-        $this->code = config('app.shopee_code');
+        $this->shopId = $shopeeConfig->shop_id;
+        $this->code = $shopeeConfig->code;
 
         $this->setBaseString($accessLevel);
         $this->setSign($this->baseString);

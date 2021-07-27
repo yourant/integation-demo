@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
@@ -25,9 +24,27 @@ class LoginController extends Controller
     /**
      * Where to redirect users after login.
      *
-     * @var string
+     * @param  \Illuminate\Http\Request  $request
+     * @var void
      */
-    protected $redirectTo = RouteServiceProvider::HOME;
+    protected function loggedOut(Request $request) {
+        return redirect('/login');
+    }
+
+    /**
+     * Where to redirect users after login.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\User  $user
+     * @var void
+     */
+    public function authenticated(Request $request, $user) {
+        if ($user->platform == 'shopee') {
+            return redirect()->route('shopee.dashboard');
+        } elseif ($user->platform == 'lazada') {
+            return redirect()->route('lazada.dashboard');
+        }
+    }
 
     /**
      * Create a new controller instance.
