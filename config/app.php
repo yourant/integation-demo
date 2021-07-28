@@ -172,9 +172,9 @@ return [
   
     'lazada_app_url' => env('LAZADA_APP_URL','https://api.lazada.sg/rest'),
 
-    'lazada_app_key' => env('LAZADA_APP_KEY', '121343'),
+    'lazada_app_key' => env('LAZADA_APP_KEY', '102662'),
 
-    'lazada_app_secret' => env('LAZADA_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
+    'lazada_app_secret' => env('LAZADA_APP_SECRET','UMK0OLHzSNgyNHKX7OMowXVSsIn5Gq4G'),
 
     /*
     |--------------------------------------------------------------------------
@@ -187,9 +187,9 @@ return [
   
     'lazada2_app_url' => env('LAZADA2_APP_URL','https://api.lazada.sg/rest'),
 
-    'lazada2_app_key' => env('LAZADA2_APP_KEY', '121343'),
+    'lazada2_app_key' => env('LAZADA2_APP_KEY', '102818'),
 
-    'lazada2_app_secret' => env('LAZADA2_APP_SECRET','hx4ZUElCIpS7DMOVXaqrXUvFRKfzqCCp'),
+    'lazada2_app_secret' => env('LAZADA2_APP_SECRET','QhSfoBKgn3hosuhly1KnS4mzwBTygHuV'),
     
   
     /*
