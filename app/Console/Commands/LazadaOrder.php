@@ -46,7 +46,9 @@ class LazadaOrder extends Command
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
-            
+            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
+
             $lazadaAPI = new LazadaAPIController();
             $orders = $lazadaAPI->getPendingOrders();
             
@@ -71,8 +73,8 @@ class LazadaOrder extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $shippingFee->Name,
                             'Quantity' => 1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $order['shipping_fee'] / 1.07
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name
                         ];
                     }
 
@@ -80,8 +82,8 @@ class LazadaOrder extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $sellerVoucher->Name,
                             'Quantity' => -1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $order['voucher'] / 1.07
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['voucher'] / $percentage->Name
                         ];
                     }
 
@@ -97,8 +99,8 @@ class LazadaOrder extends Command
                         $items[$orderId][] = [
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $orderItem['item_price'] / 1.07
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name
                         ];
                         
                     }

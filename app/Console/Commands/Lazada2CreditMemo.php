@@ -46,6 +46,8 @@ class Lazada2CreditMemo extends Command
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             
             $lazadaAPI = new Lazada2APIController();
             $orders = $lazadaAPI->getReturnedOrders();
@@ -63,15 +65,16 @@ class Lazada2CreditMemo extends Command
                         'NumAtCard' => $orderId,
                         'U_Ecommerce_Type' => 'Lazada',
                         'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name']
+                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
         
                     if($order['shipping_fee'] != 0.00){
                         $fees[$orderId][] = [
                             'ItemCode' => $shippingFee->Name,
                             'Quantity' => 1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $order['shipping_fee'] / 1.07
+                            'VatGroup' => $taxCode,
+                            'UnitPrice' => $order['shipping_fee'] / $percentage
                         ];
                     }
 
@@ -79,8 +82,8 @@ class Lazada2CreditMemo extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $sellerVoucher->Name,
                             'Quantity' => -1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $order['voucher'] / 1.07
+                            'VatGroup' => $taxCode,
+                            'UnitPrice' => $order['voucher'] / $percentage
                         ];
                     }
                 
@@ -96,8 +99,8 @@ class Lazada2CreditMemo extends Command
                         $items[$orderId][] = [
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $orderItem['item_price'] / 1.07
+                            'VatGroup' => $taxCode,
+                            'UnitPrice' => $orderItem['item_price'] / $percentage
                         ];
                         
                     }
