@@ -18,6 +18,8 @@ class CreateAccessTokensTable extends Migration
             $table->string('platform', 100);
             $table->string('refresh_token', 256)->nullable();
             $table->string('access_token', 256)->nullable();
+            $table->string('code', 100)->nullable();
+            $table->integer('shop_id')->nullable();
             $table->timestamps();
         });
     }

@@ -20,12 +20,16 @@ class AccessTokenSeeder extends Seeder
                 'platform' => 'shopee',
                 'refresh_token' => null,
                 'access_token' => null,
+                'code' => null,
+                'shop_id' => null,
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
             ], [
                 'platform' => 'lazada',
                 'refresh_token' => null,
                 'access_token' => null,
+                'code' => null,
+                'shop_id' => null,
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
             ]

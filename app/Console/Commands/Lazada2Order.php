@@ -46,6 +46,8 @@ class Lazada2Order extends Command
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
 
             $lazadaAPI = new Lazada2APIController();
             $orders = $lazadaAPI->getPendingOrders();
@@ -64,14 +66,15 @@ class Lazada2Order extends Command
                         'U_Ecommerce_Type' => 'Lazada',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
                     
                     if($order['shipping_fee'] != 0.00){
                         $fees[$orderId][] = [
                             'ItemCode' => $shippingFee->Name,
                             'Quantity' => 1,
-                            'VatGroup' => 'ZR',
-                            'UnitPrice' => $order['shipping_fee']
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name
                         ];
                     }
 
@@ -79,8 +82,8 @@ class Lazada2Order extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $sellerVoucher->Name,
                             'Quantity' => -1,
-                            'VatGroup' => 'ZR',
-                            'UnitPrice' => $order['voucher']
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['voucher'] / $percentage->Name
                         ];
                     }
 
@@ -88,7 +91,7 @@ class Lazada2Order extends Command
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-                
+
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
         
@@ -96,8 +99,8 @@ class Lazada2Order extends Command
                         $items[$orderId][] = [
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
-                            'VatGroup' => 'ZR',
-                            'UnitPrice' => $orderItem['item_price']
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name
                         ];
                         
                     }
@@ -114,9 +117,8 @@ class Lazada2Order extends Command
                     $finalSO = array_slice($tempSO[$key],0);
                     $getSO = $odataClient->getOdataClient()->from('Orders')
                                     ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
-                                    ->where('DocumentStatus','bost_Open')
                                     ->first();
-
+                    
                     if(!$getSO){
                         $odataClient->getOdataClient()->post('Orders',$finalSO);
                         
