@@ -73,8 +73,8 @@ class Lazada2Order extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $shippingFee->Name,
                             'Quantity' => 1,
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $order['shipping_fee'] / $percentage
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name
                         ];
                     }
 
@@ -82,8 +82,8 @@ class Lazada2Order extends Command
                         $fees[$orderId][] = [
                             'ItemCode' => $sellerVoucher->Name,
                             'Quantity' => -1,
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $order['voucher'] / $percentage
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['voucher'] / $percentage->Name
                         ];
                     }
 
@@ -91,7 +91,7 @@ class Lazada2Order extends Command
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-                
+
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
         
@@ -99,8 +99,8 @@ class Lazada2Order extends Command
                         $items[$orderId][] = [
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $orderItem['item_price'] / $percentage
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name
                         ];
                         
                     }
@@ -118,7 +118,7 @@ class Lazada2Order extends Command
                     $getSO = $odataClient->getOdataClient()->from('Orders')
                                     ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
                                     ->first();
-
+                    
                     if(!$getSO){
                         $odataClient->getOdataClient()->post('Orders',$finalSO);
                         

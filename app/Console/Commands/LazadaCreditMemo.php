@@ -88,14 +88,9 @@ class LazadaCreditMemo extends Command
                         }
                         
                     }
-                    $tempCM[$orderId]['DocTotal'] = array_sum($refund[$orderId]);
-        
-                    if(!empty($fees[$orderId])){
-                        $tempCM[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
-                    }else{
-                        $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
-                    }
                     
+                    $tempCM[$orderId]['DocTotal'] = array_sum($refund[$orderId]);
+                    $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                     
                 }
         

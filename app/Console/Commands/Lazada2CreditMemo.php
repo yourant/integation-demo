@@ -66,50 +66,31 @@ class Lazada2CreditMemo extends Command
                         'U_Ecommerce_Type' => 'Lazada',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
-        
-                    if($order['shipping_fee'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $shippingFee->Name,
-                            'Quantity' => 1,
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $order['shipping_fee'] / $percentage
-                        ];
-                    }
-
-                    if($order['voucher'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $sellerVoucher->Name,
-                            'Quantity' => -1,
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $order['voucher'] / $percentage
-                        ];
-                    }
                 
                 }
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-                
+
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
         
                     foreach($item['order_items'] as $orderItem){
-                        $items[$orderId][] = [
-                            'ItemCode' => $orderItem['sku'],
-                            'Quantity' => 1,
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $orderItem['item_price'] / $percentage
-                        ];
+                        if($orderItem['status'] == 'returned'){
+                            $items[$orderId][] = [
+                                'ItemCode' => $orderItem['sku'],
+                                'Quantity' => 1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                            ];
+                            $refund[$orderId][] = $orderItem['paid_price'];
+                        }
                         
                     }
-        
-                    if(!empty($fees[$orderId])){
-                        $tempCM[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
-                    }else{
-                        $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
-                    }
+                    
+                    $tempCM[$orderId]['DocTotal'] = array_sum($refund[$orderId]);
+                    $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                     
                 }
         
