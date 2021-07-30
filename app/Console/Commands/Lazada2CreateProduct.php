@@ -40,12 +40,13 @@ class Lazada2CreateProduct extends Command
     public function handle()
     {
         //SAP odataClient
-        /**$odataClient = new SapService();
-
+        $odataClient = new SapService();
+        $lazada2 = new Lazada2APIController();
+        
         $item = $odataClient->getOdataClient()->from('Items')
                                                 ->whereKey('181MKT20010')
                                                 ->first();
-        $createProductPayload = "
+        /**$createProductPayload = "
                     <Request>
                         <Product>
                             <PrimaryCategory>10000531</PrimaryCategory>
@@ -70,15 +71,8 @@ class Lazada2CreateProduct extends Command
                     </Request>";
         
                     //Create Product        
-                    print_r($lazada2->createProduct($createProductPayload));**/
-                    
-        /**$lazada2 = new Lazada2APIController();
-        $request = $lazada2->getProductItem('181MKT20010');**/
-
-        $odataClient = new SapService();
-        $item = $odataClient->getOdataClient()->from('Items')
-                                                ->whereKey('181MKT20010')
-                                                ->first();
+                    print_r($lazada2->createProduct($createProductPayload));
+        
         $skuPayload = "<Request>
                             <Product>
                                 <Skus>
@@ -92,7 +86,6 @@ class Lazada2CreateProduct extends Command
                             </Product>
                         </Request>";
         
-        $lazada2 = new Lazada2APIController();
-        print_r($lazada2->updatePriceQuantity($skuPayload));
+        print_r($lazada2->updatePriceQuantity($skuPayload));**/
     }
 }
