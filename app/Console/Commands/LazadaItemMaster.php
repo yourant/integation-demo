@@ -55,7 +55,7 @@ class LazadaItemMaster extends Command
                 foreach($getItems as $item){
                     //Price and Stocks
                     $sapPrice = $item['ItemPrices']['8']['Price'];
-                    $sapStock = $item['ItemWarehouseInfoCollection']['0']['InStock'];
+                    $sapStock = $item['QuantityOnStock'];
                     //Old and New SKU
                     $oldSku = $item['U_OLD_SKU']; //Old sku from SAP
                     $newSku = $item['ItemCode']; //Sku in lazada

@@ -46,10 +46,12 @@ class LazadaCreditMemo extends Command
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             
             $lazadaAPI = new LazadaAPIController();
             $orders = $lazadaAPI->getReturnedOrders();
-            
+            //print_r($orders);
             if(!empty($orders['data']['orders'])){
                 foreach($orders['data']['orders'] as $order){
                     $orderId = $order['order_id'];
@@ -64,26 +66,7 @@ class LazadaCreditMemo extends Command
                         'U_Ecommerce_Type' => 'Lazada',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
-        
-                    if($order['shipping_fee'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $shippingFee->Name,
-                            'Quantity' => 1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $order['shipping_fee'] / 1.07
-                        ];
-                    }
-
-                    if($order['voucher'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $sellerVoucher->Name,
-                            'Quantity' => -1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $order['voucher'] / 1.07
-                        ];
-                    }
                 
                 }
         
@@ -92,22 +75,22 @@ class LazadaCreditMemo extends Command
                 
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
-        
+                    
                     foreach($item['order_items'] as $orderItem){
-                        $items[$orderId][] = [
-                            'ItemCode' => $orderItem['sku'],
-                            'Quantity' => 1,
-                            'VatGroup' => 'SR',
-                            'UnitPrice' => $orderItem['item_price'] / 1.07
-                        ];
+                        if($orderItem['status'] == 'returned'){
+                            $items[$orderId][] = [
+                                'ItemCode' => $orderItem['sku'],
+                                'Quantity' => 1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                            ];
+                            $refund[$orderId][] = $orderItem['paid_price'];
+                        }
                         
                     }
-        
-                    if(!empty($fees[$orderId])){
-                        $tempCM[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
-                    }else{
-                        $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
-                    }
+                    
+                    $tempCM[$orderId]['DocTotal'] = array_sum($refund[$orderId]);
+                    $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                     
                 }
         
@@ -116,7 +99,6 @@ class LazadaCreditMemo extends Command
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
                                     ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
                                     ->first();
-
                     if(!$getCM){
                         $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
                         
