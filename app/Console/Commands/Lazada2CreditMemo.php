@@ -63,7 +63,7 @@ class Lazada2CreditMemo extends Command
                         'DocDueDate' => substr($order['created_at'],0,10),
                         'TaxDate' => substr($order['created_at'],0,10),
                         'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada 2',
+                        'U_Ecommerce_Type' => 'Lazada_2',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
                     ];
@@ -98,7 +98,7 @@ class Lazada2CreditMemo extends Command
                     $finalCM = array_slice($tempCM[$key],0);
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
                                     ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
-                                    ->where('U_Ecommerce_Type','Lazada 2')
+                                    ->where('U_Ecommerce_Type','Lazada_2')
                                     ->first();
 
                     if(!$getCM){

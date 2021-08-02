@@ -63,7 +63,7 @@ class LazadaOrder extends Command
                         'DocDueDate' => substr($order['created_at'],0,10),
                         'TaxDate' => substr($order['created_at'],0,10),
                         'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada 1',
+                        'U_Ecommerce_Type' => 'Lazada_1',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
                         'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
@@ -117,7 +117,7 @@ class LazadaOrder extends Command
                     $finalSO = array_slice($tempSO[$key],0);
                     $getSO = $odataClient->getOdataClient()->from('Orders')
                                     ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
-                                    ->where('U_Ecommerce_Type','Lazada 1')
+                                    ->where('U_Ecommerce_Type','Lazada_1')
                                     ->first();
 
                     if(!$getSO){
