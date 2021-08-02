@@ -46,7 +46,7 @@ class Lazada2CreateProduct extends Command
         $item = $odataClient->getOdataClient()->from('Items')
                                                 ->whereKey('181MKT20010')
                                                 ->first();
-        /**$createProductPayload = "
+        $createProductPayload = "
                     <Request>
                         <Product>
                             <PrimaryCategory>10000531</PrimaryCategory>
@@ -70,10 +70,21 @@ class Lazada2CreateProduct extends Command
                         </Product>
                     </Request>";
         
-                    //Create Product        
-                    print_r($lazada2->createProduct($createProductPayload));
+        //Create Product        
+        $response = $lazada2->createProduct($createProductPayload);
+        print_r($response);
+        $updateItemCode = $odataClient->getOdataClient()->from('Items')
+                    ->whereKey($item['ItemCode'])
+                    ->patch([
+                        'U_LAZ2_ITEM_CODE' => $response['data']['item_id'],
+        ]);
+
+        if($updateItemCode){
+            print_r('Item Code UDF updated successfully');
+        }
+
         
-        $skuPayload = "<Request>
+        /**$skuPayload = "<Request>
                             <Product>
                                 <Skus>
                                     <Sku>
@@ -85,7 +96,6 @@ class Lazada2CreateProduct extends Command
                                 </Skus>
                             </Product>
                         </Request>";
-        
         print_r($lazada2->updatePriceQuantity($skuPayload));**/
     }
 }
