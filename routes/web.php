@@ -29,6 +29,7 @@ Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
     Route::post('/update-stock',[ShopeeController::class, 'updateStock'])->name('shopee.update-stock');
     Route::post('/salesorder-generate',[ShopeeController::class, 'generateSalesorder'])->name('shopee.salesorder-generate');
     Route::post('/invoice-generate',[ShopeeController::class, 'generateInvoice'])->name('shopee.invoice-generate');
+    Route::post('/creditmemo-generate',[ShopeeController::class, 'generateCreditmemo'])->name('shopee.creditmemo-generate');
 
     // Events
     // Route::get('/fetch-events',[HrCalendarController::class,'fetchEvents'])->name('hr_calendar.fetch_events');
