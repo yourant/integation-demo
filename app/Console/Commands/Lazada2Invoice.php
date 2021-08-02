@@ -55,9 +55,11 @@ class Lazada2Invoice extends Command
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
+                                        ->where('U_Ecommerce_Type','Lazada_2')
                                         ->first();
                     $getInv = $odataClient->getOdataClient()->from('Invoices')
                                         ->where('U_Order_ID',(string)$id)
+                                        ->where('U_Ecommerce_Type','Lazada_2')
                                         ->first();
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
