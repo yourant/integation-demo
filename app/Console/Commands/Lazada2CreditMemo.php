@@ -43,7 +43,7 @@ class Lazada2CreditMemo extends Command
         try {
             $odataClient = new SapService();
         
-            $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA_CUSTOMER')->first();
+            $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA2_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
@@ -63,7 +63,7 @@ class Lazada2CreditMemo extends Command
                         'DocDueDate' => substr($order['created_at'],0,10),
                         'TaxDate' => substr($order['created_at'],0,10),
                         'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada',
+                        'U_Ecommerce_Type' => 'Lazada 2',
                         'U_Order_ID' => $orderId,
                         'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
                     ];
@@ -98,6 +98,7 @@ class Lazada2CreditMemo extends Command
                     $finalCM = array_slice($tempCM[$key],0);
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
                                     ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
+                                    ->where('U_Ecommerce_Type','Lazada 2')
                                     ->first();
 
                     if(!$getCM){
