@@ -19,21 +19,19 @@ class ShopeeService
     protected $baseString;
     protected $sign;
 
-    public function __construct($path, $accessLevel, $accessToken = null)
+    public function __construct($path, $accessLevel = null, $accessToken = null)
     {
         $shopeeConfig = AccessToken::where('platform', 'shopee')->first();
-
         $this->timestamp = time();
+        $this->redirectUrl = route('shopee.init-token');
         $this->partnerId = (int) config('app.shopee_partner_id');
         $this->partnerKey = config('app.shopee_partner_key');
-        $this->redirectUrl = config('app.url') . 'test2';
         $this->apiVersUrl = config('app.shopee_api_vers_url');
         $this->host = config('app.shopee_host');
         $this->path = $path;
         $this->accessToken = $accessToken;
         $this->shopId = $shopeeConfig->shop_id;
         $this->code = $shopeeConfig->code;
-
         $this->setBaseString($accessLevel);
         $this->setSign($this->baseString);
     }

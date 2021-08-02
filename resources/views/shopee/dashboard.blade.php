@@ -94,7 +94,7 @@
                     </div>
 
                     <div class="row mt-4">
-                        {{-- <div class="col-md-4">
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
                                     <center>Generate Sales Orders</center>
@@ -127,25 +127,24 @@
                                     </center>
                                 </div>
                             </div>
-                        </div> --}}
-                        {{-- <div class="col-md-4">
-                            <div class="card">
-                                
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">                         
                                 <div class="card-header">
-                                    <center>Update Item Stock</center>
+                                    <center>Generate Credit Memo</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Update the shopee products based on the stock in the Item Master</p>
+                                    <p class="card-text">Generate Credit Memo</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary">
-                                            UPDATE STOCKS
+                                        <a href="#" class="btn btn-primary" id="generate-cm-btn">
+                                            PROCESS CREDIT MEMO
                                         </a>
                                     </center>
                                 </div>
                             </div>
-                        </div> --}}
+                        </div>
                     </div>
 
                     
@@ -329,6 +328,37 @@
                     })                 
                 }
             });
+
+            $('#generate-cm-btn').click(function() {
+                if (!isLoading) {
+                    $('#success-alert').hide();
+                    $('#error-alert').hide();
+
+                    $('.toast').toast('show');
+                    $('#toast-title').text('GENERATE CREDIT MEMO');
+                    $('#toast-msg').text('Generating . . .');
+
+                    isLoading = true;
+
+                    $.ajax({
+                        url: "{{ route('shopee.creditmemo-generate') }}",
+                        method: "POST",
+                        success: function(data, status) {
+                            $("#success-msg").text('');
+                            $('#success-alert').show();
+                        },
+                        error: function(response, status) {
+                            $("#error-msg").text('');
+                            $('#error-alert').show();
+                        },
+                        complete: function(response, status) {
+                            $('.toast').toast('hide');
+                            isLoading = false;
+                        }
+                    })                 
+                }
+            });
+            
         });
 
     </script>
