@@ -433,8 +433,6 @@ class ShopeeController extends Controller
                 'time_range_field' => 'update_time',
                 'time_from' => strtotime(date("Y-m-d 00:00:00")),
                 'time_to' => strtotime(date("Y-m-d 23:59:59")),
-                // 'time_from' => 1627747200,
-                // 'time_to' => 1627833599,
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'READY_TO_SHIP',
@@ -483,12 +481,12 @@ class ShopeeController extends Controller
                 $taxPercentage = (float) $ecmItem['properties']['Name'];
             } elseif ($ecmItem['properties']['Code'] == 'SHIPPING_FEE') {
                 $shippingItem = $ecmItem['properties']['Name'];
+            } elseif ($ecmItem['properties']['Code'] == 'SHOP_VOUCHER') {
+                $shopVoucherItem = $ecmItem['properties']['Name'];
             } elseif ($ecmItem['properties']['Code'] == 'SELLER_VOUCHER') {
                 $sellerVoucherItem = $ecmItem['properties']['Name'];
-            } elseif ($ecmItem['properties']['Code'] == 'SERVICE_FEE') {
-                $serviceFeeItem = $ecmItem['properties']['Name'];
-            } elseif ($ecmItem['properties']['Code'] == 'TRANSACTION_FEE') {
-                $transactionFeeItem = $ecmItem['properties']['Name'];
+            } elseif ($ecmItem['properties']['Code'] == 'SHOPEE_COIN') {
+                $shopeeCoinItem = $ecmItem['properties']['Name'];
             } 
         }
         
@@ -497,7 +495,8 @@ class ShopeeController extends Controller
             $existedSO = $salesOrderSapService->getOdataClient()
                 ->select('DocNum')
                 ->from('Orders')
-                ->where('U_Order_ID', (string)$order['order_sn'])
+                ->where('U_Order_ID', '2107296G1BPR3R')
+                ->where('CancelStatus', 'csNo')
                 ->first();
 
             if (!$existedSO) {
@@ -507,7 +506,7 @@ class ShopeeController extends Controller
                 ], $escrowDetail->getShopCommonParameter()));
                 $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
                 $escrow = $escrowDetailResponseArr['response'];
-                dd($escrowDetailResponseArr);
+                // dd($escrowDetailResponseArr);
 
                 $itemList = [];
 
@@ -528,19 +527,21 @@ class ShopeeController extends Controller
                     ];
                 }
 
-                $finalShippingFee = $escrow['order_income']['buyer_paid_shipping_fee'] + $escrow['order_income']['shopee_shipping_rebate'] - $escrow['order_income']['actual_shipping_fee'];
-                $shippingQuantity = 1;
-
-                if ($finalShippingFee < 0) {
-                    $shippingQuantity = -1;
-                }
-
-                if (!empty($finalShippingFee)) {
+                if ($escrow['order_income']['buyer_paid_shipping_fee']) {
                     $itemList[] = [
                         'ItemCode' => $shippingItem,
-                        'Quantity' => $shippingQuantity,
+                        'Quantity' => 1,
                         'VatGroup' => $taxCode,
-                        'UnitPrice' => abs($finalShippingFee) / $taxPercentage
+                        'UnitPrice' => $escrow['order_income']['buyer_paid_shipping_fee'] / $taxPercentage
+                    ];           
+                }
+
+                if ($escrow['order_income']['voucher_from_shopee']) {
+                    $itemList[] = [
+                        'ItemCode' => $shopVoucherItem,
+                        'Quantity' => -1,
+                        'VatGroup' => $taxCode,
+                        'UnitPrice' => $escrow['order_income']['voucher_from_shopee'] / $taxPercentage
                     ];           
                 }
 
@@ -553,21 +554,12 @@ class ShopeeController extends Controller
                     ];           
                 }
 
-                if ($escrow['order_income']['service_fee']) {
+                if ($escrow['order_income']['coins']) {
                     $itemList[] = [
-                        'ItemCode' => $serviceFeeItem,
+                        'ItemCode' => $shopeeCoinItem,
                         'Quantity' => -1,
                         'VatGroup' => $taxCode,
-                        'UnitPrice' => $escrow['order_income']['service_fee'] / $taxPercentage
-                    ];           
-                }
-
-                if ($escrow['order_income']['seller_transaction_fee']) {
-                    $itemList[] = [
-                        'ItemCode' => $transactionFeeItem,
-                        'Quantity' => -1,
-                        'VatGroup' => $taxCode,
-                        'UnitPrice' => $escrow['order_income']['seller_transaction_fee'] / $taxPercentage
+                        'UnitPrice' => $escrow['order_income']['coins'] / $taxPercentage
                     ];           
                 }
 
