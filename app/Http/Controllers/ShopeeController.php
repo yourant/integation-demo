@@ -430,7 +430,7 @@ class ShopeeController extends Controller
         while ($moreReadyOrders) {
             $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
             $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
-                'time_range_field' => 'create_time',
+                'time_range_field' => 'update_time',
                 'time_from' => strtotime(date("Y-m-d 00:00:00")),
                 'time_to' => strtotime(date("Y-m-d 23:59:59")),
                 // 'time_from' => 1627747200,
@@ -453,10 +453,10 @@ class ShopeeController extends Controller
                 $moreReadyOrders = false;
             }   
         }
-
+        // dd($orderList);
         $orderStr = implode(",", $orderList);
         // for testing
-        $orderStr = '210803JSMM88AR';
+        $orderStr = '210605G06FA1JT';
         
         $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
@@ -507,7 +507,7 @@ class ShopeeController extends Controller
                 ], $escrowDetail->getShopCommonParameter()));
                 $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
                 $escrow = $escrowDetailResponseArr['response'];
-                // dd($escrowDetailResponseArr);
+                dd($escrowDetailResponseArr);
 
                 $itemList = [];
 
