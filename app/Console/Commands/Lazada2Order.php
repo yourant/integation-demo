@@ -118,6 +118,11 @@ class Lazada2Order extends Command
                     $getSO = $odataClient->getOdataClient()->from('Orders')
                                     ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
                                     ->where('U_Ecommerce_Type','Lazada_2')
+                                    ->where(function($query){
+                                        $query->where('DocumentStatus','bost_Open');
+                                        $query->orWhere('DocumentStatus','bost_Close');
+                                    })
+                                    ->where('Cancelled','tNo')
                                     ->first();
                     
                     if(!$getSO){
