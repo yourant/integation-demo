@@ -95,6 +95,7 @@ class ShopeeController extends Controller
             }
 
             // $productStr = implode(",", $productSegmentList);
+            // for testing
             $productStr = '5392771665,8070898047,1199243276';
             
             $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
@@ -105,6 +106,7 @@ class ShopeeController extends Controller
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
 
             // $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+            // for testing
             $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
@@ -203,6 +205,7 @@ class ShopeeController extends Controller
             }
 
             // $productStr = implode(",", $productSegmentList);
+            // for test
             $productStr = '5392771665,8070898047';
             
             $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
@@ -213,6 +216,7 @@ class ShopeeController extends Controller
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
 
             // $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+            // for test
             $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
@@ -321,6 +325,7 @@ class ShopeeController extends Controller
             }
 
             // $productStr = implode(",", $productSegmentList);
+            // for test
             $productStr = '5392771665,8070898047';
             
             $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
@@ -331,6 +336,7 @@ class ShopeeController extends Controller
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
 
             // $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+            // for test
             $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
@@ -450,7 +456,7 @@ class ShopeeController extends Controller
 
         $orderStr = implode(",", $orderList);
         // for testing
-        $orderStr = '210606KC1RDS57,210605G06FA1JT';
+        $orderStr = '210803JSMM88AR';
         
         $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
@@ -627,7 +633,7 @@ class ShopeeController extends Controller
         }
 
         // for testing
-        $orderList = ['210605G06FA1JT'];
+        $orderList = ['210803JSMM88AR'];
 
         $salesOrderSapService = new SapService();
         $invoiceList = [];
