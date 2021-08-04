@@ -99,6 +99,11 @@ class Lazada2CreditMemo extends Command
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
                                     ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
                                     ->where('U_Ecommerce_Type','Lazada_2')
+                                    ->where(function($query){
+                                        $query->where('DocumentStatus','bost_Open');
+                                        $query->orWhere('DocumentStatus','bost_Close');
+                                    })
+                                    ->where('Cancelled','tNO')
                                     ->first();
 
                     if(!$getCM){
