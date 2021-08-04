@@ -57,7 +57,7 @@ class Lazada2Invoice extends Command
                                         ->where('U_Order_ID',(string)$id)
                                         ->where('U_Ecommerce_Type','Lazada_2')
                                         ->where('DocumentStatus','bost_Open')
-                                        ->where('Cancelled','tNo')
+                                        ->where('Cancelled','tNO')
                                         ->first();
                     $getInv = $odataClient->getOdataClient()->from('Invoices')
                                         ->where('U_Order_ID',(string)$id)
@@ -66,7 +66,7 @@ class Lazada2Invoice extends Command
                                             $query->where('DocumentStatus','bost_Open');
                                             $query->orWhere('DocumentStatus','bost_Close');
                                         })
-                                        ->where('Cancelled','tNo')
+                                        ->where('Cancelled','tNO')
                                         ->first();
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);

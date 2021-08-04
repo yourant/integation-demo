@@ -122,7 +122,7 @@ class LazadaOrder extends Command
                                         $query->where('DocumentStatus','bost_Open');
                                         $query->orWhere('DocumentStatus','bost_Close');
                                     })
-                                    ->where('Cancelled','tNo')
+                                    ->where('Cancelled','tNO')
                                     ->first();
 
                     if(!$getSO){
