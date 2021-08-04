@@ -100,7 +100,7 @@
                                     <center>Generate Sales Orders</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate Sales Order for every order in Shopee with "To Ship" status</p>
+                                    <p class="card-text">Generate Sales Order for every order in Shopee with "To Process" status</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -117,7 +117,7 @@
                                     <center>Generate A/R Invoice</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate A/R Invoice for every order in Shopee with "To Receive" status</p>
+                                    <p class="card-text">Generate A/R Invoice for every order in Shopee with "Shipped" status</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -134,7 +134,7 @@
                                     <center>Generate Credit Memo</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate Credit Memo</p>
+                                    <p class="card-text">Generate Credit Memo for every return in Shopee with "Refund Completed" status</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>

@@ -94,7 +94,7 @@ class ShopeeController extends Controller
                 array_push($productSegmentList, $item['item_id']);
             }
 
-            // $productStr = implode(",", $productSegmentList);
+            $productStr = implode(",", $productSegmentList);
             // for testing
             $productStr = '5392771665,8070898047,1199243276';
             
@@ -105,7 +105,7 @@ class ShopeeController extends Controller
             
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
 
-            // $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+            $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
             // for testing
             $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
@@ -131,7 +131,6 @@ class ShopeeController extends Controller
                 $shopeeModelsResponseArr = json_decode($shopeeModelsResponse->body(), true);
 
                 foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) {                                
-                    // $shItemId = $product['item_id'];
                     $sku = $model['model_sku'];
 
                     try {
@@ -204,7 +203,7 @@ class ShopeeController extends Controller
                 array_push($productSegmentList, $item['item_id']);
             }
 
-            // $productStr = implode(",", $productSegmentList);
+            $productStr = implode(",", $productSegmentList);
             // for test
             $productStr = '5392771665,8070898047';
             
@@ -215,7 +214,7 @@ class ShopeeController extends Controller
             
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
 
-            // $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+            $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
             // for test
             $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
@@ -324,7 +323,7 @@ class ShopeeController extends Controller
                 array_push($productSegmentList, $item['item_id']);
             }
 
-            // $productStr = implode(",", $productSegmentList);
+            $productStr = implode(",", $productSegmentList);
             // for test
             $productStr = '5392771665,8070898047';
             
@@ -335,7 +334,7 @@ class ShopeeController extends Controller
             
             $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
 
-            // $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
+            $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
             // for test
             $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
@@ -454,7 +453,7 @@ class ShopeeController extends Controller
         // dd($orderList);
         $orderStr = implode(",", $orderList);
         // for testing
-        $orderStr = '210605G06FA1JT';
+        $orderStr = '210804NT0V645D';
         
         $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
@@ -464,8 +463,6 @@ class ShopeeController extends Controller
 
         $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
         $orderListDetails = $shopeeOrderDetailResponseArr['response']['order_list'];
-        // dd($orderListDetails);
-        // dd($shopeeOrderDetailResponseArr['response']['order_list']);
 
         $salesOrderSapService = new SapService();
 
@@ -490,12 +487,11 @@ class ShopeeController extends Controller
             } 
         }
         
-        foreach ($orderListDetails as $key2 => $order) {
-
+        foreach ($orderListDetails as $order) {
             $existedSO = $salesOrderSapService->getOdataClient()
                 ->select('DocNum')
                 ->from('Orders')
-                ->where('U_Order_ID', '2107296G1BPR3R')
+                ->where('U_Order_ID', (string)$order['order_sn'])
                 ->where('CancelStatus', 'csNo')
                 ->first();
 
@@ -506,13 +502,16 @@ class ShopeeController extends Controller
                 ], $escrowDetail->getShopCommonParameter()));
                 $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
                 $escrow = $escrowDetailResponseArr['response'];
-                // dd($escrowDetailResponseArr);
 
                 $itemList = [];
 
                 foreach ($order['item_list'] as $item) {                   
                     try {
-                        $response = $salesOrderSapService->getOdataClient()->from('Items')->where('U_SH_ITEM_CODE', (string)$item['item_id'])->first();
+                        $response = $salesOrderSapService->getOdataClient()
+                            ->from('Items')
+                            ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
+                            ->where('U_SH_INTEGRATION', 'Yes')
+                            ->first();
                     } catch(ClientException $e) {
                         dd($e->getResponse()->getBody()->getContents());
                     }
@@ -553,7 +552,7 @@ class ShopeeController extends Controller
                         'UnitPrice' => $escrow['order_income']['voucher_from_seller'] / $taxPercentage
                     ];           
                 }
-
+                
                 if ($escrow['order_income']['coins']) {
                     $itemList[] = [
                         'ItemCode' => $shopeeCoinItem,
@@ -574,6 +573,7 @@ class ShopeeController extends Controller
                     'U_Customer_Name' => $order['recipient_address']['name'],
                     'U_Customer_Phone' => $order['recipient_address']['phone'],
                     'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
+                    'DocTotal' => $order['total_amount'],
                     'DocumentLines' => $itemList
                 ];
 
@@ -593,50 +593,54 @@ class ShopeeController extends Controller
         $shopeeToken = AccessToken::where('platform', 'shopee')->first();
         
         $orderList = [];
-        $moreReadyOrders = true;
+        $moreShippedOrders = true;
         $offset = 0;
         $pageSize = 50;
         
-        while ($moreReadyOrders) {
-            $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
-            $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
+        while ($moreShippedOrders) {
+            $shopeeShippedOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
+            $shopeeShippedOrdersResponse = Http::get($shopeeShippedOrders->getFullPath(), array_merge([
                 'time_range_field' => 'update_time',
-                // 'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                // 'time_to' => strtotime(date("Y-m-d 23:59:59")),
-                'time_from' => 1627833600,
-                'time_to' => 1627919999,
+                'time_from' => strtotime(date("Y-m-d 00:00:00")),
+                'time_to' => strtotime(date("Y-m-d 23:59:59")),
+                // 'time_from' => 1627833600,
+                // 'time_to' => 1627919999,
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'SHIPPED',
                 'response_optional_fields' => 'order_status'
-            ], $shopeeReadyOrders->getShopCommonParameter()));
+            ], $shopeeShippedOrders->getShopCommonParameter()));
 
-            $shopeeReadyOrdersResponseArr = json_decode($shopeeReadyOrdersResponse->body(), true);
+            $shopeeShippedOrdersResponseArr = json_decode($shopeeShippedOrdersResponse->body(), true);
 
-            foreach ($shopeeReadyOrdersResponseArr['response']['order_list'] as $order) {
+            foreach ($shopeeShippedOrdersResponseArr['response']['order_list'] as $order) {
                 array_push($orderList, $order['order_sn']);
             }
 
-            if ($shopeeReadyOrdersResponseArr['response']['more']) {
+            if ($shopeeShippedOrdersResponseArr['response']['more']) {
                 $offset += $pageSize;
             } else {
-                $moreReadyOrders = false;
+                $moreShippedOrders = false;
             }   
         }
 
         // for testing
-        $orderList = ['210803JSMM88AR'];
+        $orderList = ['210803K1WFX89R'];
 
-        $salesOrderSapService = new SapService();
+        $invoiceSapService = new SapService();
         $invoiceList = [];
 
         foreach ($orderList as $order) {
 
-            $salesOrder = $salesOrderSapService->getOdataClient()->from('Orders')
+            $salesOrder = $invoiceSapService->getOdataClient()
+                ->from('Orders')
                 ->where('U_Order_ID', (string)$order)
+                ->where('DocumentStatus', 'bost_Open')
+                ->where('CancelStatus', 'csNo')
                 ->first();
 
-            $existInv = $salesOrderSapService->getOdataClient()->from('Invoices')
+            $existInv = $invoiceSapService->getOdataClient()
+                ->from('Invoices')
                 ->where('U_Order_ID', (string)$order)
                 ->first();
 
@@ -674,10 +678,11 @@ class ShopeeController extends Controller
                     'U_Customer_Name' => $salesOrder['U_Customer_Name'],
                     'U_Customer_Phone' => $salesOrder['U_Customer_Phone'],
                     'U_Customer_Shipping_Address' => $salesOrder['U_Customer_Shipping_Address'],
+                    'DocTotal' => $salesOrder['DocTotal'],
                     'DocumentLines' => $itemList
                 ];
 
-                $invoice = $salesOrderSapService->getOdataClient()->post('Invoices', $invoiceList);
+                $invoice = $invoiceSapService->getOdataClient()->post('Invoices', $invoiceList);
 
                 if ($invoice) {
                     return response()->json(null, 200);
@@ -723,7 +728,7 @@ class ShopeeController extends Controller
 
         // for testing
         foreach ($returnList as $value) {
-            if ($value['return_sn'] == '180409085937720') {
+            if ($value['return_sn'] == '190923173135204') {
                 $returnList = [];
                 array_push($returnList, $value);
             }       
@@ -747,15 +752,20 @@ class ShopeeController extends Controller
         }
         // dd($returnList);
         foreach ($returnList as $returnItem) {
-            $invoice = $returnSapService->getOdataClient()->from('Invoices')
+            $order = $returnSapService->getOdataClient()
+                ->from('Orders')
                 ->where('U_Order_ID', (string)$returnItem['order_sn'])
+                ->where('CancelStatus', 'csNo')
                 ->first();
-
-            if ($invoice && $returnItem['status'] == 'REFUND_PAID') {
+            // dd($returnItem['order_sn']);
+            // if ($invoice && $returnItem['status'] == 'REFUND_PAID') {
+            if ($order && $returnItem['status'] == 'REFUND_PAID') {
                 foreach ($returnItem['item'] as $item) {
                     try {
-                        $response = $returnSapService->getOdataClient()->from('Items')
+                        $response = $returnSapService->getOdataClient()
+                            ->from('Items')
                             ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
+                            ->where('U_SH_INTEGRATION', 'Yes')
                             ->first();
                     } catch(ClientException $e) {
                         dd($e->getResponse()->getBody()->getContents());
@@ -771,14 +781,14 @@ class ShopeeController extends Controller
                     ];
                 }
 
-                if (!$returnItem['needs_logistics']) {
-                    $itemList[] = [
-                        'ItemCode' => $extraFee,
-                        'Quantity' => -1,
-                        'VatGroup' => $taxCode,
-                        'UnitPrice' => 2 / $taxPercentage
-                    ];
-                }
+                // if (!$returnItem['needs_logistics']) {
+                //     $itemList[] = [
+                //         'ItemCode' => $extraFee,
+                //         'Quantity' => -1,
+                //         'VatGroup' => $taxCode,
+                //         'UnitPrice' => 2 / $taxPercentage
+                //     ];
+                // }
 
                 $creditMemoList = [
                     'CardCode' => $shopeeCust,
@@ -787,13 +797,14 @@ class ShopeeController extends Controller
                     'DocDueDate' => $returnItem['return_seller_due_date'],
                     'TaxDate' => $returnItem['create_time'],
                     'U_Ecommerce_Type' => 'Shopee',
-                    'U_Order_ID' => $invoice['U_Order_ID'],
-                    'U_Customer_Name' => $invoice['U_Customer_Name'],
-                    'U_Customer_Phone' => $invoice['U_Customer_Phone'],
+                    'U_Order_ID' => $returnItem['order_sn'],
+                    'U_Customer_Name' => $order['U_Customer_Name'],
+                    'U_Customer_Phone' => $order['U_Customer_Phone'],
                     'U_Customer_Email' => $returnItem['user']['email'],
-                    'U_Customer_Shipping_Address' => $invoice['U_Customer_Shipping_Address'],
+                    'U_Customer_Shipping_Address' => $order['U_Customer_Shipping_Address'],
                     'DocumentLines' => $itemList
                 ];
+                // dd($returnItem);
                 // dd($creditMemoList);
                 $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', $creditMemoList);
 
