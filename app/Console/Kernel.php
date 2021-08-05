@@ -22,6 +22,7 @@ class Kernel extends ConsoleKernel
         Commands\ShopeeFirstScheduler::class,
         Commands\SalesOrderShopeeCreate::class,
         Commands\InvoiceShopeeCreate::class,
+        Commands\ShopeeItemCreate::class,
     ];
 
     /**
