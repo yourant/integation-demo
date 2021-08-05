@@ -44,36 +44,72 @@ class Lazada2CreateProduct extends Command
         $lazada2 = new Lazada2APIController();
         
         $item = $odataClient->getOdataClient()->from('Items')
-                                                ->whereKey('181MKT20010')
+                                                ->whereKey('181MKT20011')
                                                 ->first();
-        $createProductPayload = "
-                    <Request>
-                        <Product>
-                            <PrimaryCategory>10000531</PrimaryCategory>
-                            <Attributes>
-                                <name>".$item['ItemName']."</name>
-                                <brand>Makita</brand>
-                                <delivery_option_sof>No</delivery_option_sof>
-                                <warranty_type>No Warranty</warranty_type>
-                            </Attributes>
-                            <Skus>
-                                <Sku>
-                                    <SellerSku>".$item['ItemCode']."</SellerSku>
-                                    <quantity>".$item['QuantityOnStock']."</quantity>
-                                    <price>".$item['ItemPrices']['8']['Price']."</price>
-                                    <package_length>35</package_length>
-                                    <package_height>25</package_height>
-                                    <package_weight>2</package_weight>
-                                    <package_width>25</package_width>
-                                </Sku>
-                            </Skus>
-                        </Product>
-                    </Request>";
-        
+        $fields = [
+            'itemName' => $item['ItemName'],
+            'sellerSku' => $item['ItemCode'],
+            'quantity' => $item['QuantityOnStock'],
+            'price' => $item['ItemPrices']['8']['Price'],
+            'lazItemCode' => $item['U_LAZ2_ITEM_CODE']
+        ];
+
+        if($fields['lazItemCode'] ==  null){
+            $createProductPayload = "
+                        <Request>
+                            <Product>
+                                <PrimaryCategory>10000531</PrimaryCategory>
+                                <Attributes>
+                                    <name>".$fields['itemName']."</name>
+                                    <brand>Makita</brand>
+                                    <delivery_option_sof>No</delivery_option_sof>
+                                    <warranty_type>No Warranty</warranty_type>
+                                </Attributes>
+                                <Skus>
+                                    <Sku>
+                                        <SellerSku>".$fields['sellerSku']."</SellerSku>
+                                        <quantity>".$fields['quantity']."</quantity>
+                                        <price>".$fields['price']."</price>
+                                        <package_length>35</package_length>
+                                        <package_height>25</package_height>
+                                        <package_weight>2</package_weight>
+                                        <package_width>25</package_width>
+                                    </Sku>
+                                </Skus>
+                            </Product>
+                        </Request>";
+            
+        }else if($fields['lazItemCode'] !=  null){
+            $data = [
+                'itemId' => $fields['lazItemCode'],
+                'sellerSku' => $fields['sellerSku']
+            ];
+            $getProduct = $lazada2->getProduct($data);
+            //print_r($getProduct);
+            $assocSku = $getProduct['data']['skus']['0']['SellerSku'];
+            $createProductPayload = "
+                        <Request>
+                            <Product>
+                                <AssociatedSku>".$assocSku."</AssociatedSku>
+                                <Skus>
+                                    <Sku>
+                                        <SellerSku>".$fields['sellerSku']."</SellerSku>
+                                        <quantity>".$fields['quantity']."</quantity>
+                                        <price>".$fields['price']."</price>
+                                        <package_length>35</package_length>
+                                        <package_height>25</package_height>
+                                        <package_weight>2</package_weight>
+                                        <package_width>25</package_width>
+                                    </Sku>
+                                </Skus>
+                            </Product>
+                        </Request>";
+        }
         //Create Product        
         $response = $lazada2->createProduct($createProductPayload);
         print_r($response);
-        $updateItemCode = $odataClient->getOdataClient()->from('Items')
+        
+        /**$updateItemCode = $odataClient->getOdataClient()->from('Items')
                     ->whereKey($item['ItemCode'])
                     ->patch([
                         'U_LAZ2_ITEM_CODE' => $response['data']['item_id'],
@@ -81,7 +117,7 @@ class Lazada2CreateProduct extends Command
 
         if($updateItemCode){
             print_r('Item Code UDF updated successfully');
-        }
+        } **/
 
         
         /**$skuPayload = "<Request>
