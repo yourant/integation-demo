@@ -705,10 +705,6 @@ class ShopeeController extends Controller
         while ($moreReturnItem) {
             $shopeeReturnItems = new ShopeeService('/returns/get_return_list', 'shop', $shopeeToken->access_token);
             $shopeeReturnItemsResponse = Http::get($shopeeReturnItems->getFullPath(), array_merge([
-                // 'create_time_from' => strtotime(date("Y-m-d 00:00:00")),
-                // 'create_time_to' => strtotime(date("Y-m-d 23:59:59")),
-                // 'create_time_from' => 1627833600,
-                // 'create_time_to' => 1627919999,
                 'page_size' => $pageSize,
                 'page_no' => $offset
             ], $shopeeReturnItems->getShopCommonParameter()));
@@ -723,12 +719,12 @@ class ShopeeController extends Controller
                 $offset += $pageSize;
             } else {
                 $moreReturnItem = false;
-            }   
+            }
         }
 
         // for testing
         foreach ($returnList as $value) {
-            if ($value['return_sn'] == '190923173135204') {
+            if ($value['return_sn'] == '200124144731506') {
             // if ($value['return_sn'] == '190923173135204') {
                 $returnList = [];
                 array_push($returnList, $value);
@@ -754,21 +750,12 @@ class ShopeeController extends Controller
 
         // dd($returnList);
         foreach ($returnList as $returnItem) {
-
-
-            // dd($returnItem['order_sn']);
-
-            // dd($orderListDetails);
-
-
             $order = $returnSapService->getOdataClient()
                 ->from('Orders')
                 ->where('U_Order_ID', (string)$returnItem['order_sn'])
                 ->where('CancelStatus', 'csNo')
                 ->first();
-            // dd($order);
-            // dd($returnItem['order_sn']);
-            // if ($invoice && $returnItem['status'] == 'REFUND_PAID') {
+
             if ($order && $returnItem['status'] == 'REFUND_PAID') {
                 foreach ($returnItem['item'] as $item) {
                     try {
@@ -826,7 +813,6 @@ class ShopeeController extends Controller
                     'DocTotal' => $returnItem['refund_amount'],
                     'DocumentLines' => $itemList
                 ];
-                // dd($returnItem);
                 // dd($creditMemoList);
                 $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', $creditMemoList);
 
