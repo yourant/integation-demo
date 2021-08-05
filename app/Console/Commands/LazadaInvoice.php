@@ -57,10 +57,17 @@ class LazadaInvoice extends Command
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
                                         ->where('U_Ecommerce_Type','Lazada_1')
+                                        ->where('DocumentStatus','bost_Open')
+                                        ->where('Cancelled','tNO')
                                         ->first();
                     $getInv = $odataClient->getOdataClient()->from('Invoices')
                                         ->where('U_Order_ID',(string)$id)
                                         ->where('U_Ecommerce_Type','Lazada_1')
+                                        ->where(function($query){
+                                            $query->where('DocumentStatus','bost_Open');
+                                            $query->orWhere('DocumentStatus','bost_Close');
+                                        })
+                                        ->where('Cancelled','tNO')
                                         ->first();
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
