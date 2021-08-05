@@ -453,7 +453,7 @@ class ShopeeController extends Controller
         // dd($orderList);
         $orderStr = implode(",", $orderList);
         // for testing
-        $orderStr = '210804NT0V645D';
+        $orderStr = '18033000113B04H';
         
         $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
@@ -729,9 +729,10 @@ class ShopeeController extends Controller
         // for testing
         foreach ($returnList as $value) {
             if ($value['return_sn'] == '190923173135204') {
+            // if ($value['return_sn'] == '190923173135204') {
                 $returnList = [];
                 array_push($returnList, $value);
-            }       
+            }
         }
 
         $itemList = [];
@@ -742,21 +743,30 @@ class ShopeeController extends Controller
         foreach ($ecm as $ecmItem) {
             if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
                 $shopeeCust = $ecmItem['properties']['Name'];
-            } elseif ($ecmItem['properties']['Code'] == 'EXTRA_FEE') {
-                $extraFee = $ecmItem['properties']['Name'];
+            } elseif ($ecmItem['properties']['Code'] == 'SELLER_PAYMENT') {
+                $sellerPaymentItem = $ecmItem['properties']['Name'];
             } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
                 $taxCode = $ecmItem['properties']['Name'];
             } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
                 $taxPercentage = (float) $ecmItem['properties']['Name'];
-            } 
+            }
         }
+
         // dd($returnList);
         foreach ($returnList as $returnItem) {
+
+
+            // dd($returnItem['order_sn']);
+
+            // dd($orderListDetails);
+
+
             $order = $returnSapService->getOdataClient()
                 ->from('Orders')
                 ->where('U_Order_ID', (string)$returnItem['order_sn'])
                 ->where('CancelStatus', 'csNo')
                 ->first();
+            // dd($order);
             // dd($returnItem['order_sn']);
             // if ($invoice && $returnItem['status'] == 'REFUND_PAID') {
             if ($order && $returnItem['status'] == 'REFUND_PAID') {
@@ -781,14 +791,25 @@ class ShopeeController extends Controller
                     ];
                 }
 
-                // if (!$returnItem['needs_logistics']) {
-                //     $itemList[] = [
-                //         'ItemCode' => $extraFee,
-                //         'Quantity' => -1,
-                //         'VatGroup' => $taxCode,
-                //         'UnitPrice' => 2 / $taxPercentage
-                //     ];
-                // }
+                $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
+                $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
+                    'order_sn' => $returnItem['order_sn']
+                ], $escrowDetail->getShopCommonParameter()));
+                $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
+                $escrow = $escrowDetailResponseArr['response']['order_income'];
+                // dd($escrow);
+                $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
+                $sellerPayment = $docTotal - $escrow['seller_return_refund'];
+                $qty = $sellerPayment < 0 ? 1 : -1;
+
+                if ($sellerPayment) {
+                    $itemList[] = [
+                        'ItemCode' => $sellerPaymentItem,
+                        'Quantity' => $qty,
+                        'VatGroup' => $taxCode,
+                        'UnitPrice' => abs($sellerPayment) / $taxPercentage
+                    ];
+                }
 
                 $creditMemoList = [
                     'CardCode' => $shopeeCust,
@@ -802,6 +823,7 @@ class ShopeeController extends Controller
                     'U_Customer_Phone' => $order['U_Customer_Phone'],
                     'U_Customer_Email' => $returnItem['user']['email'],
                     'U_Customer_Shipping_Address' => $order['U_Customer_Shipping_Address'],
+                    'DocTotal' => $returnItem['refund_amount'],
                     'DocumentLines' => $itemList
                 ];
                 // dd($returnItem);
