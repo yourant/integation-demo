@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
-use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaController;
+use App\Http\Controllers\ShopeeController;
+use App\Http\Controllers\LazadaUIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,7 +39,7 @@ Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
 
 Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
     // Test Route for lazada
-    Route::get('/',[ShopeeController::class, 'index2'])->name('lazada.dashboard');
+    Route::get('/',[LazadaUIController::class, 'index'])->name('lazada.dashboard');
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
