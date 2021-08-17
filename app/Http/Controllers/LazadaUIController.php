@@ -207,4 +207,271 @@ class LazadaUIController extends Controller
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
         }
     }
+
+    public function generateSalesOrder()
+    {
+        try {
+            $odataClient = new SapService();
+            
+            $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
+            $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
+            $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
+
+            $lazadaAPI = new LazadaAPIController();
+            $orders = $lazadaAPI->getPendingOrders();
+            
+            if(!empty($orders['data']['orders'])){
+                foreach($orders['data']['orders'] as $order){
+                    $orderId = $order['order_id'];
+                    $orderIdArray[] = $orderId;
+                    
+                    $tempSO[$orderId] = [
+                        'CardCode' => $lazadaCustomer->Name,
+                        'DocDate' => substr($order['created_at'],0,10),
+                        'DocDueDate' => substr($order['created_at'],0,10),
+                        'TaxDate' => substr($order['created_at'],0,10),
+                        'NumAtCard' => $orderId,
+                        'U_Ecommerce_Type' => 'Lazada_1',
+                        'U_Order_ID' => $orderId,
+                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
+                    ];
+                    
+                    if($order['shipping_fee'] != 0.00){
+                        $fees[$orderId][] = [
+                            'ItemCode' => $shippingFee->Name,
+                            'Quantity' => 1,
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+                        ];
+                    }
+
+                    if($order['voucher'] != 0.00){
+                        $fees[$orderId][] = [
+                            'ItemCode' => $sellerVoucher->Name,
+                            'Quantity' => -1,
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['voucher'] / $percentage->Name
+                        ];
+                    }
+
+                }
+        
+                $orderIds = '['.implode(',',$orderIdArray).']';
+                $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
+                
+                foreach ($orderItems['data'] as $item) {
+                    $orderId = $item['order_id'];
+        
+                    foreach($item['order_items'] as $orderItem){
+                        $items[$orderId][] = [
+                            'ItemCode' => $orderItem['sku'],
+                            'Quantity' => 1,
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name
+                        ];
+                        
+                    }
+
+                    if(!empty($fees[$orderId])){
+                        $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                    }else{
+                        $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+                    }
+
+                }
+
+                foreach($tempSO as $key => $value){
+                    $finalSO = array_slice($tempSO[$key],0);
+                    $getSO = $odataClient->getOdataClient()->from('Orders')
+                                    ->where('U_Order_ID',(string)$finalSO['U_Order_ID'])
+                                    ->where('U_Ecommerce_Type','Lazada_1')
+                                    ->where(function($query){
+                                        $query->where('DocumentStatus','bost_Open');
+                                        $query->orWhere('DocumentStatus','bost_Close');
+                                    })
+                                    ->where('Cancelled','tNO')
+                                    ->first();
+
+                    if(!$getSO){
+                        $odataClient->getOdataClient()->post('Orders',$finalSO);
+                        
+                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
+                    }else{
+                        unset($finalSO);
+                    }
+
+                }
+
+            }else{
+                Log::channel('lazada.sales_order')->info('No pending orders for now.');
+            }
+        } catch (\Exception $e) {
+            Log::channel('lazada.sales_order')->emergency($e->getMessage());
+        }
+    }
+
+    public function generateInvoice()
+    {
+        try {
+            $odataClient = new SapService();
+            $lazadaAPI = new LazadaAPIController();
+            $orders = $lazadaAPI->getReadyToShipOrders();
+            $orderArray = [];
+
+            if(!empty($orders['data']['orders'])){
+                foreach($orders['data']['orders'] as $order){
+                    $orderId = $order['order_id'];
+                    array_push($orderArray,$orderId);
+                }
+
+                foreach($orderArray as $id){
+                    $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
+                                        ->where('U_Order_ID',(string)$id)
+                                        ->where('U_Ecommerce_Type','Lazada_1')
+                                        ->where('DocumentStatus','bost_Open')
+                                        ->where('Cancelled','tNO')
+                                        ->first();
+                    $getInv = $odataClient->getOdataClient()->from('Invoices')
+                                        ->where('U_Order_ID',(string)$id)
+                                        ->where('U_Ecommerce_Type','Lazada_1')
+                                        ->where(function($query){
+                                            $query->where('DocumentStatus','bost_Open');
+                                            $query->orWhere('DocumentStatus','bost_Close');
+                                        })
+                                        ->where('Cancelled','tNO')
+                                        ->first();
+                    if($orderDocEntry && !$getInv){
+                        $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
+                        $items = [];
+                        foreach ($getSO['DocumentLines'] as $key => $value) {
+                            $batchList = [];
+                            if($value['BatchNumbers']) {                  
+                                foreach ($value['BatchNumbers'] as $batch) {
+                                    $batchList[] = [
+                                        'BatchNumber' => $batch['BatchNumber'],
+                                        'Quantity' => $batch['Quantity']
+                                    ];
+                                }
+                            }
+        
+                            $items[] = [
+                                'BaseType' => 17,
+                                'BaseEntry' => $getSO['DocEntry'],
+                                'BaseLine' => $key,
+                                'BatchNumbers' => $batchList
+                            ];
+                        }
+                        //Copy sales order to invoice
+                        $odataClient->getOdataClient()->post('Invoices',[
+                            'CardCode' => $getSO['CardCode'],
+                            'DocDate' => $getSO['DocDate'],
+                            'DocDueDate' => $getSO['DocDueDate'],
+                            'PostingDate' => $getSO['TaxDate'],
+                            'NumAtCard' => $getSO['NumAtCard'],
+                            'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
+                            'U_Order_ID' => $getSO['U_Order_ID'],
+                            'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
+                            'DocumentLines' => $items 
+                        ]);
+                        
+                        Log::channel('lazada.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
+                    }
+                    
+                }
+
+            }else{
+                Log::channel('lazada.ar_invoice')->info('No ready to ship orders for now.');
+            }
+        } catch (\Exception $e) {
+            Log::channel('lazada.ar_invoice')->emergency($e->getMessage());
+        }
+    }
+
+    public function generateCreditMemo()
+    {
+        try {
+            $odataClient = new SapService();
+        
+            $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
+            $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
+            $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
+            
+            $lazadaAPI = new LazadaAPIController();
+            $orders = $lazadaAPI->getReturnedOrders();
+            //print_r($orders);
+            if(!empty($orders['data']['orders'])){
+                foreach($orders['data']['orders'] as $order){
+                    $orderId = $order['order_id'];
+                    $orderIdArray[] = $orderId;
+                    
+                    $tempCM[$orderId] = [
+                        'CardCode' => $lazadaCustomer->Name,
+                        'DocDate' => substr($order['created_at'],0,10),
+                        'DocDueDate' => substr($order['created_at'],0,10),
+                        'TaxDate' => substr($order['created_at'],0,10),
+                        'NumAtCard' => $orderId,
+                        'U_Ecommerce_Type' => 'Lazada_1',
+                        'U_Order_ID' => $orderId,
+                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                    ];
+                
+                }
+        
+                $orderIds = '['.implode(',',$orderIdArray).']';
+                $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
+                
+                foreach ($orderItems['data'] as $item) {
+                    $orderId = $item['order_id'];
+                    
+                    foreach($item['order_items'] as $orderItem){
+                        if($orderItem['status'] == 'returned'){
+                            $items[$orderId][] = [
+                                'ItemCode' => $orderItem['sku'],
+                                'Quantity' => 1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                            ];
+                            $refund[$orderId][] = $orderItem['paid_price'];
+                        }
+                        
+                    }
+                    
+                    $tempCM[$orderId]['DocTotal'] = array_sum($refund[$orderId]);
+                    $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
+                    
+                }
+        
+                foreach($tempCM as $key => $value){
+                    $finalCM = array_slice($tempCM[$key],0);
+                    $getCM = $odataClient->getOdataClient()->from('CreditNotes')
+                                    ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
+                                    ->where('U_Ecommerce_Type','Lazada_1')
+                                    ->where(function($query){
+                                        $query->where('DocumentStatus','bost_Open');
+                                        $query->orWhere('DocumentStatus','bost_Close');
+                                    })
+                                    ->where('Cancelled','tNO')
+                                    ->first();
+                    if(!$getCM){
+                        $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
+                        
+                        Log::channel('lazada.credit_memo')->info('Credit memo for Lazada order:'.$finalCM['U_Order_ID'].' created successfully.');
+                    }else{
+                        unset($finalCM);
+                    }
+                    
+                }
+
+            }else{
+                Log::channel('lazada.credit_memo')->info('No returned orders for now.');
+            }
+        } catch (\Exception $e) {
+            Log::channel('lazada.credit_memo')->emergency($e->getMessage());
+        }
+    }
 }

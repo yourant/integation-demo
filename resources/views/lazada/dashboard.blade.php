@@ -272,6 +272,96 @@
                 }
             });
 
+            $('#generate-so-btn').click(function() {
+                if (!isLoading) {
+                    $('#success-alert').hide();
+                    $('#error-alert').hide();
+
+                    $('.toast').toast('show');
+                    $('#toast-title').text('GENERATE SALES ORDERS');
+                    $('#toast-msg').text('Generating . . .');
+
+                    isLoading = true;
+
+                    $.ajax({
+                        url: "{{ route('lazada.sales-order-generate') }}",
+                        method: "POST",
+                        success: function(data, status) {
+                            $("#success-msg").text('Sales Orders Generated');
+                            $('#success-alert').show();
+                        },
+                        error: function(xhr, ajaxOptions, thrownError) {
+                            $("#error-msg").text(xhr.responseText);
+                            $('#error-alert').show();
+                        },
+                        complete: function(response, status) {
+                            $('.toast').toast('hide');
+                            isLoading = false;
+                        }
+                    })                 
+                }
+            });
+
+            $('#generate-inv-btn').click(function() {
+                if (!isLoading) {
+                    $('#success-alert').hide();
+                    $('#error-alert').hide();
+
+                    $('.toast').toast('show');
+                    $('#toast-title').text('GENERATE A/R INVOICES');
+                    $('#toast-msg').text('Generating . . .');
+
+                    isLoading = true;
+
+                    $.ajax({
+                        url: "{{ route('lazada.invoice-generate') }}",
+                        method: "POST",
+                        success: function(data, status) {
+                            $("#success-msg").text('A/R Invoices Generated');
+                            $('#success-alert').show();
+                        },
+                        error: function(xhr, ajaxOptions, thrownError) {
+                            $("#error-msg").text(xhr.responseText);
+                            $('#error-alert').show();
+                        },
+                        complete: function(response, status) {
+                            $('.toast').toast('hide');
+                            isLoading = false;
+                        }
+                    })                 
+                }
+            });
+
+            $('#generate-cm-btn').click(function() {
+                if (!isLoading) {
+                    $('#success-alert').hide();
+                    $('#error-alert').hide();
+
+                    $('.toast').toast('show');
+                    $('#toast-title').text('GENERATE CREDIT MEMO');
+                    $('#toast-msg').text('Generating . . .');
+
+                    isLoading = true;
+
+                    $.ajax({
+                        url: "{{ route('lazada.credit-memo-generate') }}",
+                        method: "POST",
+                        success: function(data, status) {
+                            $("#success-msg").text('A/R Credit Memos Generated');
+                            $('#success-alert').show();
+                        },
+                        error: function(xhr, ajaxOptions, thrownError) {
+                            $("#error-msg").text(xhr.responseText);
+                            $('#error-alert').show();
+                        },
+                        complete: function(response, status) {
+                            $('.toast').toast('hide');
+                            isLoading = false;
+                        }
+                    })                 
+                }
+            });
+
             
         });
     </script>
