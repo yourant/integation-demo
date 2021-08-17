@@ -56,9 +56,9 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary" id="sync-item-btn">
+                                        <button class="btn btn-primary" id="sync-item-btn">
                                             PROCESS ITEMS
-                                        </a>
+                                        </button>
                                     </center>
                                 </div>
                             </div>
@@ -73,9 +73,9 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary" id="update-price-btn">
+                                        <button href="#" class="btn btn-primary" id="update-price-btn">
                                             UPDATE PRICES
-                                        </a>
+                                        </button>
                                     </center>
                                 </div>
                             </div>
@@ -91,9 +91,9 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary" id="update-stock-btn">
+                                        <button class="btn btn-primary" id="update-stock-btn">
                                             UPDATE STOCKS
-                                        </a>
+                                        </button>
                                     </center>
                                 </div>
                             </div>
@@ -182,94 +182,85 @@
             });
 
             $('#sync-item-btn').click(function() {
-                if (!isLoading) {
-                    $('#success-alert').hide();
-                    $('#error-alert').hide();
-
-                    $('.toast').toast('show');
-                    $('#toast-title').text('SYNCHRONIZE ITEMS');
-                    $('#toast-msg').text('Processing . . .');
-
-                    isLoading = true;
-                    
-                    $.ajax({
-                        url: "{{ route('lazada.sync-item') }}",
-                        method: "POST",
-                        success: function(data, status) {
-                            $("#success-msg").text('Item Id UDFs updated.');
-                            $('#success-alert').show();
-                        },
-                        error: function(xhr, ajaxOptions, thrownError) {
-                            $("#error-msg").text(xhr.responseText);
-                            $('#error-alert').show();
-                        },
-                        complete: function(response, status) {
-                            $('.toast').toast('hide');
-                            isLoading = false;
-                        }
-                    })
-                }
+                $('#success-alert').hide();
+                $('#error-alert').hide();
+                
+                $.ajax({
+                    url: "{{ route('lazada.sync-item') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#sync-item-btn").attr("disabled", true);
+                        $("#sync-item-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('Item Id UDFs updated.');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#sync-item-btn").attr("disabled", false);
+                        $("#sync-item-btn").html('PROCESS ITEMS');
+                    }
+                })
+                
                     
             });
 
             $('#update-price-btn').click(function() {
-                if (!isLoading) {
-                    $('#success-alert').hide();
-                    $('#error-alert').hide();
+                $('#success-alert').hide();
+                $('#error-alert').hide();
 
-                    $('.toast').toast('show');
-                    $('#toast-title').text('UPDATE ITEMS PRICE');
-                    $('#toast-msg').text('Updating . . .');
-
-                    isLoading = true;
-
-                    $.ajax({
-                        url: "{{ route('lazada.update-price') }}",
-                        method: "POST",
-                        success: function(data, status) {
-                            $("#success-msg").text('Item Price Updated');
-                            $('#success-alert').show();
-                        },
-                        error: function(xhr, ajaxOptions, thrownError) {
-                            $("#error-msg").text(xhr.responseText);
-                            $('#error-alert').show();
-                        },
-                        complete: function(response, status) {
-                            $('.toast').toast('hide');
-                            isLoading = false;
-                        }
-                    })                 
-                }
+                $.ajax({
+                    url: "{{ route('lazada.update-price') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#update-price-btn").attr("disabled", true);
+                        $("#update-price-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('Item Price Updated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#update-price-btn").attr("disabled", false);
+                        $("#update-price-btn").html('UPDATE PRICES');
+                    }
+                })                 
+                
             });
 
             $('#update-stock-btn').click(function() {
-                if (!isLoading) {
-                    $('#success-alert').hide();
-                    $('#error-alert').hide();
+                $('#success-alert').hide();
+                $('#error-alert').hide();
 
-                    $('.toast').toast('show');
-                    $('#toast-title').text('UPDATE ITEMS STOCK');
-                    $('#toast-msg').text('Updating . . .');
-
-                    isLoading = true;
-
-                    $.ajax({
-                        url: "{{ route('lazada.update-stock') }}",
-                        method: "POST",
-                        success: function(data, status) {
-                            $("#success-msg").text('Item Stock Updated');
-                            $('#success-alert').show();
-                        },
-                        error: function(xhr, ajaxOptions, thrownError) {
-                            $("#error-msg").text(xhr.responseText);
-                            $('#error-alert').show();
-                        },
-                        complete: function(response, status) {
-                            $('.toast').toast('hide');
-                            isLoading = false;
-                        }
-                    })                 
-                }
+                $.ajax({
+                    url: "{{ route('lazada.update-stock') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#update-stock-btn").attr("disabled", true);
+                        $("#update-stock-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('Item Stock Updated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#update-stock-btn").attr("disabled", false);
+                        $("#update-stock-btn").html('UPDATE STOCKS');
+                    }
+                })                 
+                
             });
 
             $('#generate-so-btn').click(function() {
