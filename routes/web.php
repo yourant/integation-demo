@@ -38,8 +38,11 @@ Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
 });
 
 Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
-    // Test Route for lazada
+    // Dashboard for lazada Account 1
     Route::get('/',[LazadaUIController::class, 'index'])->name('lazada.dashboard');
+    Route::post('/sync-item',[LazadaUIController::class, 'syncItem'])->name('lazada.sync-item');
+    Route::post('/update-price',[LazadaUIController::class, 'updatePrice'])->name('lazada.update-price');
+    Route::post('/update-stock',[LazadaUIController::class, 'updateStock'])->name('lazada.update-stock');
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
