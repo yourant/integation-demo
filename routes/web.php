@@ -6,6 +6,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\LazadaController;
 use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaUIController;
+use App\Http\Controllers\Lazada2UIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +48,16 @@ Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
     Route::post('/sales-order-generate',[LazadaUIController::class, 'generateSalesOrder'])->name('lazada.sales-order-generate');
     Route::post('/invoice-generate',[LazadaUIController::class, 'generateInvoice'])->name('lazada.invoice-generate');
     Route::post('/credit-memo-generate',[LazadaUIController::class, 'generateCreditMemo'])->name('lazada.credit-memo-generate');
+});
+
+Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
+    // Dashboard for lazada Account 1
+    Route::get('/',[Lazada2UIController::class, 'index'])->name('lazada2.dashboard');
+    Route::post('/refresh-token',[Lazada2UIController::class, 'refreshToken'])->name('lazada2.refresh-token');
+    Route::post('/sync-item',[Lazada2UIController::class, 'syncItem'])->name('lazada2.sync-item');
+    Route::post('/update-price',[Lazada2UIController::class, 'updatePrice'])->name('lazada2.update-price');
+    Route::post('/update-stock',[Lazada2UIController::class, 'updateStock'])->name('lazada2.update-stock');
+    
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');

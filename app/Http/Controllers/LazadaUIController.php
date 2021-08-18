@@ -167,10 +167,10 @@ class LazadaUIController extends Controller
                     //Run 
                     $lazadaAPI->updatePriceQuantity($finalPayload);
                     
-                    Log::channel('lazada.update_price_qty')->info('Items stock updated.');
+                    Log::channel('lazada.update_price_qty')->info('Items price updated.');
 
                 }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items stock to be updated.');
+                    Log::channel('lazada.update_price_qty')->info('No Items price to be updated.');
                 }
             }
         } catch (\Exception $e) {
@@ -234,10 +234,10 @@ class LazadaUIController extends Controller
                     //Run 
                     $lazadaAPI->updatePriceQuantity($finalPayload);
                     
-                    Log::channel('lazada.update_price_qty')->info('Items price updated.');
+                    Log::channel('lazada.update_price_qty')->info('Items stock updated.');
 
                 }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items price to be updated.');
+                    Log::channel('lazada.update_price_qty')->info('No Items stock to be updated.');
                 }
             }
 

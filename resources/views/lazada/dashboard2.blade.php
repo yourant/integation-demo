@@ -5,7 +5,6 @@
     <div class="row justify-content-center">
 
         <div class="col-md-12">
-
             <div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert">
                 <strong>Success!</strong>
                 <span id="success-msg"></span>
@@ -25,13 +24,13 @@
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
-                       Lazada Account 1 Dashboard
-                   </div>
-                   <div class="float-right">
+                        Lazada Account 2 Dashboard
+                    </div>
+                    <div class="float-right">
                         <button class="btn btn-primary" id="refresh-token-btn">Manual Refresh Tokens</button>
-                        <a href="{{ route('lazada2.dashboard') }}" class="btn btn-primary">Switch to Lazada Account 2</a>
-                   </div>
-               </div>
+                        <a href="{{ route('lazada.dashboard') }}" class="btn btn-primary">Switch to Lazada Account 1</a>
+                    </div>
+                </div>
 
                 <div class="card-body">
                     <div class="row">
@@ -41,7 +40,7 @@
                                     <center>Synchronize Item</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Synchronize the item master to Lazada products</p>    
+                                    <p class="card-text">Synchronize the item master to Lazada products</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -58,7 +57,8 @@
                                     <center>Update Item Price</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Update the Lazada products based on the price in the Item Master</p>
+                                    <p class="card-text">Update the Lazada products based on the price in the Item
+                                        Master</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -71,12 +71,13 @@
                         </div>
                         <div class="col-md-4">
                             <div class="card">
-                                
+
                                 <div class="card-header">
                                     <center>Update Item Stock</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Update the Lazada products based on the stock in the Item Master</p>
+                                    <p class="card-text">Update the Lazada products based on the stock in the Item
+                                        Master</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -96,7 +97,8 @@
                                     <center>Generate Sales Orders</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate Sales Order for every order in Lazada with "Pending" status</p>
+                                    <p class="card-text">Generate Sales Order for every order in Lazada with "Pending"
+                                        status</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -113,7 +115,8 @@
                                     <center>Generate A/R Invoice</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate A/R Invoice for every order in Lazada with "Ready to Ship" status</p>
+                                    <p class="card-text">Generate A/R Invoice for every order in Lazada with "Ready to
+                                        Ship" status</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -125,12 +128,13 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card">                         
+                            <div class="card">
                                 <div class="card-header">
                                     <center>Generate Credit Memo</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate A/R Invoice for every order in Lazada with "Returned" status</p>
+                                    <p class="card-text">Generate A/R Invoice for every order in Lazada with "Returned"
+                                        status</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
@@ -144,9 +148,7 @@
                     </div>
                 </div>
             </div>
-
         </div>
-
     </div>
 </div>
 @endsection
@@ -169,7 +171,7 @@
                 $('#error-alert').hide();
 
                 $.ajax({
-                    url: "{{ route('lazada.refresh-token') }}",
+                    url: "{{ route('lazada2.refresh-token') }}",
                     method: "POST",
                     beforeSend: function() { 
                         $("#refresh-token-btn").attr("disabled", true);
@@ -196,7 +198,7 @@
                 $('#error-alert').hide();
                 
                 $.ajax({
-                    url: "{{ route('lazada.sync-item') }}",
+                    url: "{{ route('lazada2.sync-item') }}",
                     method: "POST",
                     beforeSend: function() { 
                         $("#sync-item-btn").attr("disabled", true);
@@ -224,7 +226,7 @@
                 $('#error-alert').hide();
 
                 $.ajax({
-                    url: "{{ route('lazada.update-price') }}",
+                    url: "{{ route('lazada2.update-price') }}",
                     method: "POST",
                     beforeSend: function() { 
                         $("#update-price-btn").attr("disabled", true);
@@ -251,7 +253,7 @@
                 $('#error-alert').hide();
 
                 $.ajax({
-                    url: "{{ route('lazada.update-stock') }}",
+                    url: "{{ route('lazada2.update-stock') }}",
                     method: "POST",
                     beforeSend: function() { 
                         $("#update-stock-btn").attr("disabled", true);
@@ -273,88 +275,6 @@
                 
             });
 
-            $('#generate-so-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
-
-                $.ajax({
-                    url: "{{ route('lazada.sales-order-generate') }}",
-                    method: "POST",
-                    beforeSend: function() { 
-                        $("#generate-so-btn").attr("disabled", true);
-                        $("#generate-so-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
-                    },
-                    success: function(data, status) {
-                        $("#success-msg").text('Sales Orders Generated');
-                        $('#success-alert').show();
-                    },
-                    error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
-                    },
-                    complete: function(response, status) {
-                        $("#generate-so-btn").attr("disabled", false);
-                        $("#generate-so-btn").html('PROCESS SALES ORDERS');
-                    }
-                })                 
-                
-            });
-
-            $('#generate-inv-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
-
-                $.ajax({
-                    url: "{{ route('lazada.invoice-generate') }}",
-                    method: "POST",
-                    beforeSend: function() { 
-                        $("#generate-inv-btn").attr("disabled", true);
-                        $("#generate-inv-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
-                    },
-                    success: function(data, status) {
-                        $("#success-msg").text('A/R Invoices Generated');
-                        $('#success-alert').show();
-                    },
-                    error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
-                    },
-                    complete: function(response, status) {
-                        $("#generate-inv-btn").attr("disabled", false);
-                        $("#generate-inv-btn").html(`PROCESS INVOICE`);
-                    }
-                })                 
-            
-            });
-
-            $('#generate-cm-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
-
-                $.ajax({
-                    url: "{{ route('lazada.credit-memo-generate') }}",
-                    method: "POST",
-                    beforeSend: function() { 
-                        $("#generate-cm-btn").attr("disabled", true);
-                        $("#generate-cm-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
-                    },
-                    success: function(data, status) {
-                        $("#success-msg").text('A/R Credit Memos Generated');
-                        $('#success-alert').show();
-                    },
-                    error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
-                    },
-                    complete: function(response, status) {
-                        $("#generate-cm-btn").attr("disabled", false);
-                        $("#generate-cm-btn").html(`PROCESS CREDIT MEMO`);
-                    }
-                })                 
-                
-            });
-
-            
         });
     </script>
 @endpush
