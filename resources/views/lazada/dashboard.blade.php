@@ -4,18 +4,6 @@
 <div class="container">
     <div class="row justify-content-center">
 
-        <div aria-live="polite" aria-atomic="true" class="d-flex justify-content-center align-items-center" style="height: 200px;">
-            <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: absolute; bottom: 2%; right: 1%;">
-                <div class="toast-header">
-                    <strong class="mr-auto" id="toast-title"></strong>
-                    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="toast-body" id="toast-msg"></div>
-            </div>
-        </div>
-
         <div class="col-md-12">
 
             <div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert">
@@ -40,6 +28,7 @@
                        Lazada Account 1 Dashboard
                    </div>
                    <div class="float-right">
+                        <button class="btn btn-primary" id="refresh-token-btn">Manual Refresh Tokens</button>
                         <a href="#" class="btn btn-primary">Switch to Lazada Account 2</a>
                    </div>
                </div>
@@ -111,9 +100,9 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary" id="generate-so-btn">
+                                        <button class="btn btn-primary" id="generate-so-btn">
                                             PROCESS SALES ORDERS
-                                        </a>
+                                        </button>
                                     </center>
                                 </div>
                             </div>
@@ -128,9 +117,9 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary" id="generate-inv-btn">
+                                        <button class="btn btn-primary" id="generate-inv-btn">
                                             PROCESS INVOICE
-                                        </a>
+                                        </button>
                                     </center>
                                 </div>
                             </div>
@@ -145,9 +134,9 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <a href="#" class="btn btn-primary" id="generate-cm-btn">
+                                        <button class="btn btn-primary" id="generate-cm-btn">
                                             PROCESS CREDIT MEMO
-                                        </a>
+                                        </button>
                                     </center>
                                 </div>
                             </div>
@@ -172,13 +161,34 @@
                 }
             });
 
-            var isLoading = false; 
-
             $('#success-alert').hide();
             $('#error-alert').hide();
 
-            $('.toast').toast({
-                autohide: false
+            $('#refresh-token-btn').click(function() {
+                $('#success-alert').hide();
+                $('#error-alert').hide();
+
+                $.ajax({
+                    url: "{{ route('lazada.refresh-token') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#refresh-token-btn").attr("disabled", true);
+                        $("#refresh-token-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('Tokens Refreshed');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#refresh-token-btn").attr("disabled", false);
+                        $("#refresh-token-btn").html('Manual Refresh Tokens');
+                    }
+                })
+                    
             });
 
             $('#sync-item-btn').click(function() {
@@ -218,7 +228,7 @@
                     method: "POST",
                     beforeSend: function() { 
                         $("#update-price-btn").attr("disabled", true);
-                        $("#update-price-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                        $("#update-price-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`);
                     },
                     success: function(data, status) {
                         $("#success-msg").text('Item Price Updated');
@@ -245,7 +255,7 @@
                     method: "POST",
                     beforeSend: function() { 
                         $("#update-stock-btn").attr("disabled", true);
-                        $("#update-stock-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                        $("#update-stock-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`);
                     },
                     success: function(data, status) {
                         $("#success-msg").text('Item Stock Updated');
@@ -264,93 +274,84 @@
             });
 
             $('#generate-so-btn').click(function() {
-                if (!isLoading) {
-                    $('#success-alert').hide();
-                    $('#error-alert').hide();
+                $('#success-alert').hide();
+                $('#error-alert').hide();
 
-                    $('.toast').toast('show');
-                    $('#toast-title').text('GENERATE SALES ORDERS');
-                    $('#toast-msg').text('Generating . . .');
-
-                    isLoading = true;
-
-                    $.ajax({
-                        url: "{{ route('lazada.sales-order-generate') }}",
-                        method: "POST",
-                        success: function(data, status) {
-                            $("#success-msg").text('Sales Orders Generated');
-                            $('#success-alert').show();
-                        },
-                        error: function(xhr, ajaxOptions, thrownError) {
-                            $("#error-msg").text(xhr.responseText);
-                            $('#error-alert').show();
-                        },
-                        complete: function(response, status) {
-                            $('.toast').toast('hide');
-                            isLoading = false;
-                        }
-                    })                 
-                }
+                $.ajax({
+                    url: "{{ route('lazada.sales-order-generate') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#generate-so-btn").attr("disabled", true);
+                        $("#generate-so-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('Sales Orders Generated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#generate-so-btn").attr("disabled", false);
+                        $("#generate-so-btn").html('PROCESS SALES ORDERS');
+                    }
+                })                 
+                
             });
 
             $('#generate-inv-btn').click(function() {
-                if (!isLoading) {
-                    $('#success-alert').hide();
-                    $('#error-alert').hide();
+                $('#success-alert').hide();
+                $('#error-alert').hide();
 
-                    $('.toast').toast('show');
-                    $('#toast-title').text('GENERATE A/R INVOICES');
-                    $('#toast-msg').text('Generating . . .');
-
-                    isLoading = true;
-
-                    $.ajax({
-                        url: "{{ route('lazada.invoice-generate') }}",
-                        method: "POST",
-                        success: function(data, status) {
-                            $("#success-msg").text('A/R Invoices Generated');
-                            $('#success-alert').show();
-                        },
-                        error: function(xhr, ajaxOptions, thrownError) {
-                            $("#error-msg").text(xhr.responseText);
-                            $('#error-alert').show();
-                        },
-                        complete: function(response, status) {
-                            $('.toast').toast('hide');
-                            isLoading = false;
-                        }
-                    })                 
-                }
+                $.ajax({
+                    url: "{{ route('lazada.invoice-generate') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#generate-inv-btn").attr("disabled", true);
+                        $("#generate-inv-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('A/R Invoices Generated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#generate-inv-btn").attr("disabled", false);
+                        $("#generate-inv-btn").html(`PROCESS INVOICE`);
+                    }
+                })                 
+            
             });
 
             $('#generate-cm-btn').click(function() {
-                if (!isLoading) {
-                    $('#success-alert').hide();
-                    $('#error-alert').hide();
+                $('#success-alert').hide();
+                $('#error-alert').hide();
 
-                    $('.toast').toast('show');
-                    $('#toast-title').text('GENERATE CREDIT MEMO');
-                    $('#toast-msg').text('Generating . . .');
-
-                    isLoading = true;
-
-                    $.ajax({
-                        url: "{{ route('lazada.credit-memo-generate') }}",
-                        method: "POST",
-                        success: function(data, status) {
-                            $("#success-msg").text('A/R Credit Memos Generated');
-                            $('#success-alert').show();
-                        },
-                        error: function(xhr, ajaxOptions, thrownError) {
-                            $("#error-msg").text(xhr.responseText);
-                            $('#error-alert').show();
-                        },
-                        complete: function(response, status) {
-                            $('.toast').toast('hide');
-                            isLoading = false;
-                        }
-                    })                 
-                }
+                $.ajax({
+                    url: "{{ route('lazada.credit-memo-generate') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#generate-cm-btn").attr("disabled", true);
+                        $("#generate-cm-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('A/R Credit Memos Generated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#generate-cm-btn").attr("disabled", false);
+                        $("#generate-cm-btn").html(`PROCESS CREDIT MEMO`);
+                    }
+                })                 
+                
             });
 
             
