@@ -275,6 +275,87 @@
                 
             });
 
+            $('#generate-so-btn').click(function() {
+                $('#success-alert').hide();
+                $('#error-alert').hide();
+
+                $.ajax({
+                    url: "{{ route('lazada2.sales-order-generate') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#generate-so-btn").attr("disabled", true);
+                        $("#generate-so-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('Sales Orders Generated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#generate-so-btn").attr("disabled", false);
+                        $("#generate-so-btn").html('PROCESS SALES ORDERS');
+                    }
+                })                 
+                
+            });
+
+            $('#generate-inv-btn').click(function() {
+                $('#success-alert').hide();
+                $('#error-alert').hide();
+
+                $.ajax({
+                    url: "{{ route('lazada2.invoice-generate') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#generate-inv-btn").attr("disabled", true);
+                        $("#generate-inv-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('A/R Invoices Generated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#generate-inv-btn").attr("disabled", false);
+                        $("#generate-inv-btn").html(`PROCESS INVOICE`);
+                    }
+                })                 
+            
+            });
+
+            $('#generate-cm-btn').click(function() {
+                $('#success-alert').hide();
+                $('#error-alert').hide();
+
+                $.ajax({
+                    url: "{{ route('lazada2.credit-memo-generate') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#generate-cm-btn").attr("disabled", true);
+                        $("#generate-cm-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
+                    },
+                    success: function(data, status) {
+                        $("#success-msg").text('A/R Credit Memos Generated');
+                        $('#success-alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#generate-cm-btn").attr("disabled", false);
+                        $("#generate-cm-btn").html(`PROCESS CREDIT MEMO`);
+                    }
+                })                 
+                
+            });
+
         });
     </script>
 @endpush

@@ -57,6 +57,10 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
     Route::post('/sync-item',[Lazada2UIController::class, 'syncItem'])->name('lazada2.sync-item');
     Route::post('/update-price',[Lazada2UIController::class, 'updatePrice'])->name('lazada2.update-price');
     Route::post('/update-stock',[Lazada2UIController::class, 'updateStock'])->name('lazada2.update-stock');
+    Route::post('/sales-order-generate',[Lazada2UIController::class, 'generateSalesOrder'])->name('lazada2.sales-order-generate');
+    Route::post('/invoice-generate',[Lazada2UIController::class, 'generateInvoice'])->name('lazada2.invoice-generate');
+    Route::post('/credit-memo-generate',[Lazada2UIController::class, 'generateCreditMemo'])->name('lazada2.credit-memo-generate');
+
     
 });
 
