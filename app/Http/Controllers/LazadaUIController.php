@@ -213,12 +213,31 @@ class LazadaUIController extends Controller
                     
                     Log::channel('lazada.update_price_qty')->info('Items price updated.');
 
-                }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items price to be updated.');
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => 'Items price updated.'
+                    ]);
+
                 }
+
+            }else{
+                Log::channel('lazada.update_price_qty')->info('No Items price to be updated.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Items price to be updated.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
 
     }
@@ -280,13 +299,31 @@ class LazadaUIController extends Controller
                     
                     Log::channel('lazada.update_price_qty')->info('Items stock updated.');
 
-                }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items stock to be updated.');
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => 'Items stock updated.'
+                    ]);
+
                 }
+            }else{
+                Log::channel('lazada.update_price_qty')->info('No Items stock to be updated.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Items stock to be updated.'
+                ]);
             }
 
         } catch (\Exception $e) {
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 

@@ -231,8 +231,7 @@
             });
 
             $('#update-price-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
+                $('#alert').hide();
 
                 $.ajax({
                     url: "{{ route('lazada.update-price') }}",
@@ -242,8 +241,10 @@
                         $("#update-price-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`);
                     },
                     success: function(data, status) {
-                        $("#success-msg").text('Item Price Updated');
-                        $('#success-alert').show();
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
@@ -258,8 +259,7 @@
             });
 
             $('#update-stock-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
+                $('#alert').hide();
 
                 $.ajax({
                     url: "{{ route('lazada.update-stock') }}",
@@ -269,8 +269,10 @@
                         $("#update-stock-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`);
                     },
                     success: function(data, status) {
-                        $("#success-msg").text('Item Stock Updated');
-                        $('#success-alert').show();
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
