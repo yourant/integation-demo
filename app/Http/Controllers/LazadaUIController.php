@@ -40,8 +40,21 @@ class LazadaUIController extends Controller
 
             if($updatedToken) {
                 Log::channel('lazada.refresh_token')->info('New tokens generated.');
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => 'New tokens generated.'
+                ]);
+
             } else {
-                Log::channel('lazada.refresh_token')->info('Problem while generating tokens.');
+                Log::channel('lazada.refresh_token')->emergency('Problem while generating tokens.');
+
+                return response()->json([
+                    'title' => 'Error: ',
+                    'status' => 'alert-danger',
+                    'message' => 'Problem while generating tokens.'
+                ]);
             }
             
         }
@@ -49,6 +62,12 @@ class LazadaUIController extends Controller
         catch(\Exception $e)
         {
             Log::channel('lazada.refresh_token')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -64,6 +83,7 @@ class LazadaUIController extends Controller
                                                 ->get();
             //lazada API
             $lazadaAPI = new LazadaAPIController();
+            $counter = 0;
 
             if(!empty($getItems['0'])){
                 //Loop results
@@ -76,13 +96,14 @@ class LazadaUIController extends Controller
                     if(!empty($getByNewSku['data'])){
                         $lazadaItemId = $getByNewSku['data']['item_id'];
                         
-                        $odataClient->getOdataClient()->from('Items')
+                        $update = $odataClient->getOdataClient()->from('Items')
                                 ->whereKey($newSku)
                                 ->patch([
                                     'U_LAZ_ITEM_CODE' => $lazadaItemId,
                                 ]);
                         
-                        Log::channel('lazada.update_price_qty')->info('Items Id updated.');
+                        ($update ? $counter++ : '');
+
                     }else if($oldSku != null){
                         $getByOldSku = $lazadaAPI->getProductItem($oldSku);
                         
@@ -92,23 +113,46 @@ class LazadaUIController extends Controller
                                                     ->where('U_OLD_SKU',$oldSku)
                                                     ->first();
                             
-                            $odataClient->getOdataClient()->from('Items')
+                            $update = $odataClient->getOdataClient()->from('Items')
                                     ->whereKey($oldSkuItemCode->ItemCode)
                                     ->patch([
                                         'U_LAZ_ITEM_CODE' => $lazadaItemId,
                                     ]);
                             
-                            Log::channel('lazada.update_price_qty')->info('Item Id UDFs updated.');
+                            ($update ? $counter++ : '');
+                                                        
                         }
                     }
 
                 }
+
+                if($counter > 0){
+                    Log::channel('lazada.update_price_qty')->info('Item Id UDFs updated.');
+
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => 'Item Id UDFs updated.'
+                    ]);
+                }
             
             }else{
-                Log::channel('lazada.update_price_qty')->warning('No Lazada items available.');
+                Log::channel('lazada.update_price_qty')->info('No Lazada items available.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Lazada items available.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -169,12 +213,31 @@ class LazadaUIController extends Controller
                     
                     Log::channel('lazada.update_price_qty')->info('Items price updated.');
 
-                }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items price to be updated.');
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => 'Items price updated.'
+                    ]);
+
                 }
+
+            }else{
+                Log::channel('lazada.update_price_qty')->info('No Items price to be updated.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Items price to be updated.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
 
     }
@@ -236,13 +299,31 @@ class LazadaUIController extends Controller
                     
                     Log::channel('lazada.update_price_qty')->info('Items stock updated.');
 
-                }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items stock to be updated.');
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => 'Items stock updated.'
+                    ]);
+
                 }
+            }else{
+                Log::channel('lazada.update_price_qty')->info('No Items stock to be updated.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Items stock to be updated.'
+                ]);
             }
 
         } catch (\Exception $e) {
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -321,6 +402,8 @@ class LazadaUIController extends Controller
 
                 }
 
+                $counter = 0;
+                
                 foreach($tempSO as $key => $value){
                     $finalSO = array_slice($tempSO[$key],0);
                     $getSO = $odataClient->getOdataClient()->from('Orders')
@@ -336,18 +419,53 @@ class LazadaUIController extends Controller
                     if(!$getSO){
                         $odataClient->getOdataClient()->post('Orders',$finalSO);
                         
+                        $counter++;
+                        
                         Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
                     }else{
                         unset($finalSO);
                     }
 
                 }
+                
+                if($counter > 0){
+
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => $counter. ' New Sales Orders Generated.'
+                    ]);
+
+                }else{
+
+                    return response()->json([
+                        'title' => 'Information: ',
+                        'status' => 'alert-info',
+                        'message' => 'No pending orders for now.'
+                    ]);
+
+                }
+
 
             }else{
                 Log::channel('lazada.sales_order')->info('No pending orders for now.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No pending orders for now.'
+                ]);
+
             }
         } catch (\Exception $e) {
             Log::channel('lazada.sales_order')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
+
         }
     }
 
@@ -365,6 +483,7 @@ class LazadaUIController extends Controller
                     array_push($orderArray,$orderId);
                 }
 
+                $counter = 0;
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
@@ -415,16 +534,49 @@ class LazadaUIController extends Controller
                             'DocumentLines' => $items 
                         ]);
                         
+                        $counter++;
+                        
                         Log::channel('lazada.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
+
                     }
                     
                 }
 
+                if($counter > 0){
+
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => $counter. ' New A/R Invoices Generated.'
+                    ]);
+
+                }else{
+
+                    return response()->json([
+                        'title' => 'Information: ',
+                        'status' => 'alert-info',
+                        'message' => 'No ready to ship orders for now.'
+                    ]);
+
+                }
+
             }else{
                 Log::channel('lazada.ar_invoice')->info('No ready to ship orders for now.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No ready to ship orders for now.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::channel('lazada.ar_invoice')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -483,7 +635,8 @@ class LazadaUIController extends Controller
                     $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                     
                 }
-        
+
+                $counter = 0;
                 foreach($tempCM as $key => $value){
                     $finalCM = array_slice($tempCM[$key],0);
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
@@ -498,18 +651,51 @@ class LazadaUIController extends Controller
                     if(!$getCM){
                         $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
                         
+                        $counter++;
+                        
                         Log::channel('lazada.credit_memo')->info('Credit memo for Lazada order:'.$finalCM['U_Order_ID'].' created successfully.');
+
                     }else{
                         unset($finalCM);
                     }
                     
                 }
 
+                if($counter > 0){
+
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => $counter. ' New A/R Credit Memos Generated.'
+                    ]);
+
+                }else{
+
+                    return response()->json([
+                        'title' => 'Information: ',
+                        'status' => 'alert-info',
+                        'message' => 'No returned orders for now.'
+                    ]);
+
+                }
+
             }else{
                 Log::channel('lazada.credit_memo')->info('No returned orders for now.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No returned orders for now.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::channel('lazada.credit_memo')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 }
