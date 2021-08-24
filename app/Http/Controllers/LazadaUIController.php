@@ -40,8 +40,21 @@ class LazadaUIController extends Controller
 
             if($updatedToken) {
                 Log::channel('lazada.refresh_token')->info('New tokens generated.');
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => 'New tokens generated.'
+                ]);
+
             } else {
-                Log::channel('lazada.refresh_token')->info('Problem while generating tokens.');
+                Log::channel('lazada.refresh_token')->emergency('Problem while generating tokens.');
+
+                return response()->json([
+                    'title' => 'Error: ',
+                    'status' => 'alert-danger',
+                    'message' => 'Problem while generating tokens.'
+                ]);
             }
             
         }
@@ -49,6 +62,12 @@ class LazadaUIController extends Controller
         catch(\Exception $e)
         {
             Log::channel('lazada.refresh_token')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -64,6 +83,7 @@ class LazadaUIController extends Controller
                                                 ->get();
             //lazada API
             $lazadaAPI = new LazadaAPIController();
+            $counter = 0;
 
             if(!empty($getItems['0'])){
                 //Loop results
@@ -76,13 +96,14 @@ class LazadaUIController extends Controller
                     if(!empty($getByNewSku['data'])){
                         $lazadaItemId = $getByNewSku['data']['item_id'];
                         
-                        $odataClient->getOdataClient()->from('Items')
+                        $update = $odataClient->getOdataClient()->from('Items')
                                 ->whereKey($newSku)
                                 ->patch([
                                     'U_LAZ_ITEM_CODE' => $lazadaItemId,
                                 ]);
                         
-                        Log::channel('lazada.update_price_qty')->info('Items Id updated.');
+                        ($update ? $counter++ : '');
+
                     }else if($oldSku != null){
                         $getByOldSku = $lazadaAPI->getProductItem($oldSku);
                         
@@ -92,23 +113,46 @@ class LazadaUIController extends Controller
                                                     ->where('U_OLD_SKU',$oldSku)
                                                     ->first();
                             
-                            $odataClient->getOdataClient()->from('Items')
+                            $update = $odataClient->getOdataClient()->from('Items')
                                     ->whereKey($oldSkuItemCode->ItemCode)
                                     ->patch([
                                         'U_LAZ_ITEM_CODE' => $lazadaItemId,
                                     ]);
                             
-                            Log::channel('lazada.update_price_qty')->info('Item Id UDFs updated.');
+                            ($update ? $counter++ : '');
+                                                        
                         }
                     }
 
                 }
+
+                if($counter == count($getItems)){
+                    Log::channel('lazada.update_price_qty')->info('Item Id UDFs updated.');
+
+                    return response()->json([
+                        'title' => 'Success: ',
+                        'status' => 'alert-success',
+                        'message' => 'Item Id UDFs updated.'
+                    ]);
+                }
             
             }else{
-                Log::channel('lazada.update_price_qty')->warning('No Lazada items available.');
+                Log::channel('lazada.update_price_qty')->info('No Lazada items available.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Lazada items available.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
