@@ -5,6 +5,14 @@
     <div class="row justify-content-center">
 
         <div class="col-md-12">
+            <div id="alert" class="alert alert-dismissible fade show" style="display: none;" role="alert">
+                <strong></strong>
+                <span id="alert-msg"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
             <div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert">
                 <strong>Success!</strong>
                 <span id="success-msg"></span>
@@ -167,8 +175,7 @@
             $('#error-alert').hide();
 
             $('#refresh-token-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
+                $('#alert').hide();
 
                 $.ajax({
                     url: "{{ route('lazada2.refresh-token') }}",
@@ -177,9 +184,11 @@
                         $("#refresh-token-btn").attr("disabled", true);
                         $("#refresh-token-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...`);
                     },
-                    success: function(data, status) {
-                        $("#success-msg").text('Tokens Refreshed');
-                        $('#success-alert').show();
+                    success: function(data) {
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
@@ -194,8 +203,7 @@
             });
 
             $('#sync-item-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
+                $('#alert').hide();
                 
                 $.ajax({
                     url: "{{ route('lazada2.sync-item') }}",
@@ -204,9 +212,11 @@
                         $("#sync-item-btn").attr("disabled", true);
                         $("#sync-item-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
                     },
-                    success: function(data, status) {
-                        $("#success-msg").text('Item Id UDFs updated.');
-                        $('#success-alert').show();
+                    success: function(data) {
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
@@ -222,8 +232,7 @@
             });
 
             $('#update-price-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
+                $('#alert').hide();
 
                 $.ajax({
                     url: "{{ route('lazada2.update-price') }}",
@@ -232,9 +241,11 @@
                         $("#update-price-btn").attr("disabled", true);
                         $("#update-price-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`);
                     },
-                    success: function(data, status) {
-                        $("#success-msg").text('Item Price Updated');
-                        $('#success-alert').show();
+                    success: function(data) {
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
@@ -249,8 +260,7 @@
             });
 
             $('#update-stock-btn').click(function() {
-                $('#success-alert').hide();
-                $('#error-alert').hide();
+                $('#alert').hide();
 
                 $.ajax({
                     url: "{{ route('lazada2.update-stock') }}",
@@ -259,9 +269,11 @@
                         $("#update-stock-btn").attr("disabled", true);
                         $("#update-stock-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`);
                     },
-                    success: function(data, status) {
-                        $("#success-msg").text('Item Stock Updated');
-                        $('#success-alert').show();
+                    success: function(data) {
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
