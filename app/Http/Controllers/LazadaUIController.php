@@ -222,7 +222,7 @@ class LazadaUIController extends Controller
                 }
 
             }else{
-                Log::channel('lazada.item_master')->info('No Items price to be updated.');
+                Log::channel('lazada.item_master')->warning('No Items price to be updated.');
 
                 return response()->json([
                     'title' => 'Information: ',
@@ -307,7 +307,7 @@ class LazadaUIController extends Controller
 
                 }
             }else{
-                Log::channel('lazada.item_master')->info('No Items stock to be updated.');
+                Log::channel('lazada.item_master')->warning('No Items stock to be updated.');
 
                 return response()->json([
                     'title' => 'Information: ',
