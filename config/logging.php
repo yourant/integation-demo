@@ -108,9 +108,9 @@ return [
                 'path' => storage_path('logs/lazada/refresh_token.log'),
                 'level' => 'debug'
             ],
-            'update_price_qty' => [
+            'item_master' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada/update_price_qty.log'),
+                'path' => storage_path('logs/lazada/item_master.log'),
                 'level' => 'debug'
             ],
             'sales_order' => [

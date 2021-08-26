@@ -107,20 +107,17 @@ class LazadaItemMaster extends Command
                     //Run 
                     $lazadaAPI->updatePriceQuantity($finalPayload);
                     
-                    Log::channel('lazada.update_price_qty')->info('Items stock and price updated.');
+                    Log::channel('lazada.item_master')->info('Items stock and price updated.');
 
-                }else{
-                    Log::channel('lazada.update_price_qty')->info('No Items stock and price to be updated.');
                 }
-                
             
             }else{
-                Log::channel('lazada.update_price_qty')->warning('No Lazada items available.');
+                Log::channel('lazada.item_master')->warning('No Lazada items available.');
             }
 
 
         } catch (\Exception $e) {
-            Log::channel('lazada.update_price_qty')->emergency($e->getMessage());
+            Log::channel('lazada.item_master')->emergency($e->getMessage());
         }
         
     }
