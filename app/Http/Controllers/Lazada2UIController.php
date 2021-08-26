@@ -126,7 +126,7 @@ class Lazada2UIController extends Controller
                 }
 
                 if($counter > 0){
-                    Log::channel('lazada2.update_price_qty')->info('Item Id UDFs updated.');
+                    Log::channel('lazada2.item_master')->info('Item Id UDFs updated.');
 
                     return response()->json([
                         'title' => 'Success: ',
@@ -136,7 +136,7 @@ class Lazada2UIController extends Controller
                 }
             
             }else{
-                Log::channel('lazada2.update_price_qty')->warning('No Lazada items available.');
+                Log::channel('lazada2.item_master')->warning('No Lazada items available.');
 
                 return response()->json([
                     'title' => 'Information: ',
@@ -145,7 +145,7 @@ class Lazada2UIController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::channel('lazada2.update_price_qty')->emergency($e->getMessage());
+            Log::channel('lazada2.item_master')->emergency($e->getMessage());
 
             return response()->json([
                 'title' => 'Error: ',
@@ -210,7 +210,7 @@ class Lazada2UIController extends Controller
                     //Run 
                     $lazadaAPI->updatePriceQuantity($finalPayload);
                     
-                    Log::channel('lazada2.update_price_qty')->info('Items price updated.');
+                    Log::channel('lazada2.item_master')->info('Items price updated.');
 
                     return response()->json([
                         'title' => 'Success: ',
@@ -220,7 +220,7 @@ class Lazada2UIController extends Controller
 
                 }
             }else{
-                Log::channel('lazada2.update_price_qty')->info('No Items price to be updated.');
+                Log::channel('lazada2.item_master')->warning('No Items price to be updated.');
 
                 return response()->json([
                     'title' => 'Information: ',
@@ -229,7 +229,7 @@ class Lazada2UIController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::channel('lazada2.update_price_qty')->emergency($e->getMessage());
+            Log::channel('lazada2.item_master')->emergency($e->getMessage());
 
             return response()->json([
                 'title' => 'Error: ',
@@ -294,7 +294,7 @@ class Lazada2UIController extends Controller
                     //Run 
                     $lazadaAPI->updatePriceQuantity($finalPayload);
                     
-                    Log::channel('lazada2.update_price_qty')->info('Items stock updated.');
+                    Log::channel('lazada2.item_master')->info('Items stock updated.');
 
                     return response()->json([
                         'title' => 'Success: ',
@@ -304,7 +304,7 @@ class Lazada2UIController extends Controller
 
                 }
             }else{
-                Log::channel('lazada2.update_price_qty')->info('No Items stock to be updated.');
+                Log::channel('lazada2.item_master')->warning('No Items stock to be updated.');
 
                 return response()->json([
                     'title' => 'Information: ',
@@ -314,7 +314,7 @@ class Lazada2UIController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::channel('lazada2.update_price_qty')->emergency($e->getMessage());
+            Log::channel('lazada2.item_master')->emergency($e->getMessage());
 
             return response()->json([
                 'title' => 'Error: ',
