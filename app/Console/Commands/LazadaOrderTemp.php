@@ -43,12 +43,10 @@ class LazadaOrderTemp extends Command
         $offset = 0;
         
         $moreOrders= true;
-
-        $orders = $lazadaAPI->getOrders($offset);
         
         while($moreOrders){
             
-            $orders = $lazadaAPI->getOrders($offset);
+            $orders = $lazadaAPI->getPendingOrders($offset);
 
             if(!empty($orders['data']['orders'])){
                 
@@ -56,10 +54,16 @@ class LazadaOrderTemp extends Command
                     print_r("Item ID - ".$item['order_id']."\n");
                 }
 
-                $offset += $orders['data']['count'];
+                if($orders['data']['count'] == $orders['data']['countTotal']){
+                    
+                    $moreOrders = false;
+                
+                }else{  
 
-            }else{
+                    $offset += $orders['data']['count'];
+                }
 
+            }else{                
                 $moreOrders = false;
                 
                 print_r('All Orders fetch');
