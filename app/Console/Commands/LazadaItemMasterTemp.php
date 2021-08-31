@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SapService;
 use Illuminate\Console\Command;
 
 class LazadaItemMasterTemp extends Command
@@ -46,9 +47,9 @@ class LazadaItemMasterTemp extends Command
         
         while($moreItems){
             
-            $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Y')->skip($count)->get();
+            $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y
 
-            if($getItems){
+            if($getItems->isNotEmpty()){
                 
                 foreach($getItems as $item){
                     print_r("Item Code - ".$item['ItemCode']."\n");
@@ -58,9 +59,12 @@ class LazadaItemMasterTemp extends Command
 
             }else{
                 $moreItems = false;
-                print_r('Success!!');
             }
 
+        }
+
+        if($moreItems == false){
+            print_r('Success!!');
         }
     }
 }
