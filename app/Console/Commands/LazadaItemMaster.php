@@ -60,7 +60,7 @@ class LazadaItemMaster extends Command
                     
                     foreach($getItems as $item){
                         //Price and Stocks
-                        $sapPrice = $item['ItemPrices']['8']['Price'];
+                        $sapPrice = $item['ItemPrices']['8']['Price']; //live - $item['ItemPrices']['3']['Price']
                         $sapStock = $item['QuantityOnStock'];
                         //Old and New SKU
                         $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
