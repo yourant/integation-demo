@@ -42,7 +42,7 @@ class LazadaOrder extends Command
     {
         try {
             $odataClient = new SapService();
-            
+            //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
