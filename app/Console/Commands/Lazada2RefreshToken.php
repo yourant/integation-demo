@@ -47,7 +47,7 @@ class Lazada2RefreshToken extends Command
         {
             $lazadaToken = AccessToken::where('platform','lazada2')->first();
             $updatedAt = $lazadaToken->updated_at->format('Y-m-d');
-            $checkDate = date('Y-m-d',strtotime($updatedAt. ' + 5 days'));
+            $checkDate = date('Y-m-d',strtotime($updatedAt. ' + 28 days'));
             $now = Carbon::now()->format('Y-m-d');
             if($updatedAt != $now && $checkDate == $now){
                 //Lazada Service
