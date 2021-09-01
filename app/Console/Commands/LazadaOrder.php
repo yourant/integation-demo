@@ -104,8 +104,8 @@ class LazadaOrder extends Command
                     }else{  
                         $offset += $orders['data']['count'];
                     }
-                }
-                else{
+                
+                }else{
                     $moreOrders = false;
                 }
 
