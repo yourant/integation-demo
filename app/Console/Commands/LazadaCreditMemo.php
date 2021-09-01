@@ -102,13 +102,23 @@ class LazadaCreditMemo extends Command
                     
                     foreach($item['order_items'] as $orderItem){
                         if($orderItem['status'] == 'returned'){
+                            $shippingAmount = $orderItem['shipping_amount'];
+                            $paidPrice = $orderItem['paid_price'];
+                            
+                            if($shippingAmount != 0){
+                                $finalPrice = $paidPrice + $shippingAmount;
+                            }else{
+                                $finalPrice = $paidPrice;
+                            }
+                            
                             $items[$orderId][] = [
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                                'UnitPrice' => $finalPrice / $percentage->Name
                             ];
-                            $refund[$orderId][] = $orderItem['paid_price'];
+
+                            $refund[$orderId][] = $finalPrice;
                         }
                         
                     }
@@ -142,6 +152,7 @@ class LazadaCreditMemo extends Command
             }else{
                 Log::channel('lazada.credit_memo')->info('No returned orders for now.');
             }
+            
         } catch (\Exception $e) {
             Log::channel('lazada.credit_memo')->emergency($e->getMessage());
         }
