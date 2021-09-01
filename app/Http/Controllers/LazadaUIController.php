@@ -171,74 +171,99 @@ class LazadaUIController extends Controller
     {
         try
         {
-            //SAP odataClient
             $odataClient = new SapService();
-            //Get items with lazada integration set as yes
-            $getItems = $odataClient->getOdataClient()->from('Items')
-                                                 ->where('U_LAZ_INTEGRATION','Yes')
-                                                 ->get();
-            //lazada API
-            $lazadaAPI = new LazadaAPIController();
             
-            if(!empty($getItems['0'])){
-                //Loop results
-                foreach($getItems as $item){
-                    //Price
-                    $sapPrice = $item['ItemPrices']['8']['Price'];
-                    //Old and New SKU
-                    $oldSku = $item['U_OLD_SKU']; //Old sku from SAP
-                    $newSku = $item['ItemCode']; //Sku in lazada
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                    if(!empty($getByNewSku['data'])){
-                        $lazadaItemId = $getByNewSku['data']['item_id'];
-                        $finalSku = $newSku;
-                    }else if($oldSku != null){
-                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
-                        if(!empty($getByOldSku['data'])){
-                            $lazadaItemId = $getByOldSku['data']['item_id'];
-                            $finalSku = $oldSku;
+            $count = 0;
+
+            $skuPayloadCount = 0;
+
+            $moreItems = true;
+
+            while($moreItems){
+
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+
+                if($getItems->isNotEmpty()){
+                    
+                    $lazadaAPI = new LazadaAPIController();
+
+                    foreach($getItems as $item){
+                        //Price
+                        $sapPrice = $item['ItemPrices']['8']['Price']; //live - $item['ItemPrices']['3']['Price']
+                        //Old and New SKU
+                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
+
+                        if(!empty($getByNewSku['data'])){
+                            $lazadaItemId = $getByNewSku['data']['item_id'];
+                            $finalSku = $newSku;
+
+                        }else if($oldSku != null){
+                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+
+                            if(!empty($getByOldSku['data'])){
+                                $lazadaItemId = $getByOldSku['data']['item_id'];
+                                $finalSku = $oldSku;
+                            }
                         }
+
+                        if(!empty($lazadaItemId) && !empty($finalSku)){
+                            //Create SKU Payload
+                            $skuPayload[] = "<Sku>
+                                                <ItemId>".$lazadaItemId."</ItemId>
+                                                <SellerSku>".$finalSku."</SellerSku>
+                                                <Price>".$sapPrice."</Price>
+                                            </Sku>";
+                        }
+                        
                     }
 
-                    if(!empty($lazadaItemId) && !empty($finalSku)){
-                         //Create SKU Payload
-                        $skuPayload[] = "<Sku>
-                                            <ItemId>".$lazadaItemId."</ItemId>
-                                            <SellerSku>".$finalSku."</SellerSku>
-                                            <Price>".$sapPrice."</Price>
-                                        </Sku>";
+                    if(!empty($skuPayload)){
+                        $finalPayload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    ".implode('',$skuPayload)."
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        //Run 
+                        $updatePrice = $lazadaAPI->updatePriceQuantity($finalPayload);
+
+                        if($updatePrice['code'] == 0){
+                            $skuPayloadCount += count($skuPayload);
+                        }
+    
                     }
-                    
+
+                    if(count($skuPayload) >= 20){
+                        unset($skuPayload);
+                    }
+
+                    $count += count($getItems);
+                
+                }else{
+                    $moreItems = false;
                 }
 
-                if(!empty($skuPayload)){
-                    $finalPayload = "<Request>
-                                        <Product>
-                                            <Skus>
-                                                ".implode('',$skuPayload)."
-                                            </Skus>
-                                        </Product>
-                                    </Request>";
-                    //Run 
-                    $lazadaAPI->updatePriceQuantity($finalPayload);
-                    
-                    Log::channel('lazada.item_master')->info('Items price updated.');
-
-                    return response()->json([
-                        'title' => 'Success: ',
-                        'status' => 'alert-success',
-                        'message' => 'Items price updated.'
-                    ]);
-
-                }
+            }
+            
+            if($skuPayloadCount > 0){
+                Log::channel('lazada.item_master')->info('Price updated on '.$skuPayloadCount.' Lazada SKU/s.');
+    
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => 'Price updated on '.$skuPayloadCount.' Lazada SKU/s.'
+                ]);
 
             }else{
-                Log::channel('lazada.item_master')->warning('No Items price to be updated.');
+                Log::channel('lazada.item_master')->warning('No Lazada items available.');
 
                 return response()->json([
                     'title' => 'Information: ',
                     'status' => 'alert-info',
-                    'message' => 'No Items price to be updated.'
+                    'message' => 'No Lazada items available.'
                 ]);
             }
         } catch (\Exception $e) {
