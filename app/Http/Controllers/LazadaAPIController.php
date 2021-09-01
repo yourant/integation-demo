@@ -65,7 +65,7 @@ class LazadaAPIController extends Controller
 
     public function getReturnedOrders($offset){
         $request = new LazopRequest('/orders/get','GET');
-        $request->addApiParam('sort_direction','DESC');
+        $request->addApiParam('sort_direction','ASC');
         $request->addApiParam('sort_by','created_at');
         $request->addApiParam('offset',$offset);
         $request->addApiParam('limit',50);
