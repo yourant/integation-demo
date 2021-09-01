@@ -37,11 +37,12 @@ class Lazada2APIController extends Controller
 
     }
 
-    public function getPendingOrders(){
+    public function getPendingOrders($offset){
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','ASC');
         $request->addApiParam('sort_by','created_at');
-        $request->addApiParam('offset','0');
+        $request->addApiParam('offset',$offset);
+        $request->addApiParam('limit',50);
         $request->addApiParam('status','pending');
         $request->addApiParam('created_after',$this->dateStart);
         
@@ -49,22 +50,24 @@ class Lazada2APIController extends Controller
 
     }
 
-    public function getReadyToShipOrders(){
+    public function getReadyToShipOrders($offset){
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','ASC');
         $request->addApiParam('sort_by','created_at');
-        $request->addApiParam('offset','0');
+        $request->addApiParam('offset',$offset);
+        $request->addApiParam('limit',50);
         $request->addApiParam('status','ready_to_ship');
         $request->addApiParam('update_after',$this->dateStart);
 
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }
 
-    public function getReturnedOrders(){
+    public function getReturnedOrders($offset){
         $request = new LazopRequest('/orders/get','GET');
-        $request->addApiParam('sort_direction','DESC');
+        $request->addApiParam('sort_direction','ASC');
         $request->addApiParam('sort_by','created_at');
-        $request->addApiParam('offset','0');
+        $request->addApiParam('offset',$offset);
+        $request->addApiParam('limit',50);
         $request->addApiParam('status','returned');
         $request->addApiParam('update_after',$this->dateStart);
         
