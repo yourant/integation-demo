@@ -51,11 +51,12 @@ class LazadaAPIController extends Controller
 
     }
 
-    public function getReadyToShipOrders(){
+    public function getReadyToShipOrders($offset){
         $request = new LazopRequest('/orders/get','GET');
         $request->addApiParam('sort_direction','ASC');
         $request->addApiParam('sort_by','created_at');
-        $request->addApiParam('offset','0');
+        $request->addApiParam('offset',$offset);
+        $request->addApiParam('limit',50);
         $request->addApiParam('status','ready_to_ship');
         $request->addApiParam('update_after',$this->dateStart);
 

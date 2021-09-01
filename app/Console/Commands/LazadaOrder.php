@@ -107,8 +107,6 @@ class LazadaOrder extends Command
                 }
                 else{
                     $moreOrders = false;
-
-                    Log::channel('lazada.sales_order')->info('No pending orders for now.');
                 }
 
             }
@@ -161,6 +159,8 @@ class LazadaOrder extends Command
 
                 }
 
+            }else{
+                Log::channel('lazada.sales_order')->info('No pending orders for now.');
             }
 
         } catch (\Exception $e) {

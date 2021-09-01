@@ -43,16 +43,37 @@ class LazadaInvoice extends Command
     {
         try {
             $odataClient = new SapService();
+        
             $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getReadyToShipOrders();
+            
+            $offset = 0;
+            
+            $moreOrders= true;
+
             $orderArray = [];
+            
+            while($moreOrders){
 
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    array_push($orderArray,$orderId);
+                $orders = $lazadaAPI->getReadyToShipOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderArray,$orderId);
+                    }
+    
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+    
+                }else{
+                    $moreOrders = false;
                 }
+            }
 
+            if(!empty($orderArray)){
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
@@ -60,6 +81,7 @@ class LazadaInvoice extends Command
                                         ->where('DocumentStatus','bost_Open')
                                         ->where('Cancelled','tNO')
                                         ->first();
+
                     $getInv = $odataClient->getOdataClient()->from('Invoices')
                                         ->where('U_Order_ID',(string)$id)
                                         ->where('U_Ecommerce_Type','Lazada_1')
@@ -69,9 +91,11 @@ class LazadaInvoice extends Command
                                         })
                                         ->where('Cancelled','tNO')
                                         ->first();
+
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
                         $items = [];
+
                         foreach ($getSO['DocumentLines'] as $key => $value) {
                             $batchList = [];
                             if($value['BatchNumbers']) {                  
@@ -107,8 +131,8 @@ class LazadaInvoice extends Command
                     }
                     
                 }
-
-            }else{
+            }
+            else{
                 Log::channel('lazada.ar_invoice')->info('No ready to ship orders for now.');
             }
         } catch (\Exception $e) {
