@@ -75,67 +75,77 @@ class LazadaUIController extends Controller
     {
         try
         {
-            //SAP odataClient
             $odataClient = new SapService();
-            //Get items with lazada integration set as yes
-            $getItems = $odataClient->getOdataClient()->from('Items')
-                                                ->where('U_LAZ_INTEGRATION','Yes')
-                                                ->get();
-            //lazada API
-            $lazadaAPI = new LazadaAPIController();
-            $counter = 0;
 
-            if(!empty($getItems['0'])){
-                //Loop results
-                foreach($getItems as $item){
-                    //Old and New SKU
-                    $oldSku = $item['U_OLD_SKU']; //Old sku from SAP
-                    $newSku = $item['ItemCode']; //Sku in lazada
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                    
-                    if(!empty($getByNewSku['data'])){
-                        $lazadaItemId = $getByNewSku['data']['item_id'];
-                        
-                        $update = $odataClient->getOdataClient()->from('Items')
-                                ->whereKey($newSku)
-                                ->patch([
-                                    'U_LAZ_ITEM_CODE' => $lazadaItemId,
-                                ]);
-                        
-                        ($update ? $counter++ : '');
+            $itemCount = 0;
 
-                    }else if($oldSku != null){
-                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+            $count = 0;
+
+            $moreItems = true;
+
+            while($moreItems){
+
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+
+                if($getItems->isNotEmpty()){
+
+                    $lazadaAPI = new LazadaAPIController();
+                     //Loop results
+                    foreach($getItems as $item){
+                        //Old and New SKU
+                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
                         
-                        if(!empty($getByOldSku['data'])){
-                            $lazadaItemId = $getByOldSku['data']['item_id'];
-                            $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_OLD_SKU',$oldSku)
-                                                    ->first();
+                        if(!empty($getByNewSku['data'])){
+                            $lazadaItemId = $getByNewSku['data']['item_id'];
                             
                             $update = $odataClient->getOdataClient()->from('Items')
-                                    ->whereKey($oldSkuItemCode->ItemCode)
+                                    ->whereKey($newSku)
                                     ->patch([
                                         'U_LAZ_ITEM_CODE' => $lazadaItemId,
                                     ]);
                             
-                            ($update ? $counter++ : '');
-                                                        
+                            ($update ? $itemCount++ : '');
+
+                        }else if($oldSku != null){
+                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+                            
+                            if(!empty($getByOldSku['data'])){
+                                $lazadaItemId = $getByOldSku['data']['item_id'];
+                                $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
+                                                        ->where('U_OLD_SKU',$oldSku)
+                                                        ->first();
+                                
+                                $update = $odataClient->getOdataClient()->from('Items')
+                                        ->whereKey($oldSkuItemCode->ItemCode)
+                                        ->patch([
+                                            'U_LAZ_ITEM_CODE' => $lazadaItemId,
+                                        ]);
+                                
+                                ($update ? $itemCount++ : '');
+                                                            
+                            }
                         }
+
                     }
 
-                }
+                    $count += count($getItems);
 
-                if($counter > 0){
-                    Log::channel('lazada.item_master')->info('Item Id UDFs updated.');
-
-                    return response()->json([
-                        'title' => 'Success: ',
-                        'status' => 'alert-success',
-                        'message' => 'Item Id UDFs updated.'
-                    ]);
+                }else{
+                    $moreItems = false;
                 }
-            
+            }
+
+            if($itemCount > 0){
+                Log::channel('lazada.item_master')->info($itemCount.' Item Id UDFs updated.');
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => $itemCount.' Item Id UDFs updated.'
+                ]);
+
             }else{
                 Log::channel('lazada.item_master')->warning('No Lazada items available.');
 
@@ -145,6 +155,7 @@ class LazadaUIController extends Controller
                     'message' => 'No Lazada items available.'
                 ]);
             }
+
         } catch (\Exception $e) {
             Log::channel('lazada.item_master')->emergency($e->getMessage());
 
