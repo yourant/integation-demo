@@ -521,6 +521,14 @@ class LazadaUIController extends Controller
                         'message' => $counter. ' New Sales Orders Generated.'
                     ]);
 
+                }else{
+
+                    return response()->json([
+                        'title' => 'Information: ',
+                        'status' => 'alert-info',
+                        'message' => 'No pending orders for now.'
+                    ]);
+
                 }
 
             }else{
@@ -549,17 +557,40 @@ class LazadaUIController extends Controller
     {
         try {
             $odataClient = new SapService();
+        
             $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getReadyToShipOrders();
+            
+            $offset = 0;
+            
+            $moreOrders= true;
+
             $orderArray = [];
 
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    array_push($orderArray,$orderId);
-                }
+            while($moreOrders){
 
+                $orders = $lazadaAPI->getReadyToShipOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderArray,$orderId);
+                    }
+
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+                
+                }else{
+                    $moreOrders = false;
+                }
+            
+            }
+
+            if(!empty($orderArray)){
                 $counter = 0;
+                
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
@@ -576,6 +607,7 @@ class LazadaUIController extends Controller
                                         })
                                         ->where('Cancelled','tNO')
                                         ->first();
+
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
                         $items = [];
@@ -627,7 +659,7 @@ class LazadaUIController extends Controller
                     ]);
 
                 }else{
-
+                    
                     return response()->json([
                         'title' => 'Information: ',
                         'status' => 'alert-info',
