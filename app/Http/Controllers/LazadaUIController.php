@@ -75,67 +75,188 @@ class LazadaUIController extends Controller
     {
         try
         {
-            //SAP odataClient
             $odataClient = new SapService();
-            //Get items with lazada integration set as yes
-            $getItems = $odataClient->getOdataClient()->from('Items')
-                                                ->where('U_LAZ_INTEGRATION','Yes')
-                                                ->get();
-            //lazada API
-            $lazadaAPI = new LazadaAPIController();
-            $counter = 0;
 
-            if(!empty($getItems['0'])){
-                //Loop results
-                foreach($getItems as $item){
-                    //Old and New SKU
-                    $oldSku = $item['U_OLD_SKU']; //Old sku from SAP
-                    $newSku = $item['ItemCode']; //Sku in lazada
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                    
-                    if(!empty($getByNewSku['data'])){
-                        $lazadaItemId = $getByNewSku['data']['item_id'];
-                        
-                        $update = $odataClient->getOdataClient()->from('Items')
-                                ->whereKey($newSku)
-                                ->patch([
-                                    'U_LAZ_ITEM_CODE' => $lazadaItemId,
-                                ]);
-                        
-                        ($update ? $counter++ : '');
+            $itemCount = 0;
 
-                    }else if($oldSku != null){
-                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+            $count = 0;
+
+            $moreItems = true;
+
+            while($moreItems){
+
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+
+                if($getItems->isNotEmpty()){
+
+                    $lazadaAPI = new LazadaAPIController();
+                     //Loop results
+                    foreach($getItems as $item){
+                        //Old and New SKU
+                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
                         
-                        if(!empty($getByOldSku['data'])){
-                            $lazadaItemId = $getByOldSku['data']['item_id'];
-                            $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_OLD_SKU',$oldSku)
-                                                    ->first();
+                        if(!empty($getByNewSku['data'])){
+                            $lazadaItemId = $getByNewSku['data']['item_id'];
                             
                             $update = $odataClient->getOdataClient()->from('Items')
-                                    ->whereKey($oldSkuItemCode->ItemCode)
+                                    ->whereKey($newSku)
                                     ->patch([
                                         'U_LAZ_ITEM_CODE' => $lazadaItemId,
                                     ]);
                             
-                            ($update ? $counter++ : '');
-                                                        
+                            ($update ? $itemCount++ : '');
+
+                        }else if($oldSku != null){
+                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+                            
+                            if(!empty($getByOldSku['data'])){
+                                $lazadaItemId = $getByOldSku['data']['item_id'];
+                                $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
+                                                        ->where('U_OLD_SKU',$oldSku)
+                                                        ->first();
+                                
+                                $update = $odataClient->getOdataClient()->from('Items')
+                                        ->whereKey($oldSkuItemCode->ItemCode)
+                                        ->patch([
+                                            'U_LAZ_ITEM_CODE' => $lazadaItemId,
+                                        ]);
+                                
+                                ($update ? $itemCount++ : '');
+                                                            
+                            }
                         }
+
                     }
 
-                }
+                    $count += count($getItems);
 
-                if($counter > 0){
-                    Log::channel('lazada.item_master')->info('Item Id UDFs updated.');
-
-                    return response()->json([
-                        'title' => 'Success: ',
-                        'status' => 'alert-success',
-                        'message' => 'Item Id UDFs updated.'
-                    ]);
+                }else{
+                    $moreItems = false;
                 }
+            }
+
+            if($itemCount > 0){
+                Log::channel('lazada.item_master')->info($itemCount.' Item Id UDFs updated.');
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => $itemCount.' Item Id UDFs updated.'
+                ]);
+
+            }else{
+                Log::channel('lazada.item_master')->warning('No Lazada items available.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No Lazada items available.'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::channel('lazada.item_master')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function updatePrice()
+    {
+        try
+        {
+            $odataClient = new SapService();
             
+            $count = 0;
+
+            $skuPayloadCount = 0;
+
+            $moreItems = true;
+
+            while($moreItems){
+
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+
+                if($getItems->isNotEmpty()){
+                    
+                    $lazadaAPI = new LazadaAPIController();
+
+                    foreach($getItems as $item){
+                        //Price
+                        $sapPrice = $item['ItemPrices']['8']['Price']; //live - $item['ItemPrices']['3']['Price']
+                        //Old and New SKU
+                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
+
+                        if(!empty($getByNewSku['data'])){
+                            $lazadaItemId = $getByNewSku['data']['item_id'];
+                            $finalSku = $newSku;
+
+                        }else if($oldSku != null){
+                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+
+                            if(!empty($getByOldSku['data'])){
+                                $lazadaItemId = $getByOldSku['data']['item_id'];
+                                $finalSku = $oldSku;
+                            }
+                        }
+
+                        if(!empty($lazadaItemId) && !empty($finalSku)){
+                            //Create SKU Payload
+                            $skuPayload[] = "<Sku>
+                                                <ItemId>".$lazadaItemId."</ItemId>
+                                                <SellerSku>".$finalSku."</SellerSku>
+                                                <Price>".$sapPrice."</Price>
+                                            </Sku>";
+                        }
+                        
+                    }
+
+                    if(!empty($skuPayload)){
+                        $finalPayload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    ".implode('',$skuPayload)."
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        //Run 
+                        $updatePrice = $lazadaAPI->updatePriceQuantity($finalPayload);
+
+                        if($updatePrice['code'] == 0){
+                            $skuPayloadCount += count($skuPayload);
+                        }
+    
+                    }
+
+                    if(count($skuPayload) >= 20){
+                        unset($skuPayload);
+                    }
+
+                    $count += count($getItems);
+                
+                }else{
+                    $moreItems = false;
+                }
+
+            }
+            
+            if($skuPayloadCount > 0){
+                Log::channel('lazada.item_master')->info('Price updated on '.$skuPayloadCount.' Lazada SKU/s.');
+    
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => 'Price updated on '.$skuPayloadCount.' Lazada SKU/s.'
+                ]);
+
             }else{
                 Log::channel('lazada.item_master')->warning('No Lazada items available.');
 
@@ -154,91 +275,6 @@ class LazadaUIController extends Controller
                 'message' => $e->getMessage()
             ]);
         }
-    }
-
-    public function updatePrice()
-    {
-        try
-        {
-            //SAP odataClient
-            $odataClient = new SapService();
-            //Get items with lazada integration set as yes
-            $getItems = $odataClient->getOdataClient()->from('Items')
-                                                 ->where('U_LAZ_INTEGRATION','Yes')
-                                                 ->get();
-            //lazada API
-            $lazadaAPI = new LazadaAPIController();
-            
-            if(!empty($getItems['0'])){
-                //Loop results
-                foreach($getItems as $item){
-                    //Price
-                    $sapPrice = $item['ItemPrices']['8']['Price'];
-                    //Old and New SKU
-                    $oldSku = $item['U_OLD_SKU']; //Old sku from SAP
-                    $newSku = $item['ItemCode']; //Sku in lazada
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                    if(!empty($getByNewSku['data'])){
-                        $lazadaItemId = $getByNewSku['data']['item_id'];
-                        $finalSku = $newSku;
-                    }else if($oldSku != null){
-                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
-                        if(!empty($getByOldSku['data'])){
-                            $lazadaItemId = $getByOldSku['data']['item_id'];
-                            $finalSku = $oldSku;
-                        }
-                    }
-
-                    if(!empty($lazadaItemId) && !empty($finalSku)){
-                         //Create SKU Payload
-                        $skuPayload[] = "<Sku>
-                                            <ItemId>".$lazadaItemId."</ItemId>
-                                            <SellerSku>".$finalSku."</SellerSku>
-                                            <Price>".$sapPrice."</Price>
-                                        </Sku>";
-                    }
-                    
-                }
-
-                if(!empty($skuPayload)){
-                    $finalPayload = "<Request>
-                                        <Product>
-                                            <Skus>
-                                                ".implode('',$skuPayload)."
-                                            </Skus>
-                                        </Product>
-                                    </Request>";
-                    //Run 
-                    $lazadaAPI->updatePriceQuantity($finalPayload);
-                    
-                    Log::channel('lazada.item_master')->info('Items price updated.');
-
-                    return response()->json([
-                        'title' => 'Success: ',
-                        'status' => 'alert-success',
-                        'message' => 'Items price updated.'
-                    ]);
-
-                }
-
-            }else{
-                Log::channel('lazada.item_master')->warning('No Items price to be updated.');
-
-                return response()->json([
-                    'title' => 'Information: ',
-                    'status' => 'alert-info',
-                    'message' => 'No Items price to be updated.'
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::channel('lazada.item_master')->emergency($e->getMessage());
-
-            return response()->json([
-                'title' => 'Error: ',
-                'status' => 'alert-danger',
-                'message' => $e->getMessage()
-            ]);
-        }
 
     }
 
@@ -246,73 +282,99 @@ class LazadaUIController extends Controller
     {
         try
         {
-            //SAP odataClient
             $odataClient = new SapService();
-            //Get items with lazada integration set as yes
-            $getItems = $odataClient->getOdataClient()->from('Items')
-                                                 ->where('U_LAZ_INTEGRATION','Yes')
-                                                 ->get();
-            //lazada API
-            $lazadaAPI = new LazadaAPIController();
+            
+            $count = 0;
 
-            if(!empty($getItems['0'])){
-                //Loop results
-                foreach($getItems as $item){
-                    //Stocks
-                    $sapStock = $item['QuantityOnStock'];
-                    //Old and New SKU
-                    $oldSku = $item['U_OLD_SKU']; //Old sku from SAP
-                    $newSku = $item['ItemCode']; //Sku in lazada
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                    if(!empty($getByNewSku['data'])){
-                        $lazadaItemId = $getByNewSku['data']['item_id'];
-                        $finalSku = $newSku;
-                    }else if($oldSku != null){
-                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
-                        if(!empty($getByOldSku['data'])){
-                            $lazadaItemId = $getByOldSku['data']['item_id'];
-                            $finalSku = $oldSku;
+            $skuPayloadCount = 0;
+
+            $moreItems = true;
+
+            while($moreItems){
+                
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+
+                if($getItems->isNotEmpty()){
+                    
+                    $lazadaAPI = new LazadaAPIController();
+
+                    foreach($getItems as $item){
+                        //Stocks
+                        $sapStock = $item['QuantityOnStock'];
+                        //Old and New SKU
+                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
+                        
+                        if(!empty($getByNewSku['data'])){
+                            $lazadaItemId = $getByNewSku['data']['item_id'];
+                            $finalSku = $newSku;
+                        
+                        }else if($oldSku != null){
+                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+                            
+                            if(!empty($getByOldSku['data'])){
+                                $lazadaItemId = $getByOldSku['data']['item_id'];
+                                $finalSku = $oldSku;
+                            }
                         }
+    
+                        if(!empty($lazadaItemId) && !empty($finalSku)){
+                             //Create SKU Payload
+                            $skuPayload[] = "<Sku>
+                                                <ItemId>".$lazadaItemId."</ItemId>
+                                                <SellerSku>".$finalSku."</SellerSku>
+                                                <Quantity>".$sapStock."</Quantity>
+                                            </Sku>";
+                        }
+                        
                     }
 
-                    if(!empty($lazadaItemId) && !empty($finalSku)){
-                         //Create SKU Payload
-                        $skuPayload[] = "<Sku>
-                                            <ItemId>".$lazadaItemId."</ItemId>
-                                            <SellerSku>".$finalSku."</SellerSku>
-                                            <Quantity>".$sapStock."</Quantity>
-                                        </Sku>";
+                    if(!empty($skuPayload)){
+                        $finalPayload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    ".implode('',$skuPayload)."
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        //Run 
+                        $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
+                        
+                        if($updateStock['code'] == 0){
+                            $skuPayloadCount += count($skuPayload);
+                        }
+    
                     }
-                    
+
+                    if(count($skuPayload) >= 20){
+                        unset($skuPayload);
+                    }
+
+                    $count += count($getItems);
+
+                }else{
+                    $moreItems = false;
                 }
 
-                if(!empty($skuPayload)){
-                    $finalPayload = "<Request>
-                                        <Product>
-                                            <Skus>
-                                                ".implode('',$skuPayload)."
-                                            </Skus>
-                                        </Product>
-                                    </Request>";
-                    //Run 
-                    $lazadaAPI->updatePriceQuantity($finalPayload);
-                    
-                    Log::channel('lazada.item_master')->info('Items stock updated.');
+            }
 
-                    return response()->json([
-                        'title' => 'Success: ',
-                        'status' => 'alert-success',
-                        'message' => 'Items stock updated.'
-                    ]);
+            if($skuPayloadCount > 0){
+                Log::channel('lazada.item_master')->info('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
 
-                }
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => 'Stock updated on '.$skuPayloadCount.' Lazada SKU/s.'
+                ]);
+
             }else{
-                Log::channel('lazada.item_master')->warning('No Items stock to be updated.');
+                Log::channel('lazada.item_master')->warning('No Lazada items available.');
 
                 return response()->json([
                     'title' => 'Information: ',
                     'status' => 'alert-info',
-                    'message' => 'No Items stock to be updated.'
+                    'message' => 'No Lazada items available.'
                 ]);
             }
 
@@ -331,7 +393,7 @@ class LazadaUIController extends Controller
     {
         try {
             $odataClient = new SapService();
-            
+            //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
@@ -339,47 +401,72 @@ class LazadaUIController extends Controller
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
 
             $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getPendingOrders();
+
+            $moreOrders= true;
             
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    $orderIdArray[] = $orderId;
-                    
-                    $tempSO[$orderId] = [
-                        'CardCode' => $lazadaCustomer->Name,
-                        'DocDate' => substr($order['created_at'],0,10),
-                        'DocDueDate' => substr($order['created_at'],0,10),
-                        'TaxDate' => substr($order['created_at'],0,10),
-                        'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada_1',
-                        'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
-                    ];
-                    
-                    if($order['shipping_fee'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $shippingFee->Name,
-                            'Quantity' => 1,
-                            'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+            $offset = 0;
+
+            $orderIdArray = [];
+
+            while($moreOrders){
+                
+                $orders = $lazadaAPI->getPendingOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+                
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderIdArray,$orderId);
+                        
+                        $tempSO[$orderId] = [
+                            'CardCode' => $lazadaCustomer->Name,
+                            'DocDate' => substr($order['created_at'],0,10),
+                            'DocDueDate' => substr($order['created_at'],0,10),
+                            'TaxDate' => substr($order['created_at'],0,10),
+                            'NumAtCard' => $orderId,
+                            'U_Ecommerce_Type' => 'Lazada_1',
+                            'U_Order_ID' => $orderId,
+                            'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                            'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                         ];
+                        
+                        if($order['shipping_fee'] != 0.00){
+                            $fees[$orderId][] = [
+                                'ItemCode' => $shippingFee->Name,
+                                'Quantity' => 1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+                            ];
+                        }
+    
+                        if($order['voucher'] != 0.00){
+                            $fees[$orderId][] = [
+                                'ItemCode' => $sellerVoucher->Name,
+                                'Quantity' => -1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $order['voucher'] / $percentage->Name
+                            ];
+                        }
+    
                     }
 
-                    if($order['voucher'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $sellerVoucher->Name,
-                            'Quantity' => -1,
-                            'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $order['voucher'] / $percentage->Name
-                        ];
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
                     }
-
+                
+                }else{
+                    $moreOrders = false;
                 }
-        
+            
+            }
+
+            if(!empty($orderIdArray)){
+                
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
+                $counter = 0;
                 
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
@@ -401,8 +488,6 @@ class LazadaUIController extends Controller
                     }
 
                 }
-
-                $counter = 0;
                 
                 foreach($tempSO as $key => $value){
                     $finalSO = array_slice($tempSO[$key],0);
@@ -446,7 +531,6 @@ class LazadaUIController extends Controller
 
                 }
 
-
             }else{
                 Log::channel('lazada.sales_order')->info('No pending orders for now.');
 
@@ -473,17 +557,40 @@ class LazadaUIController extends Controller
     {
         try {
             $odataClient = new SapService();
+        
             $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getReadyToShipOrders();
+            
+            $offset = 0;
+            
+            $moreOrders= true;
+
             $orderArray = [];
 
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    array_push($orderArray,$orderId);
-                }
+            while($moreOrders){
 
+                $orders = $lazadaAPI->getReadyToShipOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderArray,$orderId);
+                    }
+
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+                
+                }else{
+                    $moreOrders = false;
+                }
+            
+            }
+
+            if(!empty($orderArray)){
                 $counter = 0;
+                
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
@@ -500,6 +607,7 @@ class LazadaUIController extends Controller
                                         })
                                         ->where('Cancelled','tNO')
                                         ->first();
+
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
                         $items = [];
@@ -551,7 +659,7 @@ class LazadaUIController extends Controller
                     ]);
 
                 }else{
-
+                    
                     return response()->json([
                         'title' => 'Information: ',
                         'status' => 'alert-info',
@@ -584,7 +692,7 @@ class LazadaUIController extends Controller
     {
         try {
             $odataClient = new SapService();
-        
+            //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
@@ -592,41 +700,76 @@ class LazadaUIController extends Controller
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             
             $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getReturnedOrders();
-            //print_r($orders);
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    $orderIdArray[] = $orderId;
+            
+            $moreOrders= true;
+            
+            $offset = 0;
+
+            $orderIdArray = [];
+            
+            while($moreOrders){
+
+                $orders = $lazadaAPI->getReturnedOrders($offset);
+            
+                if(!empty($orders['data']['orders'])){
+
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderIdArray,$orderId);
+                        
+                        $tempCM[$orderId] = [
+                            'CardCode' => $lazadaCustomer->Name,
+                            'DocDate' => substr($order['created_at'],0,10),
+                            'DocDueDate' => substr($order['created_at'],0,10),
+                            'TaxDate' => substr($order['created_at'],0,10),
+                            'NumAtCard' => $orderId,
+                            'U_Ecommerce_Type' => 'Lazada_1',
+                            'U_Order_ID' => $orderId,
+                            'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        ];
                     
-                    $tempCM[$orderId] = [
-                        'CardCode' => $lazadaCustomer->Name,
-                        'DocDate' => substr($order['created_at'],0,10),
-                        'DocDueDate' => substr($order['created_at'],0,10),
-                        'TaxDate' => substr($order['created_at'],0,10),
-                        'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada_1',
-                        'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                    ];
-                
+                    }
+
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+
+                }else{
+                    $moreOrders = false;
                 }
+
+            }
+
+            if(!empty($orderIdArray)){
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-                
+                $counter = 0;
+
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
                     
                     foreach($item['order_items'] as $orderItem){
                         if($orderItem['status'] == 'returned'){
+                            $shippingAmount = $orderItem['shipping_amount'];
+                            $paidPrice = $orderItem['paid_price'];
+                            
+                            if($shippingAmount != 0){
+                                $finalPrice = $paidPrice + $shippingAmount;
+                            }else{
+                                $finalPrice = $paidPrice;
+                            }
+                            
                             $items[$orderId][] = [
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                                'UnitPrice' => $finalPrice / $percentage->Name
                             ];
-                            $refund[$orderId][] = $orderItem['paid_price'];
+
+                            $refund[$orderId][] = $finalPrice;
                         }
                         
                     }
@@ -635,8 +778,7 @@ class LazadaUIController extends Controller
                     $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                     
                 }
-
-                $counter = 0;
+                
                 foreach($tempCM as $key => $value){
                     $finalCM = array_slice($tempCM[$key],0);
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
