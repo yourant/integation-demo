@@ -360,7 +360,7 @@ class LazadaUIController extends Controller
             }
 
             if($skuPayloadCount > 0){
-                Log::channel('lazada.item_master')->warning('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
+                Log::channel('lazada.item_master')->info('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
 
                 return response()->json([
                     'title' => 'Success: ',
