@@ -7,21 +7,21 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Lazada2APIController;
 
-class Lazada2ItemMaster extends Command
+class Lazada2ItemStockUpdate extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'lazada2:item-master';
+    protected $signature = 'lazada2:item-stock-update';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Item Master for 2nd Lazada Account';
+    protected $description = 'Update the Lazada products based on the stock in the Item Master';
 
     /**
      * Create a new command instance.
@@ -40,7 +40,7 @@ class Lazada2ItemMaster extends Command
      */
     public function handle()
     {
-        try 
+        try
         {
             $odataClient = new SapService();
             
@@ -51,16 +51,15 @@ class Lazada2ItemMaster extends Command
             $moreItems = true;
 
             while($moreItems){
-            
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
                 
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+
                 if($getItems->isNotEmpty()){
                     
                     $lazadaAPI = new Lazada2APIController();
-                    
+
                     foreach($getItems as $item){
-                        //Price and Stocks
-                        $sapPrice = $item['ItemPrices']['8']['Price']; //live - $item['ItemPrices']['3']['Price']
+                        //Stocks
                         $sapStock = $item['QuantityOnStock'];
                         //Old and New SKU
                         $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
@@ -70,28 +69,13 @@ class Lazada2ItemMaster extends Command
                         if(!empty($getByNewSku['data'])){
                             $lazadaItemId = $getByNewSku['data']['item_id'];
                             $finalSku = $newSku;
-
-                            $odataClient->getOdataClient()->from('Items')
-                                    ->whereKey($newSku)
-                                    ->patch([
-                                        'U_LAZ2_ITEM_CODE' => $lazadaItemId,
-                                    ]);
-
+                        
                         }else if($oldSku != null){
                             $getByOldSku = $lazadaAPI->getProductItem($oldSku);
                             
                             if(!empty($getByOldSku['data'])){
                                 $lazadaItemId = $getByOldSku['data']['item_id'];
                                 $finalSku = $oldSku;
-                                $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
-                                                        ->where('U_OLD_SKU',$oldSku)
-                                                        ->first();
-
-                                $odataClient->getOdataClient()->from('Items')
-                                        ->whereKey($oldSkuItemCode->ItemCode)
-                                        ->patch([
-                                            'U_LAZ2_ITEM_CODE' => $lazadaItemId,
-                                        ]);
                             }
                         }
     
@@ -101,14 +85,12 @@ class Lazada2ItemMaster extends Command
                                                 <ItemId>".$lazadaItemId."</ItemId>
                                                 <SellerSku>".$finalSku."</SellerSku>
                                                 <Quantity>".$sapStock."</Quantity>
-                                                <Price>".$sapPrice."</Price>
                                             </Sku>";
                         }
                         
                     }
-    
-                    if(!empty($skuPayload)){
 
+                    if(!empty($skuPayload)){
                         $finalPayload = "<Request>
                                             <Product>
                                                 <Skus>
@@ -116,10 +98,10 @@ class Lazada2ItemMaster extends Command
                                                 </Skus>
                                             </Product>
                                         </Request>";
-
-                        $updatePriceStock = $lazadaAPI->updatePriceQuantity($finalPayload);
-
-                        if($updatePriceStock['code'] == 0){
+                        //Run 
+                        $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
+                        
+                        if($updateStock['code'] == 0){
                             $skuPayloadCount += count($skuPayload);
                         }
     
@@ -128,26 +110,26 @@ class Lazada2ItemMaster extends Command
                     if(count($skuPayload) >= 20){
                         unset($skuPayload);
                     }
-    
+
                     $count += count($getItems);
-    
+
                 }else{
                     $moreItems = false;
                 }
-    
+
             }
 
             if($skuPayloadCount > 0){
-                Log::channel('lazada2.item_master')->info('stock and price updated on '.$skuPayloadCount.' Lazada SKU/s.');
-            }
+                Log::channel('lazada2.item_master')->info('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
 
-            if($count == 0){
+            }else{
                 Log::channel('lazada2.item_master')->warning('No Lazada items available.');
-            }
 
+            }
 
         } catch (\Exception $e) {
             Log::channel('lazada2.item_master')->emergency($e->getMessage());
+
         }
     }
 }

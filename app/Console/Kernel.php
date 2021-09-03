@@ -14,7 +14,6 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\LazadaRefreshToken::class,
-        Commands\LazadaItemMaster::class,
         Commands\LazadaOrder::class,
         Commands\LazadaInvoice::class,
         Commands\LazadaCreditMemo::class,
