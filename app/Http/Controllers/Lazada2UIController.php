@@ -392,7 +392,7 @@ class Lazada2UIController extends Controller
     {
         try {
             $odataClient = new SapService();
-
+            //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA2_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
@@ -400,48 +400,73 @@ class Lazada2UIController extends Controller
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
 
             $lazadaAPI = new Lazada2APIController();
-            $orders = $lazadaAPI->getPendingOrders();
 
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    $orderIdArray[] = $orderId;
-                    
-                    $tempSO[$orderId] = [
-                        'CardCode' => $lazadaCustomer->Name,
-                        'DocDate' => substr($order['created_at'],0,10),
-                        'DocDueDate' => substr($order['created_at'],0,10),
-                        'TaxDate' => substr($order['created_at'],0,10),
-                        'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada_2',
-                        'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
-                    ];
-                    
-                    if($order['shipping_fee'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $shippingFee->Name,
-                            'Quantity' => 1,
-                            'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+            $moreOrders= true;
+            
+            $offset = 0;
+
+            $orderIdArray = [];
+
+            while($moreOrders){
+                
+                $orders = $lazadaAPI->getPendingOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+                
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderIdArray,$orderId);
+                        
+                        $tempSO[$orderId] = [
+                            'CardCode' => $lazadaCustomer->Name,
+                            'DocDate' => substr($order['created_at'],0,10),
+                            'DocDueDate' => substr($order['created_at'],0,10),
+                            'TaxDate' => substr($order['created_at'],0,10),
+                            'NumAtCard' => $orderId,
+                            'U_Ecommerce_Type' => 'Lazada_2',
+                            'U_Order_ID' => $orderId,
+                            'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                            'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                         ];
+                        
+                        if($order['shipping_fee'] != 0.00){
+                            $fees[$orderId][] = [
+                                'ItemCode' => $shippingFee->Name,
+                                'Quantity' => 1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+                            ];
+                        }
+    
+                        if($order['voucher'] != 0.00){
+                            $fees[$orderId][] = [
+                                'ItemCode' => $sellerVoucher->Name,
+                                'Quantity' => -1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $order['voucher'] / $percentage->Name
+                            ];
+                        }
+    
                     }
 
-                    if($order['voucher'] != 0.00){
-                        $fees[$orderId][] = [
-                            'ItemCode' => $sellerVoucher->Name,
-                            'Quantity' => -1,
-                            'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $order['voucher'] / $percentage->Name
-                        ];
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
                     }
-
+                
+                }else{
+                    $moreOrders = false;
                 }
-        
+            
+            }
+
+            if(!empty($orderIdArray)){
+                
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-
+                $counter = 0;
+                
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
         
@@ -462,9 +487,7 @@ class Lazada2UIController extends Controller
                     }
 
                 }
-
-                $counter = 0;
-
+                
                 foreach($tempSO as $key => $value){
                     $finalSO = array_slice($tempSO[$key],0);
                     $getSO = $odataClient->getOdataClient()->from('Orders')
@@ -476,19 +499,19 @@ class Lazada2UIController extends Controller
                                     })
                                     ->where('Cancelled','tNO')
                                     ->first();
-                    
+
                     if(!$getSO){
                         $odataClient->getOdataClient()->post('Orders',$finalSO);
                         
                         $counter++;
-
+                        
                         Log::channel('lazada2.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
                     }else{
                         unset($finalSO);
                     }
 
                 }
-
+                
                 if($counter > 0){
 
                     return response()->json([
@@ -517,7 +540,6 @@ class Lazada2UIController extends Controller
                 ]);
 
             }
-
         } catch (\Exception $e) {
             Log::channel('lazada2.sales_order')->emergency($e->getMessage());
 
@@ -534,17 +556,40 @@ class Lazada2UIController extends Controller
     {
         try {
             $odataClient = new SapService();
+        
             $lazadaAPI = new Lazada2APIController();
-            $orders = $lazadaAPI->getReadyToShipOrders();
+            
+            $offset = 0;
+            
+            $moreOrders= true;
+
             $orderArray = [];
 
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    array_push($orderArray,$orderId);
-                }
+            while($moreOrders){
 
+                $orders = $lazadaAPI->getReadyToShipOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderArray,$orderId);
+                    }
+
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+                
+                }else{
+                    $moreOrders = false;
+                }
+            
+            }
+
+            if(!empty($orderArray)){
                 $counter = 0;
+                
                 foreach($orderArray as $id){
                     $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
@@ -561,6 +606,7 @@ class Lazada2UIController extends Controller
                                         })
                                         ->where('Cancelled','tNO')
                                         ->first();
+
                     if($orderDocEntry && !$getInv){
                         $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
                         $items = [];
@@ -596,8 +642,9 @@ class Lazada2UIController extends Controller
                         ]);
                         
                         $counter++;
-
+                        
                         Log::channel('lazada2.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
+
                     }
                     
                 }
@@ -611,7 +658,7 @@ class Lazada2UIController extends Controller
                     ]);
 
                 }else{
-
+                    
                     return response()->json([
                         'title' => 'Information: ',
                         'status' => 'alert-info',
@@ -644,7 +691,7 @@ class Lazada2UIController extends Controller
     {
         try {
             $odataClient = new SapService();
-        
+            //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA2_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
@@ -652,41 +699,76 @@ class Lazada2UIController extends Controller
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             
             $lazadaAPI = new Lazada2APIController();
-            $orders = $lazadaAPI->getReturnedOrders();
             
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    $orderIdArray[] = $orderId;
+            $moreOrders= true;
+            
+            $offset = 0;
+
+            $orderIdArray = [];
+            
+            while($moreOrders){
+
+                $orders = $lazadaAPI->getReturnedOrders($offset);
+            
+                if(!empty($orders['data']['orders'])){
+
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderIdArray,$orderId);
+                        
+                        $tempCM[$orderId] = [
+                            'CardCode' => $lazadaCustomer->Name,
+                            'DocDate' => substr($order['created_at'],0,10),
+                            'DocDueDate' => substr($order['created_at'],0,10),
+                            'TaxDate' => substr($order['created_at'],0,10),
+                            'NumAtCard' => $orderId,
+                            'U_Ecommerce_Type' => 'Lazada_2',
+                            'U_Order_ID' => $orderId,
+                            'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        ];
                     
-                    $tempCM[$orderId] = [
-                        'CardCode' => $lazadaCustomer->Name,
-                        'DocDate' => substr($order['created_at'],0,10),
-                        'DocDueDate' => substr($order['created_at'],0,10),
-                        'TaxDate' => substr($order['created_at'],0,10),
-                        'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada_2',
-                        'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                    ];
-                
+                    }
+
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+
+                }else{
+                    $moreOrders = false;
                 }
+
+            }
+
+            if(!empty($orderIdArray)){
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
+                $counter = 0;
 
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
-        
+                    
                     foreach($item['order_items'] as $orderItem){
                         if($orderItem['status'] == 'returned'){
+                            $shippingAmount = $orderItem['shipping_amount'];
+                            $paidPrice = $orderItem['paid_price'];
+                            
+                            if($shippingAmount != 0){
+                                $finalPrice = $paidPrice + $shippingAmount;
+                            }else{
+                                $finalPrice = $paidPrice;
+                            }
+                            
                             $items[$orderId][] = [
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                                'UnitPrice' => $finalPrice / $percentage->Name
                             ];
-                            $refund[$orderId][] = $orderItem['paid_price'];
+
+                            $refund[$orderId][] = $finalPrice;
                         }
                         
                     }
@@ -696,7 +778,6 @@ class Lazada2UIController extends Controller
                     
                 }
                 
-                $counter = 0;
                 foreach($tempCM as $key => $value){
                     $finalCM = array_slice($tempCM[$key],0);
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
@@ -711,10 +792,11 @@ class Lazada2UIController extends Controller
 
                     if(!$getCM){
                         $odataClient->getOdataClient()->post('CreditNotes',$finalCM);
-
+                        
                         $counter++;
                         
                         Log::channel('lazada2.credit_memo')->info('Credit memo for Lazada order:'.$finalCM['U_Order_ID'].' created successfully.');
+
                     }else{
                         unset($finalCM);
                     }
