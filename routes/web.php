@@ -3,8 +3,10 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
-use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaController;
+use App\Http\Controllers\ShopeeController;
+use App\Http\Controllers\LazadaUIController;
+use App\Http\Controllers\Lazada2UIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,8 +39,29 @@ Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
 });
 
 Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
-    // Test Route for lazada
-    Route::get('/',[ShopeeController::class, 'index2'])->name('lazada.dashboard');
+    // Dashboard for lazada Account 1
+    Route::get('/',[LazadaUIController::class, 'index'])->name('lazada.dashboard');
+    Route::post('/refresh-token',[LazadaUIController::class, 'refreshToken'])->name('lazada.refresh-token');
+    Route::post('/sync-item',[LazadaUIController::class, 'syncItem'])->name('lazada.sync-item');
+    Route::post('/update-price',[LazadaUIController::class, 'updatePrice'])->name('lazada.update-price');
+    Route::post('/update-stock',[LazadaUIController::class, 'updateStock'])->name('lazada.update-stock');
+    Route::post('/sales-order-generate',[LazadaUIController::class, 'generateSalesOrder'])->name('lazada.sales-order-generate');
+    Route::post('/invoice-generate',[LazadaUIController::class, 'generateInvoice'])->name('lazada.invoice-generate');
+    Route::post('/credit-memo-generate',[LazadaUIController::class, 'generateCreditMemo'])->name('lazada.credit-memo-generate');
+});
+
+Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
+    // Dashboard for lazada Account 1
+    Route::get('/',[Lazada2UIController::class, 'index'])->name('lazada2.dashboard');
+    Route::post('/refresh-token',[Lazada2UIController::class, 'refreshToken'])->name('lazada2.refresh-token');
+    Route::post('/sync-item',[Lazada2UIController::class, 'syncItem'])->name('lazada2.sync-item');
+    Route::post('/update-price',[Lazada2UIController::class, 'updatePrice'])->name('lazada2.update-price');
+    Route::post('/update-stock',[Lazada2UIController::class, 'updateStock'])->name('lazada2.update-stock');
+    Route::post('/sales-order-generate',[Lazada2UIController::class, 'generateSalesOrder'])->name('lazada2.sales-order-generate');
+    Route::post('/invoice-generate',[Lazada2UIController::class, 'generateInvoice'])->name('lazada2.invoice-generate');
+    Route::post('/credit-memo-generate',[Lazada2UIController::class, 'generateCreditMemo'])->name('lazada2.credit-memo-generate');
+
+    
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');

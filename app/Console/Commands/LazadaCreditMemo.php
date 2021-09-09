@@ -42,7 +42,7 @@ class LazadaCreditMemo extends Command
     {
         try {
             $odataClient = new SapService();
-        
+            //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
             $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
@@ -50,41 +50,75 @@ class LazadaCreditMemo extends Command
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             
             $lazadaAPI = new LazadaAPIController();
-            $orders = $lazadaAPI->getReturnedOrders();
-            //print_r($orders);
-            if(!empty($orders['data']['orders'])){
-                foreach($orders['data']['orders'] as $order){
-                    $orderId = $order['order_id'];
-                    $orderIdArray[] = $orderId;
-                    
-                    $tempCM[$orderId] = [
-                        'CardCode' => $lazadaCustomer->Name,
-                        'DocDate' => substr($order['created_at'],0,10),
-                        'DocDueDate' => substr($order['created_at'],0,10),
-                        'TaxDate' => substr($order['created_at'],0,10),
-                        'NumAtCard' => $orderId,
-                        'U_Ecommerce_Type' => 'Lazada_1',
-                        'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                    ];
+
+            $moreOrders= true;
+            
+            $offset = 0;
+
+            $orderIdArray = [];
+
+            while($moreOrders){
                 
+                $orders = $lazadaAPI->getReturnedOrders($offset);
+
+                if(!empty($orders['data']['orders'])){
+
+                    foreach($orders['data']['orders'] as $order){
+                        $orderId = $order['order_id'];
+                        array_push($orderIdArray,$orderId);
+                        
+                        $tempCM[$orderId] = [
+                            'CardCode' => $lazadaCustomer->Name,
+                            'DocDate' => substr($order['created_at'],0,10),
+                            'DocDueDate' => substr($order['created_at'],0,10),
+                            'TaxDate' => substr($order['created_at'],0,10),
+                            'NumAtCard' => $orderId,
+                            'U_Ecommerce_Type' => 'Lazada_1',
+                            'U_Order_ID' => $orderId,
+                            'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        ];
+                    
+                    }
+
+                    if($orders['data']['count'] == $orders['data']['countTotal']){
+                        $moreOrders = false;
+                    }else{  
+                        $offset += $orders['data']['count'];
+                    }
+                    
+                }else{
+                    $moreOrders = false;
                 }
+
+            }
+
+            if(!empty($orderIdArray)){
         
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
-                
+
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
                     
                     foreach($item['order_items'] as $orderItem){
                         if($orderItem['status'] == 'returned'){
+                            $shippingAmount = $orderItem['shipping_amount'];
+                            $paidPrice = $orderItem['paid_price'];
+                            
+                            if($shippingAmount != 0){
+                                $finalPrice = $paidPrice + $shippingAmount;
+                            }else{
+                                $finalPrice = $paidPrice;
+                            }
+                            
                             $items[$orderId][] = [
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $orderItem['paid_price'] / $percentage->Name
+                                'UnitPrice' => $finalPrice / $percentage->Name
                             ];
-                            $refund[$orderId][] = $orderItem['paid_price'];
+
+                            $refund[$orderId][] = $finalPrice;
                         }
                         
                     }
@@ -118,6 +152,7 @@ class LazadaCreditMemo extends Command
             }else{
                 Log::channel('lazada.credit_memo')->info('No returned orders for now.');
             }
+            
         } catch (\Exception $e) {
             Log::channel('lazada.credit_memo')->emergency($e->getMessage());
         }
