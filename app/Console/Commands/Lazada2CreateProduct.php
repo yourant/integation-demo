@@ -39,52 +39,90 @@ class Lazada2CreateProduct extends Command
      */
     public function handle()
     {
-        //SAP odataClient
-        $odataClient = new SapService();
-        $lazada2 = new Lazada2APIController();
-        
-        $item = $odataClient->getOdataClient()->from('Items')
-                                                ->whereKey('181MKT20011')
-                                                ->first();
-        $fields = [
-            'itemName' => $item['ItemName'],
-            'sellerSku' => $item['ItemCode'],
-            'quantity' => $item['QuantityOnStock'],
-            'price' => $item['ItemPrices']['8']['Price'],
-            'lazItemCode' => $item['U_LAZ2_ITEM_CODE']
-        ];
+        try {
+            $odataClient = new SapService();
+            
+            $count = 0;
 
-        $createProductPayload = "
-                    <Request>
-                        <Product>
-                            <PrimaryCategory>10000531</PrimaryCategory>
-                            <Attributes>
-                                <name>".$fields['itemName']."</name>
-                                <brand>Makita</brand>
-                                <delivery_option_sof>No</delivery_option_sof>
-                                <warranty_type>No Warranty</warranty_type>
-                            </Attributes>
-                            <Skus>
-                                <Sku>
-                                    <SellerSku>".$fields['sellerSku']."</SellerSku>
-                                    <quantity>".$fields['quantity']."</quantity>
-                                    <price>".$fields['price']."</price>
-                                    <package_length>35</package_length>
-                                    <package_height>25</package_height>
-                                    <package_weight>2</package_weight>
-                                    <package_width>25</package_width>
-                                </Sku>
-                            </Skus>
-                        </Product>
-                    </Request>";
+            $itemCount = 0;
+
+            $moreItems = true;
+
+            while($moreItems){
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Yes')->skip($count)->get();
+
+                if($getItems->isNotEmpty()){
+
+                    $lazadaAPI = new Lazada2APIController();
+
+                    foreach($getItems as $item){
+
+                        $fields = [
+                            'itemName' => $item['ItemName'],
+                            'sellerSku' => $item['ItemCode'],
+                            'quantity' => $item['QuantityOnStock'],
+                            'price' => $item['ItemPrices']['8']['Price'],
+                            'lazItemCode' => $item['U_LAZ2_ITEM_CODE']
+                        ];
+
+                        $createProductPayload = "
+                            <Request>
+                                <Product>
+                                    <PrimaryCategory>10000531</PrimaryCategory>
+                                    <Attributes>
+                                        <name>".$fields['itemName']."</name>
+                                        <brand>Makita</brand>
+                                        <delivery_option_sof>No</delivery_option_sof>
+                                        <warranty_type>No Warranty</warranty_type>
+                                    </Attributes>
+                                    <Skus>
+                                        <Sku>
+                                            <SellerSku>".$fields['sellerSku']."</SellerSku>
+                                            <quantity>".$fields['quantity']."</quantity>
+                                            <price>".$fields['price']."</price>
+                                            <package_length>35</package_length>
+                                            <package_height>25</package_height>
+                                            <package_weight>2</package_weight>
+                                            <package_width>25</package_width>
+                                        </Sku>
+                                    </Skus>
+                                </Product>
+                            </Request>";
+                        
+                        $response = $lazadaAPI->createProduct($createProductPayload);
+
+                        if(!empty($response['data'])){
+                            $itemCount++;
+                            print_r('create product success!');
+                        }else if($response['code'] == 500){
+                            print_r('product already exists');
+                        }
                     
-        $response = $lazada2->createProduct($createProductPayload);
-        
-        if(!empty($response['data'])){
-            print_r('create product success!');
-        }else if($response['code'] == 500){
-            print_r('product already exists');
+                    }
+
+                    $count += count($getItems);
+                
+                }else{
+                    $moreItems = false;
+                }
+            }
+
+            if($itemCount > 0){
+                print_r($itemCount.' SKUs added');
+            }
+
+        } catch (\Exception $e) {
+            Log::channel('lazada2.item_master')->emergency($e->getMessage());
         }
+                
+        
+        
+
+        
+                    
+        
+        
+       
 
     }
 }
