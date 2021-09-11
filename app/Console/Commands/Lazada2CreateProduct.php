@@ -92,8 +92,14 @@ class Lazada2CreateProduct extends Command
                         $response = $lazadaAPI->createProduct($createProductPayload);
 
                         if(!empty($response['data'])){
-                            $itemCount++;
-                            print_r('create product success!');
+                            $itemId = $response['data']['item_id'];
+                            $update = $odataClient->getOdataClient()->from('Items')
+                                        ->whereKey($fields['sellerSku'])
+                                        ->patch([
+                                            'U_LAZ2_ITEM_CODE' => $itemId,
+                                        ]);
+                            
+                            ($update ? $itemCount++ : '');
                         }else if($response['code'] == 500){
                             print_r('product already exists');
                         }
@@ -112,7 +118,7 @@ class Lazada2CreateProduct extends Command
             }
 
         } catch (\Exception $e) {
-            Log::channel('lazada2.item_master')->emergency($e->getMessage());
+            print_r($e->getMessage());
         }
                 
         
