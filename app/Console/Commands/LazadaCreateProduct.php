@@ -5,16 +5,16 @@ namespace App\Console\Commands;
 use App\Services\SapService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Lazada2APIController;
+use App\Http\Controllers\LazadaAPIController;
 
-class Lazada2CreateProduct extends Command
+class LazadaCreateProduct extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'lazada2:create-product';
+    protected $signature = 'lazada:create-product';
 
     /**
      * The console command description.
@@ -43,14 +43,14 @@ class Lazada2CreateProduct extends Command
         try {
             $odataClient = new SapService();
             //LIVE - U_MPS_ECOMMERCE
-            $brand = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_BRAND')->first();
-            $primaryCategory = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_CATEGORY')->first();
-            $deliveryOption = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_DELIVERY_OPTION')->first();
-            $packageHeight = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_HEIGHT')->first();
-            $packageLength = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_LENGTH')->first();
-            $packageWeight = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_WEIGHT')->first();
-            $packageWidth = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_WIDTH')->first();
-            $warrantyType= $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_WARRANTY_TYPE')->first();
+            $brand = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_BRAND')->first();
+            $primaryCategory = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_CATEGORY')->first();
+            $deliveryOption = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_DELIVERY_OPTION')->first();
+            $packageHeight = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_PACKAGE_HEIGHT')->first();
+            $packageLength = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_PACKAGE_LENGTH')->first();
+            $packageWeight = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_PACKAGE_WEIGHT')->first();
+            $packageWidth = $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_PACKAGE_WIDTH')->first();
+            $warrantyType= $odataClient->getOdataClient()->from('U_L1DD')->where('Code','L1_DFLT_WARRANTY_TYPE')->first();
             
             $count = 0;
 
@@ -59,11 +59,11 @@ class Lazada2CreateProduct extends Command
             $moreItems = true;
 
             while($moreItems){
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Yes')->skip($count)->get();
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();
 
                 if($getItems->isNotEmpty()){
 
-                    $lazadaAPI = new Lazada2APIController();
+                    $lazadaAPI = new LazadaAPIController();
 
                     foreach($getItems as $item){
 
@@ -105,7 +105,7 @@ class Lazada2CreateProduct extends Command
                             $update = $odataClient->getOdataClient()->from('Items')
                                         ->whereKey($fields['sellerSku'])
                                         ->patch([
-                                            'U_LAZ2_ITEM_CODE' => $itemId,
+                                            'U_LAZ_ITEM_CODE' => $itemId,
                                         ]);
                             
                             ($update ? $itemCount++ : '');
@@ -121,15 +121,13 @@ class Lazada2CreateProduct extends Command
             }
 
             if($itemCount > 0){
-                Log::channel('lazada2.item_master')->info($itemCount.' new product/s added');
+                Log::channel('lazada.item_master')->info($itemCount.' new product/s added');
             }else{
-                Log::channel('lazada2.item_master')->info('No new Lazada products to be added.');
+                Log::channel('lazada.item_master')->info('No new Lazada products to be added.');
             }
 
         } catch (\Exception $e) {
-            Log::channel('lazada2.item_master')->emergency($e->getMessage());
+            Log::channel('lazada.item_master')->emergency($e->getMessage());
         }
-                
-
     }
 }
