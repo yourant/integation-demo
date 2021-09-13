@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\SapService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Lazada2APIController;
 
 class Lazada2CreateProduct extends Command
@@ -41,6 +42,15 @@ class Lazada2CreateProduct extends Command
     {
         try {
             $odataClient = new SapService();
+            //LIVE - U_MPS_ECOMMERCE
+            $brand = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_BRAND')->first();
+            $primaryCategory = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_CATEGORY')->first();
+            $deliveryOption = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_DELIVERY_OPTION')->first();
+            $packageHeight = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_HEIGHT')->first();
+            $packageLength = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_LENGTH')->first();
+            $packageWeight = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_WEIGHT')->first();
+            $packageWidth = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_WIDTH')->first();
+            $warrantyType= $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_WARRANTY_TYPE')->first();
             
             $count = 0;
 
@@ -68,22 +78,22 @@ class Lazada2CreateProduct extends Command
                         $createProductPayload = "
                             <Request>
                                 <Product>
-                                    <PrimaryCategory>10000531</PrimaryCategory>
+                                    <PrimaryCategory>".$primaryCategory->U_VALUE."</PrimaryCategory>
                                     <Attributes>
                                         <name>".$fields['itemName']."</name>
-                                        <brand>Makita</brand>
-                                        <delivery_option_sof>No</delivery_option_sof>
-                                        <warranty_type>No Warranty</warranty_type>
+                                        <brand>".$brand->U_VALUE."</brand>
+                                        <delivery_option_sof>".$deliveryOption->U_VALUE."</delivery_option_sof>
+                                        <warranty_type>".$warrantyType->U_VALUE."</warranty_type>
                                     </Attributes>
                                     <Skus>
                                         <Sku>
                                             <SellerSku>".$fields['sellerSku']."</SellerSku>
                                             <quantity>".$fields['quantity']."</quantity>
                                             <price>".$fields['price']."</price>
-                                            <package_length>35</package_length>
-                                            <package_height>25</package_height>
-                                            <package_weight>2</package_weight>
-                                            <package_width>25</package_width>
+                                            <package_length>".$packageLength->U_VALUE."</package_length>
+                                            <package_height>".$packageHeight->U_VALUE."</package_height>
+                                            <package_weight>".$packageWeight->U_VALUE."</package_weight>
+                                            <package_width>".$packageWidth->U_VALUE."</package_width>
                                         </Sku>
                                     </Skus>
                                 </Product>
@@ -100,8 +110,6 @@ class Lazada2CreateProduct extends Command
                                         ]);
                             
                             ($update ? $itemCount++ : '');
-                        }else if($response['code'] == 500){
-                            print_r('product already exists');
                         }
                     
                     }
@@ -114,11 +122,13 @@ class Lazada2CreateProduct extends Command
             }
 
             if($itemCount > 0){
-                print_r($itemCount.' SKUs added');
+                Log::channel('lazada.item_master')->info($itemCount.' new product/s added');
+            }else{
+                Log::channel('lazada.item_master')->info('No new Lazada items to be added.');
             }
 
         } catch (\Exception $e) {
-            print_r($e->getMessage());
+            Log::channel('lazada.item_master')->emergency($e->getMessage());
         }
                 
         
