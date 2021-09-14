@@ -26,6 +26,32 @@
                 </div>
 
                 <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                           
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <center>Item Master Integration</center>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">Create base products from SAP B1 to Lazada</p>
+                                </div>
+                                <div class="card-footer">
+                                    <center>
+                                        <button href="#" class="btn btn-primary" id="item-master-btn">
+                                            CREATE BASE PRODUCTS
+                                        </button>
+                                    </center>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-4">
                             <div class="card">
@@ -181,6 +207,35 @@
                         $("#refresh-token-btn").html('Manual Refresh Tokens');
                     }
                 })
+                    
+            });
+
+            $('#item-master-btn').click(function() {
+                $('#alert').hide();
+                
+                $.ajax({
+                    url: "{{ route('lazada2.item-master-integration') }}",
+                    method: "POST",
+                    beforeSend: function() { 
+                        $("#sync-item-btn").attr("disabled", true);
+                        $("#sync-item-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                    },
+                    success: function(data) {
+                        $('#alert').addClass(data.status);
+                        $('#alert strong').text(data.title);
+                        $('#alert-msg').text(data.message)
+                        $('#alert').show();
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        $("#error-msg").text(xhr.responseText);
+                        $('#error-alert').show();
+                    },
+                    complete: function(response, status) {
+                        $("#sync-item-btn").attr("disabled", false);
+                        $("#sync-item-btn").html('CREATE BASE PRODUCTS');
+                    }
+                })
+                
                     
             });
 

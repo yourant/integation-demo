@@ -42,6 +42,7 @@ Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
     // Dashboard for lazada Account 1
     Route::get('/',[LazadaUIController::class, 'index'])->name('lazada.dashboard');
     Route::post('/refresh-token',[LazadaUIController::class, 'refreshToken'])->name('lazada.refresh-token');
+    Route::post('/item-master-integration',[LazadaUIController::class, 'itemMasterIntegration'])->name('lazada.item-master-integration');
     Route::post('/sync-item',[LazadaUIController::class, 'syncItem'])->name('lazada.sync-item');
     Route::post('/update-price',[LazadaUIController::class, 'updatePrice'])->name('lazada.update-price');
     Route::post('/update-stock',[LazadaUIController::class, 'updateStock'])->name('lazada.update-stock');
@@ -54,6 +55,7 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
     // Dashboard for lazada Account 1
     Route::get('/',[Lazada2UIController::class, 'index'])->name('lazada2.dashboard');
     Route::post('/refresh-token',[Lazada2UIController::class, 'refreshToken'])->name('lazada2.refresh-token');
+    Route::post('/item-master-integration',[Lazada2UIController::class, 'itemMasterIntegration'])->name('lazada2.item-master-integration');
     Route::post('/sync-item',[Lazada2UIController::class, 'syncItem'])->name('lazada2.sync-item');
     Route::post('/update-price',[Lazada2UIController::class, 'updatePrice'])->name('lazada2.update-price');
     Route::post('/update-stock',[Lazada2UIController::class, 'updateStock'])->name('lazada2.update-stock');
