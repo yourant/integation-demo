@@ -155,12 +155,30 @@ class Lazada2UIController extends Controller
 
             if($itemCount > 0){
                 Log::channel('lazada2.item_master')->info($itemCount.' new product/s added');
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => $itemCount.' new product/s added.'
+                ]);
             }else{
                 Log::channel('lazada2.item_master')->info('No new Lazada products to be added.');
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'No new Lazada products to be added.'
+                ]);
             }
 
         } catch (\Exception $e) {
             Log::channel('lazada2.item_master')->emergency($e->getMessage());
+
+            return response()->json([
+                'title' => 'Error: ',
+                'status' => 'alert-danger',
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
