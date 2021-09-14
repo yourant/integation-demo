@@ -214,8 +214,8 @@
                     url: "{{ route('lazada.item-master-integration') }}",
                     method: "POST",
                     beforeSend: function() { 
-                        $("#sync-item-btn").attr("disabled", true);
-                        $("#sync-item-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`);
+                        $("#item-master-btn").attr("disabled", true);
+                        $("#item-master-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating...`);
                     },
                     success: function(data) {
                         $('#alert').addClass(data.status);
@@ -228,8 +228,8 @@
                         $('#error-alert').show();
                     },
                     complete: function(response, status) {
-                        $("#sync-item-btn").attr("disabled", false);
-                        $("#sync-item-btn").html('CREATE BASE PRODUCTS');
+                        $("#item-master-btn").attr("disabled", false);
+                        $("#item-master-btn").html('CREATE BASE PRODUCTS');
                     }
                 })
                 
