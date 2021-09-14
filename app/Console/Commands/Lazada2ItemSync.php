@@ -52,7 +52,7 @@ class Lazada2ItemSync extends Command
 
             while($moreItems){
 
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Y')->skip($count)->get();//Live - Y/N
 
                 if($getItems->isNotEmpty()){
 
@@ -60,7 +60,7 @@ class Lazada2ItemSync extends Command
                      //Loop results
                     foreach($getItems as $item){
                         //Old and New SKU
-                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                        $oldSku = $item['U_MPS_OLDSKU']; //Live - U_MPS_OLDSKU
                         $newSku = $item['ItemCode']; //New SKU
                         $getByNewSku = $lazadaAPI->getProductItem($newSku);
                         
@@ -81,7 +81,7 @@ class Lazada2ItemSync extends Command
                             if(!empty($getByOldSku['data'])){
                                 $lazadaItemId = $getByOldSku['data']['item_id'];
                                 $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
-                                                        ->where('U_OLD_SKU',$oldSku)
+                                                        ->where('U_MPS_OLDSKU',$oldSku)
                                                         ->first();
                                 
                                 $update = $odataClient->getOdataClient()->from('Items')
