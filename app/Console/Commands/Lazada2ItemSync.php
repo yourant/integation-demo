@@ -52,7 +52,15 @@ class Lazada2ItemSync extends Command
 
             while($moreItems){
 
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Y')->skip($count)->get();//Live - Y/N
+                $getItems = $odataClient->getOdataClient()
+                                ->from('Items')
+                                ->where('U_LAZ2_INTEGRATION','Y')
+                                ->where(function($query){
+                                    $query->where('U_LAZ2_ITEM_CODE','=',NULL);
+                                    $query->orWhere('U_LAZ2_ITEM_CODE','=','');
+                                })
+                                ->skip($count)
+                                ->get();
 
                 if($getItems->isNotEmpty()){
 
@@ -108,7 +116,7 @@ class Lazada2ItemSync extends Command
                 Log::channel('lazada2.item_master')->info($itemCount.' Item Id UDFs updated.');
 
             }else{
-                Log::channel('lazada2.item_master')->warning('No Lazada items available.');
+                Log::channel('lazada2.item_master')->warning('No new Lazada items to be sync.');
                 
             }
 

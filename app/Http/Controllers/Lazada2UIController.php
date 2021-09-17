@@ -196,7 +196,15 @@ class Lazada2UIController extends Controller
 
             while($moreItems){
 
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Y')->skip($count)->get();//Live - Y/N
+                $getItems = $odataClient->getOdataClient()
+                                ->from('Items')
+                                ->where('U_LAZ2_INTEGRATION','Y')
+                                ->where(function($query){
+                                    $query->where('U_LAZ2_ITEM_CODE','=',NULL);
+                                    $query->orWhere('U_LAZ2_ITEM_CODE','=','');
+                                })
+                                ->skip($count)
+                                ->get();
 
                 if($getItems->isNotEmpty()){
 
@@ -258,12 +266,12 @@ class Lazada2UIController extends Controller
                 ]);
 
             }else{
-                Log::channel('lazada2.item_master')->warning('No Lazada items available.');
+                Log::channel('lazada2.item_master')->warning('No new Lazada items to be sync.');
 
                 return response()->json([
                     'title' => 'Information: ',
                     'status' => 'alert-info',
-                    'message' => 'No Lazada items available.'
+                    'message' => 'No new Lazada items to be sync.'
                 ]);
             }
 
