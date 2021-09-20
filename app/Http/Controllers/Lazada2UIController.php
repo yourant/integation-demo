@@ -517,6 +517,7 @@ class Lazada2UIController extends Controller
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
+            $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
 
             $lazadaAPI = new Lazada2APIController();
 
@@ -553,7 +554,8 @@ class Lazada2UIController extends Controller
                                 'ItemCode' => $shippingFee->Name,
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
                             ];
                         }
     
@@ -562,7 +564,8 @@ class Lazada2UIController extends Controller
                                 'ItemCode' => $sellerVoucher->Name,
                                 'Quantity' => -1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $order['voucher'] / $percentage->Name
+                                'UnitPrice' => $order['voucher'] / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
                             ];
                         }
     
@@ -594,7 +597,8 @@ class Lazada2UIController extends Controller
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
                             'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name
+                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
+                            'WarehouseCode' => $whsCode->Name
                         ];
                         
                     }
@@ -816,7 +820,8 @@ class Lazada2UIController extends Controller
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
-            
+            $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
+
             $lazadaAPI = new Lazada2APIController();
             
             $moreOrders= true;
@@ -884,7 +889,8 @@ class Lazada2UIController extends Controller
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $finalPrice / $percentage->Name
+                                'UnitPrice' => $finalPrice / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
                             ];
 
                             $refund[$orderId][] = $finalPrice;
