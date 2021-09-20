@@ -48,7 +48,8 @@ class Lazada2Order extends Command
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
-            
+            $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
+
             $lazadaAPI = new Lazada2APIController();
             
             $moreOrders= true;
@@ -84,7 +85,8 @@ class Lazada2Order extends Command
                                 'ItemCode' => $shippingFee->Name,
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name
+                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
                             ];
                         }
     
@@ -93,7 +95,8 @@ class Lazada2Order extends Command
                                 'ItemCode' => $sellerVoucher->Name,
                                 'Quantity' => -1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $order['voucher'] / $percentage->Name
+                                'UnitPrice' => $order['voucher'] / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
                             ];
                         }
     
@@ -124,7 +127,8 @@ class Lazada2Order extends Command
                             'ItemCode' => $orderItem['sku'],
                             'Quantity' => 1,
                             'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name
+                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
+                            'WarehouseCode' => $whsCode->Name
                         ];
                         
                     }
