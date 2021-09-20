@@ -48,7 +48,8 @@ class LazadaCreditMemo extends Command
             $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
-            
+            $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
+
             $lazadaAPI = new LazadaAPIController();
 
             $moreOrders= true;
@@ -115,7 +116,8 @@ class LazadaCreditMemo extends Command
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $finalPrice / $percentage->Name
+                                'UnitPrice' => $finalPrice / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
                             ];
 
                             $refund[$orderId][] = $finalPrice;
