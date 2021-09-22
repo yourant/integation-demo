@@ -71,15 +71,17 @@ class ShopeeController extends Controller
     public function syncItem()
     {
         $shopeeToken = AccessToken::where('platform', 'shopee')->first();   
-        
+
         $productList = [];
-        $moreProducts = true;
         $offset = 0;
         $pageSize = 50;
-
-        // retrieve products with base
-        while ($moreProducts) {
-            $productSegmentList = [];
+        
+        // retrieve detailed normal products
+        $detailedNormalProductList = [];
+        $moreNormalProducts = true;
+           
+        while ($moreNormalProducts) {
+            $normalProductList = [];
 
             $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeToken->access_token);
             $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
@@ -90,31 +92,127 @@ class ShopeeController extends Controller
 
             $shopeeProductsResponseArr = json_decode($shopeeProductsResponse->body(), true);
 
-            foreach ($shopeeProductsResponseArr['response']['item'] as $item) {
-                array_push($productSegmentList, $item['item_id']);
+            if ($items = $shopeeProductsResponseArr['response']['item']) {
+                foreach ($items as $item) {
+                    array_push($normalProductList, $item['item_id']);
+                }
             }
 
-            $productStr = implode(",", $productSegmentList);
-            // for testing
-            // $productStr = '5392771665,8070898047,1199243276';
-            
-            $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
-            $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
-                'item_id_list' => $productStr
-            ], $shopeeProductBase->getShopCommonParameter()));
-            
-            $shopeeProductBaseResponseArr = json_decode($shopeeProductBaseResponse->body(), true);
+            if ($normalProductList) {
+                // get base info of product
+                $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                    'item_id_list' => implode(",", $normalProductList)
+                ], $shopeeBaseProducts->getShopCommonParameter()));
 
-            $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
-            // for testing
-            // $productList = $shopeeProductBaseResponseArr['response']['item_list'];
+                $shopeeBaseProductsResponseArr = json_decode($shopeeBaseProductsResponse->body(), true);
+
+                if (array_key_exists('item_list', $shopeeBaseProductsResponseArr['response'])) {
+                    foreach ($shopeeBaseProductsResponseArr['response']['item_list'] as $item) {
+                        array_push($detailedNormalProductList, $item);
+                    }
+                }
+            }
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
                 $offset += $pageSize;
             } else {
-                $moreProducts = false;
+                $moreNormalProducts = false;
+            } 
+        }
+
+        // retrieve detailed banned products
+        $detailedBannedProductList = [];
+        $moreBannedProducts = true;
+        
+        while ($moreBannedProducts) {
+            $bannedProductList = [];
+
+            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeToken->access_token);
+            $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
+                'page_size' => $pageSize,
+                'offset' => $offset,
+                'item_status' => 'BANNED',
+            ], $shopeeProducts->getShopCommonParameter()));
+
+            $shopeeProductsResponseArr = json_decode($shopeeProductsResponse->body(), true);
+
+            if (array_key_exists('item', $shopeeProductsResponseArr['response'])) {
+                foreach ($shopeeProductsResponseArr['response']['item'] as $item) {
+                    array_push($bannedProductList, $item['item_id']);
+                }
+            }
+
+            if ($bannedProductList) {
+                // get base info of product
+                $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                    'item_id_list' => implode(",", $bannedProductList)
+                ], $shopeeBaseProducts->getShopCommonParameter()));
+
+                $shopeeBaseProductsResponseArr = json_decode($shopeeBaseProductsResponse->body(), true);
+
+                if (array_key_exists('item_list', $shopeeBaseProductsResponseArr['response'])) {
+                    foreach ($shopeeBaseProductsResponseArr['response']['item_list'] as $item) {
+                        array_push($detailedBannedProductList, $item);
+                    }
+                }
+            };
+
+            if ($shopeeProductsResponseArr['response']['has_next_page']) {
+                $offset += $pageSize;
+            } else {
+                $moreBannedProducts = false;
             }   
         }
+
+        // retrieve detailed unlisted products
+        $detailedUnlistedProductList = [];
+        $moreUnlistedProducts = true;       
+        
+        while ($moreUnlistedProducts) {
+            $unlistedProductList = [];
+
+            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeToken->access_token);
+            $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
+                'page_size' => $pageSize,
+                'offset' => $offset,
+                'item_status' => 'UNLIST',
+            ], $shopeeProducts->getShopCommonParameter()));
+
+            $shopeeProductsResponseArr = json_decode($shopeeProductsResponse->body(), true);
+
+            if ($items = $shopeeProductsResponseArr['response']['item']) {
+                foreach ($items as $item) {
+                    array_push($unlistedProductList, $item['item_id']);
+                }
+            }
+
+            if ($unlistedProductList) {
+                // get base info of product
+                $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                    'item_id_list' => implode(",", $unlistedProductList)
+                ], $shopeeBaseProducts->getShopCommonParameter()));
+
+                $shopeeBaseProductsResponseArr = json_decode($shopeeBaseProductsResponse->body(), true);
+
+                if (array_key_exists('item_list', $shopeeBaseProductsResponseArr['response'])) {
+                    foreach ($shopeeBaseProductsResponseArr['response']['item_list'] as $item) {
+                        array_push($detailedUnlistedProductList, $item);
+                    }
+                }
+            }
+
+            if ($shopeeProductsResponseArr['response']['has_next_page']) {
+                $offset += $pageSize;
+            } else {
+                $moreUnlistedProducts = false;
+            }   
+        }
+
+        // combine product base from products with different status
+        $productList = array_merge($detailedNormalProductList, $detailedBannedProductList, $detailedUnlistedProductList);
 
         foreach ($productList as $product) {
             $parentSku = $product['item_sku'];
