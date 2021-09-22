@@ -81,7 +81,7 @@ class LazadaFixUDF extends Command
             }
         }
         else if($choice == 1){
-            print_r("Items Not Existed in Lazada Account 1(TC) but Existed on Lazada Account 2(MSG) "."\n");
+            print_r("Fix Items Not Existed in Lazada Account 1(TC) but Existed on Lazada Account 2(MSG) "."\n");
                 
             while($moreItems){
         
@@ -130,6 +130,51 @@ class LazadaFixUDF extends Command
     
             }
             
+        }else if($choice == 2){
+            print_r("Fix Items Not Existed in Lazada Account 2(MSG) but Existed on Lazada Account 1(TC) "."\n"."Database: ".env("SAP_DB")."\n");
+            
+            while($moreItems){
+        
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ2_INTEGRATION','Y')->skip($count)->get();//Live - Y/N
+                
+                if($getItems->isNotEmpty()){
+                    
+                    $lazadaAPI = new LazadaAPIController();
+                    $lazada2API = new Lazada2APIController();
+                    
+                    foreach($getItems as $item){
+                        //Old and New SKU
+                        $itemName = $item['ItemName'];
+                        $oldSku = $item['U_MPS_OLDSKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+
+                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+                        $getByOldSku2 = $lazada2API->getProductItem($oldSku);
+                        
+                        if(!empty($getByOldSku['data']) && empty($getByOldSku2['data'])){
+                            $update = $odataClient->getOdataClient()->from('Items')
+                            ->whereKey($item['ItemCode'])
+                            ->patch([
+                                'U_LAZ_INTEGRATION' => 'Y',
+                                'U_LAZ2_INTEGRATION' => 'N'
+                            ]);
+                    
+                            if($update){
+                                $itemCount++;
+                                print_r("Item Name: ".$itemName." : New SKU: ".$newSku." : "."Old SKU: ".$oldSku."\n");
+                            }
+                        }
+                        
+                    }
+    
+                    $count += count($getItems);
+    
+                }else{
+                    $moreItems = false;
+                    print_r("Total: ".$itemCount);
+                }
+    
+            }
         }
 
 
