@@ -40,50 +40,96 @@ class LazadaFixUDF extends Command
      */
     public function handle()
     {
-        $choice = $this->ask("1. Fix items Not Existed on Lazada Account 1(TC) but Existed on Lazada Account 2(MSG)"."\n".
+        $choice = $this->ask("0. Testing on TC_DEV2 DB"."\n"."1. Fix items Not Existed on Lazada Account 1(TC) but Existed on Lazada Account 2(MSG)"."\n".
                             "2. Fix items Not Existed on Lazada Account 2(MSG) but Existed on Lazada Account 1(TC)");
 
         $odataClient = new SapService();
         
-        if($choice == 1){
-            print_r("1. Fix items Not Existed on Lazada Account 1(TC) but Existed on Lazada Account 2(MSG)"."\n");
-
-            $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Y')->get();
-
-            if($getItems->isNotEmpty()){
-                    
-                $lazadaAPI = new LazadaAPIController();
-                $lazada2API = new Lazada2APIController();
+        $count = 0;
+        
+        $itemCount = 0;
+        
+        $moreItems = true;
+        
+        if($choice == 0){
+            
+            while($moreItems){
                 
-                foreach($getItems as $item){
-                    //Old and New SKU
-                    $itemName = $item['ItemName'];
-                    $oldSku = $item['U_MPS_OLDSKU']; //Live - U_MPS_OLDSKU
-                    $newSku = $item['ItemCode']; //New SKU
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                    $getByNewSku2 = $lazada2API->getProductItem($newSku);
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->get();
+                
+                if($getItems->isNotEmpty()){
                     
-                    if(empty($getByNewSku['data']) && !empty($getByNewSku2['data'])){
-                        $itemCount++;
-                        print_r("Item Name: ".$itemName." : New SKU: ".$newSku." : "."Old SKU: ".$oldSku."\n");
+                    foreach($getItems as $item){
+                        
+                        $update = $odataClient->getOdataClient()->from('Items')
+                                    ->whereKey($item['ItemCode'])
+                                    ->patch([
+                                        'U_LAZ_INTEGRATION' => 'No',
+                                        'U_LAZ2_INTEGRATION' => 'Yes'
+                                    ]);
+                        
+                        ($update ? $itemCount++ : '');
+                    
+                    }
 
-                    }else if($oldSku != null){
+                }else{
+                    $moreItems = false;
+                    
+                    print_r("Total: ".$itemCount);
+                }
+
+            }
+        }
+        else if($choice == 1){
+            print_r("Items Not Existed in Lazada Account 1(TC) but Existed on Lazada Account 2(MSG) "."\n");
+                
+            while($moreItems){
+        
+                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Y')->skip($count)->get();//Live - Y/N
+                
+                if($getItems->isNotEmpty()){
+                    
+                    $lazadaAPI = new LazadaAPIController();
+                    $lazada2API = new Lazada2APIController();
+                    
+                    foreach($getItems as $item){
+                        //Old and New SKU
+                        $itemName = $item['ItemName'];
+                        $oldSku = $item['U_MPS_OLDSKU']; //Live - U_MPS_OLDSKU
+                        $newSku = $item['ItemCode']; //New SKU
+                        
                         $getByOldSku = $lazadaAPI->getProductItem($oldSku);
                         $getByOldSku2 = $lazada2API->getProductItem($oldSku);
                         
                         if(empty($getByOldSku['data']) && !empty($getByOldSku2['data'])){
-                            $itemCount++;
-                            print_r("Item Name: ".$itemName." : New SKU: ".$newSku." : "."Old SKU: ".$oldSku."\n");
+
+                            $update = $odataClient->getOdataClient()->from('Items')
+                                    ->whereKey($item['ItemCode'])
+                                    ->patch([
+                                        'U_LAZ_INTEGRATION' => 'N',
+                                        'U_LAZ2_INTEGRATION' => 'Y'
+                                    ]);
+                            
+                            if($update){
+                                $itemCount++;
+                                print_r("Item Name: ".$itemName." : New SKU: ".$newSku." : "."Old SKU: ".$oldSku."\n");
+                            }
+
                         }
+                        
                     }
+
+                    $count += count($getItems);
+    
+                }else{
                     
+                    $moreItems = false;
+                    print_r("Total: ".$itemCount);
+                
                 }
-
-            }else{
-                $moreItems = false;
-                print_r("Total: ".$itemCount."\n");
+    
             }
-
+            
         }
 
 
