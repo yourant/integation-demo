@@ -96,7 +96,7 @@ class ShopeeController extends Controller
 
             $productStr = implode(",", $productSegmentList);
             // for testing
-            $productStr = '5392771665,8070898047,1199243276';
+            // $productStr = '5392771665,8070898047,1199243276';
             
             $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
             $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
@@ -107,7 +107,7 @@ class ShopeeController extends Controller
 
             $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
             // for testing
-            $productList = $shopeeProductBaseResponseArr['response']['item_list'];
+            // $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
                 $offset += $pageSize;
@@ -205,7 +205,7 @@ class ShopeeController extends Controller
 
             $productStr = implode(",", $productSegmentList);
             // for test
-            $productStr = '5392771665,8070898047';
+            // $productStr = '5392771665,8070898047';
             
             $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
             $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
@@ -216,7 +216,7 @@ class ShopeeController extends Controller
 
             $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
             // for test
-            $productList = $shopeeProductBaseResponseArr['response']['item_list'];
+            // $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
                 $offset += $pageSize;
@@ -325,7 +325,7 @@ class ShopeeController extends Controller
 
             $productStr = implode(",", $productSegmentList);
             // for test
-            $productStr = '5392771665,8070898047';
+            // $productStr = '5392771665,8070898047';
             
             $shopeeProductBase = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
             $shopeeProductBaseResponse = Http::get($shopeeProductBase->getFullPath(), array_merge([
@@ -336,7 +336,7 @@ class ShopeeController extends Controller
 
             $productList = array_merge($productList, $shopeeProductBaseResponseArr['response']['item_list']);
             // for test
-            $productList = $shopeeProductBaseResponseArr['response']['item_list'];
+            // $productList = $shopeeProductBaseResponseArr['response']['item_list'];
 
             if ($shopeeProductsResponseArr['response']['has_next_page']) {
                 $offset += $pageSize;
@@ -453,7 +453,7 @@ class ShopeeController extends Controller
         // dd($orderList);
         $orderStr = implode(",", $orderList);
         // for testing
-        $orderStr = '18033000113B04H';
+        // $orderStr = '18033000113B04H';
         
         $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
         $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
@@ -625,7 +625,7 @@ class ShopeeController extends Controller
         }
 
         // for testing
-        $orderList = ['210803K1WFX89R'];
+        // $orderList = ['210803K1WFX89R'];
 
         $invoiceSapService = new SapService();
         $invoiceList = [];
@@ -723,13 +723,13 @@ class ShopeeController extends Controller
         }
 
         // for testing
-        foreach ($returnList as $value) {
-            if ($value['return_sn'] == '200124144731506') {
-            // if ($value['return_sn'] == '190923173135204') {
-                $returnList = [];
-                array_push($returnList, $value);
-            }
-        }
+        // foreach ($returnList as $value) {
+        //     if ($value['return_sn'] == '200124144731506') {
+        //     // if ($value['return_sn'] == '190923173135204') {
+        //         $returnList = [];
+        //         array_push($returnList, $value);
+        //     }
+        // }
 
         $itemList = [];
         $returnSapService = new SapService();
