@@ -258,7 +258,7 @@ class ShopeeController extends Controller
                                 'price_list' => [
                                     [
                                         'model_id' => (int) $modelId,
-                                        'original_price' => (int) $item['ItemPrices'][9]['Price']
+                                        'original_price' => (float) $item['ItemPrices'][9]['Price']
                                     ]
                                 ]
                             ]);
@@ -283,7 +283,7 @@ class ShopeeController extends Controller
                             'price_list' => [
                                 [
                                     'model_id' => (int) 0,
-                                    'original_price' => (int) $item['ItemPrices'][9]['Price']
+                                    'original_price' => (float) $item['ItemPrices'][9]['Price']
                                 ]
                             ]
                         ]);                       
