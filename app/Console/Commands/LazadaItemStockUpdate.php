@@ -59,33 +59,36 @@ class LazadaItemStockUpdate extends Command
                     $lazadaAPI = new LazadaAPIController();
 
                     foreach($getItems as $item){
-                        //Stocks
-                        $sapStock = $item['QuantityOnStock'];
-                        //Old and New SKU
-                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
-                        $newSku = $item['ItemCode']; //New SKU
-                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
-                        
-                        if(!empty($getByNewSku['data'])){
-                            $lazadaItemId = $getByNewSku['data']['item_id'];
-                            $finalSku = $newSku;
-                        
-                        }else if($oldSku != null){
-                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+
+                        if($item['InventoryItem'] == 'tYES'){
+                            //Stocks
+                            $sapStock = $item['QuantityOnStock'];
+                            //Old and New SKU
+                            $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
+                            $newSku = $item['ItemCode']; //New SKU
+                            $getByNewSku = $lazadaAPI->getProductItem($newSku);
                             
-                            if(!empty($getByOldSku['data'])){
-                                $lazadaItemId = $getByOldSku['data']['item_id'];
-                                $finalSku = $oldSku;
+                            if(!empty($getByNewSku['data'])){
+                                $lazadaItemId = $getByNewSku['data']['item_id'];
+                                $finalSku = $newSku;
+                            
+                            }else if($oldSku != null){
+                                $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+                                
+                                if(!empty($getByOldSku['data'])){
+                                    $lazadaItemId = $getByOldSku['data']['item_id'];
+                                    $finalSku = $oldSku;
+                                }
                             }
-                        }
-    
-                        if(!empty($lazadaItemId) && !empty($finalSku)){
-                             //Create SKU Payload
-                            $skuPayload[] = "<Sku>
-                                                <ItemId>".$lazadaItemId."</ItemId>
-                                                <SellerSku>".$finalSku."</SellerSku>
-                                                <Quantity>".$sapStock."</Quantity>
-                                            </Sku>";
+        
+                            if(!empty($lazadaItemId) && !empty($finalSku)){
+                                //Create SKU Payload
+                                $skuPayload[] = "<Sku>
+                                                    <ItemId>".$lazadaItemId."</ItemId>
+                                                    <SellerSku>".$finalSku."</SellerSku>
+                                                    <Quantity>".$sapStock."</Quantity>
+                                                </Sku>";
+                            }
                         }
                         
                     }
