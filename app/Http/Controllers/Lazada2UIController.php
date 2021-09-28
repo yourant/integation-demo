@@ -497,7 +497,7 @@ class Lazada2UIController extends Controller
                             }
                         }
 
-                        if(count($skuPayload) > 20){
+                        if(count($skuPayload) >= 20){
                             unset($skuPayload);
                         }
                         

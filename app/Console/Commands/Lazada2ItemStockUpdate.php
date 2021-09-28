@@ -107,7 +107,7 @@ class Lazada2ItemStockUpdate extends Command
                             }
                         }
 
-                        if(count($skuPayload) > 20){
+                        if(count($skuPayload) >= 20){
                             unset($skuPayload);
                         }
                         
