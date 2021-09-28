@@ -46,9 +46,9 @@ class LazadaItemPriceUpdate extends Command
             
             $count = 0;
 
-            $skuPayloadCount = 0;
-
             $moreItems = true;
+
+            $items = [];
 
             while($moreItems){
 
@@ -56,65 +56,84 @@ class LazadaItemPriceUpdate extends Command
 
                 if($getItems->isNotEmpty()){
                     
-                    $lazadaAPI = new LazadaAPIController();
-
                     foreach($getItems as $item){
-                        //Price
-                        $sapPrice = $item['ItemPrices']['8']['Price']; //live - $item['ItemPrices']['3']['Price']
-                        //Old and New SKU
-                        $oldSku = $item['U_OLD_SKU']; //Live - U_MPS_OLDSKU
-                        $newSku = $item['ItemCode']; //New SKU
-                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
 
-                        if(!empty($getByNewSku['data'])){
-                            $lazadaItemId = $getByNewSku['data']['item_id'];
-                            $finalSku = $newSku;
+                        $items[] = [
+                            'oldSku' => $item['U_OLD_SKU'],//Live - U_MPS_OLDSKU
+                            'newSku' => $item['ItemCode'],
+                            'price' => $item['ItemPrices']['8']['Price'], //live - $item['ItemPrices']['3']['Price']
+                        ];
 
-                        }else if($oldSku != null){
-                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
-
-                            if(!empty($getByOldSku['data'])){
-                                $lazadaItemId = $getByOldSku['data']['item_id'];
-                                $finalSku = $oldSku;
-                            }
-                        }
-
-                        if(!empty($lazadaItemId) && !empty($finalSku)){
-                            //Create SKU Payload
-                            $skuPayload[] = "<Sku>
-                                                <ItemId>".$lazadaItemId."</ItemId>
-                                                <SellerSku>".$finalSku."</SellerSku>
-                                                <Price>".$sapPrice."</Price>
-                                            </Sku>";
-                        }
-                        
-                    }
-
-                    if(!empty($skuPayload)){
-                        $finalPayload = "<Request>
-                                            <Product>
-                                                <Skus>
-                                                    ".implode('',$skuPayload)."
-                                                </Skus>
-                                            </Product>
-                                        </Request>";
-                        //Run 
-                        $updatePrice = $lazadaAPI->updatePriceQuantity($finalPayload);
-
-                        if($updatePrice['code'] == 0){
-                            $skuPayloadCount += count($skuPayload);
-                        }
-    
-                    }
-
-                    if(count($skuPayload) >= 20){
-                        unset($skuPayload);
                     }
 
                     $count += count($getItems);
                 
                 }else{
                     $moreItems = false;
+                }
+
+            }
+
+            $lazadaAPI = new LazadaAPIController();
+            
+            $batch = array_chunk($items,50);
+            
+            $skuPayload = [];
+            
+            $skuPayloadCount = 0;
+
+            foreach($batch as $b){
+
+                foreach($b as $key){
+                        
+                    $newSku = $key['newSku'];
+                    $oldSku = $key['oldSku'];
+                    $price = $key['price'];
+                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
+
+                    if(!empty($getByNewSku['data'])){
+                        $lazadaItemId = $getByNewSku['data']['item_id'];
+                        $finalSku = $newSku;
+    
+                    }else if($oldSku != null){
+                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
+    
+                        if(!empty($getByOldSku['data'])){
+                            $lazadaItemId = $getByOldSku['data']['item_id'];
+                            $finalSku = $oldSku;
+                        }
+                    }
+
+                    if(count($skuPayload) >= 20){
+                        unset($skuPayload);
+                    }
+
+                    if(!empty($lazadaItemId) && !empty($finalSku)){
+                        //Create SKU Payload
+                        $skuPayload[] = "<Sku>
+                                            <ItemId>".$lazadaItemId."</ItemId>
+                                            <SellerSku>".$finalSku."</SellerSku>
+                                            <Price>".$price."</Price>
+                                        </Sku>";
+                    }
+                
+                }
+
+            }
+
+            if(!empty($skuPayload)){
+                $finalPayload = "<Request>
+                                    <Product>
+                                        <Skus>
+                                            ".implode('',$skuPayload)."
+                                        </Skus>
+                                    </Product>
+                                </Request>";
+                //Run 
+                $updatePrice = $lazadaAPI->updatePriceQuantity($finalPayload);
+
+                if($updatePrice['code'] == 0){
+                    $skuPayloadCount += count($skuPayload);
                 }
 
             }
@@ -126,6 +145,7 @@ class LazadaItemPriceUpdate extends Command
                 Log::channel('lazada.item_master')->warning('No Lazada items available.');
 
             }
+
         } catch (\Exception $e) {
             Log::channel('lazada.item_master')->emergency($e->getMessage());
 
