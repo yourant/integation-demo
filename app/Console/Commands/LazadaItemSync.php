@@ -56,7 +56,7 @@ class LazadaItemSync extends Command
             
                 $getItems = $odataClient->getOdataClient()
                                 ->from('Items')
-                                ->where('U_LAZ_INTEGRATION','Y')
+                                ->where('U_LAZ_INTEGRATION','Yes')
                                 ->where('U_LAZ_ITEM_CODE',null)
                                 ->skip($count)
                                 ->get();
@@ -66,8 +66,8 @@ class LazadaItemSync extends Command
                     foreach($getItems as $item){
                         
                         $items[] = [
-                            'newSku' => $item['ItemCode'],
-                            'oldSku' => $item['U_MPS_OLDSKU']
+                            'itemCode' => $item['ItemCode'],
+                            'oldSku' => $item['U_OLD_SKU'] // Live - U_MPS_OLDSKU
                         ];
                         
                     }
@@ -82,8 +82,55 @@ class LazadaItemSync extends Command
 
             $lazadaAPI = new LazadaAPIController();
             $batch = array_chunk($items,50);
-            
+            $oldSkus = [];
+            $itemCodes = [];
+
             foreach($batch as $b){
+                 
+                foreach($b as $key){
+                    array_push($itemCodes,$key['itemCode']);
+
+                    if($key['oldSku'] != null){
+                        array_push($oldSkus,$key['oldSku']);
+                    }
+                }
+
+                if(!empty($itemCodes)){
+                    $skus =  '['.'"'.implode('","',$itemCodes).'"'.']';
+                    $response = $lazadaAPI->getProducts($skus);
+                    $resultArray = [];
+
+                    foreach($response['data']['products'] as $product){
+
+                        foreach($product['skus'] as $sku){
+                            
+                            if($key = array_search($sku['SellerSku'],$itemCodes)){
+
+                                $update = $odataClient->getOdataClient()->from('Items')
+                                                        ->whereKey($itemCodes[$key])
+                                                        ->patch([
+                                                            'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                        ]);
+                                                        //'U_LAZ_SELLER_SKU' => $sku['SellerSku']
+                                
+                                ($update ? $itemCount ++ : '');
+
+                            }
+                            
+                        }
+                    
+                        
+                    }
+                }
+    
+                /*if(!empty($oldSkus)){
+                    $result =  '['.'"'.implode('","',$oldSkus).'"'.']';
+                    print_r($result);
+                }*/
+
+            }
+
+            /*foreach($batch as $b){
 
                 foreach($b as $key){
                     
@@ -131,7 +178,7 @@ class LazadaItemSync extends Command
             }else{
                 Log::channel('lazada.item_master')->warning('No new Lazada items to be sync.');
             
-            }
+            }*/
 
         } catch (\Exception $e) {
             Log::channel('lazada.item_master')->emergency($e->getMessage());
