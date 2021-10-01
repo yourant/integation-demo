@@ -44,8 +44,6 @@ class LazadaCreditMemo extends Command
             $odataClient = new SapService();
             //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
-            $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
-            $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
@@ -100,38 +98,34 @@ class LazadaCreditMemo extends Command
 
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
+                    $subTotal = 0;
                     
                     foreach($item['order_items'] as $orderItem){
+
                         if($orderItem['status'] == 'returned'){
-                            $shippingAmount = $orderItem['shipping_amount'];
-                            $paidPrice = $orderItem['paid_price'];
-                            
-                            if($shippingAmount != 0){
-                                $finalPrice = $paidPrice + $shippingAmount;
-                            }else{
-                                $finalPrice = $paidPrice;
-                            }
                             
                             $items[$orderId][] = [
                                 'ItemCode' => $orderItem['sku'],
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $finalPrice / $percentage->Name,
+                                'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
                                 'WarehouseCode' => $whsCode->Name
                             ];
 
-                            $refund[$orderId][] = $finalPrice;
+                            $subTotal += $orderItem['item_price'];
+                            
                         }
                         
                     }
                     
-                    $tempCM[$orderId]['DocTotal'] = array_sum($refund[$orderId]);
+                    $tempCM[$orderId]['DocTotal'] = $subTotal;
                     $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                     
                 }
         
                 foreach($tempCM as $key => $value){
                     $finalCM = array_slice($tempCM[$key],0);
+
                     $getCM = $odataClient->getOdataClient()->from('CreditNotes')
                                     ->where('U_Order_ID',(string)$finalCM['U_Order_ID'])
                                     ->where('U_Ecommerce_Type','Lazada_1')
