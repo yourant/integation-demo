@@ -97,7 +97,6 @@ class LazadaItemStockUpdate extends Command
                         $sellerSku = $key['sellerSku'];
                         $productId = $key['productId'];
                         $stock = $key['stock'];
-                        $response = $lazadaAPI->getProductItem($sellerSku);
                         
                         //Create SKU Payload
                         $skuPayload[] = "<Sku>

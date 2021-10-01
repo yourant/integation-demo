@@ -94,7 +94,6 @@ class Lazada2ItemPriceUpdate extends Command
                     $sellerSku = $key['sellerSku'];
                     $productId = $key['productId'];
                     $price = $key['price'];
-                    $response = $lazadaAPI->getProductItem($sellerSku);
 
                     //Create SKU Payload
                     $skuPayload[] = "<Sku>
