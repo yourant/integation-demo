@@ -57,7 +57,7 @@ class LazadaItemSync extends Command
                 $getItems = $odataClient->getOdataClient()
                                 ->from('Items')
                                 ->where('U_LAZ_INTEGRATION','Yes')
-                                ->where('U_LAZ_ITEM_CODE',null)
+                                ->where('U_LAZ_ITEM_CODE',null) // ->where('U_LAZ_SELLER_SKU',null)
                                 ->skip($count)
                                 ->get();
                 
@@ -79,97 +79,97 @@ class LazadaItemSync extends Command
                 }
     
             }
-
-            $lazadaAPI = new LazadaAPIController();
-            $batch = array_chunk($items,50);
-            $oldSkus = [];
-            $itemCodes = [];
-
-            foreach($batch as $b){
-                 
-                foreach($b as $key){
-                    array_push($itemCodes,$key['itemCode']);
-
-                    if($key['oldSku'] != null){
-                        array_push($oldSkus,$key['oldSku']);
-                    }
-                }
-
-                if(!empty($itemCodes)){
-                    $skus =  '['.'"'.implode('","',$itemCodes).'"'.']';
-                    $response = $lazadaAPI->getProducts($skus);
-                    $resultArray = [];
-
-                    foreach($response['data']['products'] as $product){
-
-                        foreach($product['skus'] as $sku){
-                            
-                            if($key = array_search($sku['SellerSku'],$itemCodes)){
-
-                                $update = $odataClient->getOdataClient()->from('Items')
-                                                        ->whereKey($itemCodes[$key])
-                                                        ->patch([
-                                                            'U_LAZ_ITEM_CODE' => $product['item_id'],
-                                                        ]);
-                                                        //'U_LAZ_SELLER_SKU' => $sku['SellerSku']
-                                
-                                ($update ? $itemCount ++ : '');
-
-                            }
-                            
-                        }
-                    
-                        
-                    }
-                }
-    
-                /*if(!empty($oldSkus)){
-                    $result =  '['.'"'.implode('","',$oldSkus).'"'.']';
-                    print_r($result);
-                }*/
-
-            }
-
-            /*foreach($batch as $b){
-
-                foreach($b as $key){
-                    
-                    $newSku = $key['newSku'];
-                    $oldSku = $key['oldSku'];
-                    $getByNewSku = $lazadaAPI->getProductItem($newSku);
-
-                    if(!empty($getByNewSku['data'])){
-                        $lazadaItemId = $getByNewSku['data']['item_id'];
-
-                        $update = $odataClient->getOdataClient()->from('Items')
-                                ->whereKey($newSku)
-                                ->patch([
-                                    'U_LAZ_ITEM_CODE' => $lazadaItemId,
-                                ]);
-                        
-                        ($update ? $itemCount ++ : '');
-
-                    }else if($oldSku != null){
-                        $getByOldSku = $lazadaAPI->getProductItem($oldSku);
-                        
-                        if(!empty($getByOldSku['data'])){
-                            $lazadaItemId = $getByOldSku['data']['item_id'];
-                            $oldSkuItemCode = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_MPS_OLDSKU',$oldSku)
-                                                    ->first();
-
-                            $update = $odataClient->getOdataClient()->from('Items')
-                                    ->whereKey($oldSkuItemCode->ItemCode)
-                                    ->patch([
-                                        'U_LAZ_ITEM_CODE' => $lazadaItemId,
-                                    ]);
-                            
-                            ($update ? $itemCount ++ : '');
-                        }
-                    }
-
-                }
+            
+            if(!empty($items)){
                 
+                $lazadaAPI = new LazadaAPIController();
+                $batch = array_chunk($items,50);
+                $oldSkus = [];
+                $itemCodes = [];
+                
+                foreach($batch as $b){
+                 
+                    foreach($b as $key){
+
+                        array_push($itemCodes,$key['itemCode']);
+    
+                        if($key['oldSku'] != null){
+                            array_push($oldSkus,$key['oldSku']);
+                        }
+                    }
+    
+                    if(!empty($itemCodes)){
+                        $skus =  '['.'"'.implode('","',$itemCodes).'"'.']';
+                        $response = $lazadaAPI->getProducts($skus);
+                        $resultArray = [];
+                        
+                        if(!empty($response['data']['products'])){
+
+                            foreach($response['data']['products'] as $product){
+                            
+                                foreach($product['skus'] as $sku){
+                                    
+                                    $key = array_search($sku['SellerSku'],$itemCodes);
+    
+                                    if($key === false){
+                                        //Not Found
+                                    }else{
+    
+                                        $update = $odataClient->getOdataClient()->from('Items')
+                                                                            ->whereKey($itemCodes[$key])
+                                                                            ->patch([
+                                                                                'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                                            ]);
+                                                                            //live - 'U_LAZ_SELLER_SKU' => $sku['SellerSku']
+                                        ($update ? $itemCount ++ : '');
+    
+                                    }
+                                    
+                                }
+                            
+                            }
+                        }
+                        
+                    }
+
+                    if(!empty($oldSkus)){
+                        $skus =  '['.'"'.implode('","',$oldSkus).'"'.']';
+                        $response = $lazadaAPI->getProducts($skus);
+                        $resultArray = [];
+
+                        if(!empty($response['data']['products'])){
+
+                            foreach($response['data']['products'] as $product){
+        
+                                foreach($product['skus'] as $sku){
+                                    
+                                    $key = array_search($sku['SellerSku'],$oldSkus);
+
+                                    if($key === false){
+                                        //Not Found
+                                    }else{
+
+                                        $get = $odataClient->getOdataClient()->from('Items')
+                                                        ->where('U_OLD_SKU',$oldSkus[$key])//Live - U_MPS_OLDSKU
+                                                        ->first();
+
+                                        $update = $odataClient->getOdataClient()->from('Items')
+                                                                            ->whereKey($get->ItemCode)
+                                                                            ->patch([
+                                                                                'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                                            ]);
+                                                                            //live - 'U_LAZ_SELLER_SKU' => $sku['SellerSku']
+                                        ($update ? $itemCount ++ : '');
+
+                                    }
+                                    
+                                }
+                            
+                            }
+                        }
+                    }
+    
+                }
             }
 
             if($itemCount > 0){
@@ -178,7 +178,7 @@ class LazadaItemSync extends Command
             }else{
                 Log::channel('lazada.item_master')->warning('No new Lazada items to be sync.');
             
-            }*/
+            }
 
         } catch (\Exception $e) {
             Log::channel('lazada.item_master')->emergency($e->getMessage());
