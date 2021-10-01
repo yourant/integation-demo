@@ -176,7 +176,7 @@ class LazadaItemSync extends Command
                 Log::channel('lazada.item_master')->info($itemCount.' Item Id UDFs updated.');
             
             }else{
-                Log::channel('lazada.item_master')->warning('No new Lazada items to be sync.');
+                Log::channel('lazada.item_master')->info('No new Lazada items to be sync.');
             
             }
 
