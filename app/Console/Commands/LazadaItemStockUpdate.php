@@ -52,15 +52,20 @@ class LazadaItemStockUpdate extends Command
 
             while($moreItems){
                 
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();//Live - Y/N
+                $getItems = $odataClient->getOdataClient()->from('Items')
+                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y/N
+                                                    ->where('U_LAZ_ITEM_CODE','!=',null)
+                                                    ->where('U_OLD_SKU','!=',null)//Live - U_LAZ_SELLER_SKU
+                                                    ->skip($count)
+                                                    ->get();
 
                 if($getItems->isNotEmpty()){
 
                     foreach($getItems as $item){
 
                         $items[] = [
-                            'oldSku' => $item['U_OLD_SKU'],//Live - U_MPS_OLDSKU
-                            'newSku' => $item['ItemCode'],
+                            'sellerSku' => $item['U_OLD_SKU'],//Live - U_LAZ_SELLER_SKU
+                            'productId' => $item['U_LAZ_ITEM_CODE'],
                             'stock' => $item['QuantityOnStock'],
                             'invItem' => $item['InventoryItem']
                         ];
@@ -77,7 +82,7 @@ class LazadaItemStockUpdate extends Command
 
             $lazadaAPI = new LazadaAPIController();
             
-            $batch = array_chunk($items,50);
+            $batch = array_chunk($items,20);
             
             $skuPayload = [];
             
@@ -89,59 +94,42 @@ class LazadaItemStockUpdate extends Command
 
                     if($key['invItem'] == 'tYES'){
 
-                        $newSku = $key['newSku'];
-                        $oldSku = $key['oldSku'];
+                        $sellerSku = $key['sellerSku'];
+                        $productId = $key['productId'];
                         $stock = $key['stock'];
-                        $getByNewSku = $lazadaAPI->getProductItem($newSku);
-
-                        if(!empty($getByNewSku['data'])){
-                            $lazadaItemId = $getByNewSku['data']['item_id'];
-                            $finalSku = $newSku;
+                        $response = $lazadaAPI->getProductItem($sellerSku);
                         
-                        }else if($oldSku != null){
-                            $getByOldSku = $lazadaAPI->getProductItem($oldSku);
-                            
-                            if(!empty($getByOldSku['data'])){
-                                $lazadaItemId = $getByOldSku['data']['item_id'];
-                                $finalSku = $oldSku;
-                            }
-                        }
-
-                        if(count($skuPayload) >= 20){
-                            unset($skuPayload);
-                        }
+                        //Create SKU Payload
+                        $skuPayload[] = "<Sku>
+                                            <ItemId>".$productId."</ItemId>
+                                            <SellerSku>".$sellerSku."</SellerSku>
+                                            <Quantity>".$stock."</Quantity>
+                                        </Sku>";
                         
-                        if(!empty($lazadaItemId) && !empty($finalSku)){
-                            //Create SKU Payload
-                            $skuPayload[] = "<Sku>
-                                                <ItemId>".$lazadaItemId."</ItemId>
-                                                <SellerSku>".$finalSku."</SellerSku>
-                                                <Quantity>".$stock."</Quantity>
-                                            </Sku>";
-                        }
 
                     }
                 }
 
-            }
-
-            if(!empty($skuPayload)){
-                $finalPayload = "<Request>
-                                    <Product>
-                                        <Skus>
-                                            ".implode('',$skuPayload)."
-                                        </Skus>
-                                    </Product>
-                                </Request>";
-                //Run 
-                $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
-                
-                if($updateStock['code'] == 0){
-                    $skuPayloadCount += count($skuPayload);
+                if(!empty($skuPayload)){
+                    $finalPayload = "<Request>
+                                        <Product>
+                                            <Skus>
+                                                ".implode('',$skuPayload)."
+                                            </Skus>
+                                        </Product>
+                                    </Request>";
+                    //Run 
+                    $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
+                    
+                    if($updateStock['code'] == 0){
+                        $skuPayloadCount += count($skuPayload);
+                        unset($skuPayload);
+                    }
+        
                 }
-    
-            }
 
+            }
+            
             if($skuPayloadCount > 0){
                 Log::channel('lazada.item_master')->info('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
 

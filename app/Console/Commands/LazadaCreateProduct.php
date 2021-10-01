@@ -54,62 +54,27 @@ class LazadaCreateProduct extends Command
             
             $count = 0;
 
-            $itemCount = 0;
-
             $moreItems = true;
 
+            $items = [];
+
             while($moreItems){
-                $getItems = $odataClient->getOdataClient()->from('Items')->where('U_LAZ_INTEGRATION','Yes')->skip($count)->get();
+                $getItems = $odataClient->getOdataClient()->from('Items')
+                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y
+                                                    ->where('U_LAZ_ITEM_CODE',null)
+                                                    ->skip($count)
+                                                    ->get();
 
                 if($getItems->isNotEmpty()){
 
-                    $lazadaAPI = new LazadaAPIController();
-
                     foreach($getItems as $item){
 
-                        $fields = [
+                        $items[] = [
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
                             'price' => $item['ItemPrices']['8']['Price'],
                         ];
-
-                        $createProductPayload = "
-                            <Request>
-                                <Product>
-                                    <PrimaryCategory>".$primaryCategory->U_VALUE."</PrimaryCategory>
-                                    <Attributes>
-                                        <name>".$fields['itemName']."</name>
-                                        <brand>".$brand->U_VALUE."</brand>
-                                        <delivery_option_sof>".$deliveryOption->U_VALUE."</delivery_option_sof>
-                                        <warranty_type>".$warrantyType->U_VALUE."</warranty_type>
-                                    </Attributes>
-                                    <Skus>
-                                        <Sku>
-                                            <SellerSku>".$fields['sellerSku']."</SellerSku>
-                                            <quantity>".$fields['quantity']."</quantity>
-                                            <price>".$fields['price']."</price>
-                                            <package_length>".$packageLength->U_VALUE."</package_length>
-                                            <package_height>".$packageHeight->U_VALUE."</package_height>
-                                            <package_weight>".$packageWeight->U_VALUE."</package_weight>
-                                            <package_width>".$packageWidth->U_VALUE."</package_width>
-                                        </Sku>
-                                    </Skus>
-                                </Product>
-                            </Request>";
-                        
-                        $response = $lazadaAPI->createProduct($createProductPayload);
-
-                        if(!empty($response['data'])){
-                            $itemId = $response['data']['item_id'];
-                            $update = $odataClient->getOdataClient()->from('Items')
-                                        ->whereKey($fields['sellerSku'])
-                                        ->patch([
-                                            'U_LAZ_ITEM_CODE' => $itemId,
-                                        ]);
-                            
-                            ($update ? $itemCount++ : '');
-                        }
                     
                     }
 
@@ -118,6 +83,53 @@ class LazadaCreateProduct extends Command
                 }else{
                     $moreItems = false;
                 }
+            }
+
+            $itemCount = 0;
+
+            foreach($items as $item){
+
+                $createProductPayload = "
+                    <Request>
+                        <Product>
+                            <PrimaryCategory>".$primaryCategory->U_VALUE."</PrimaryCategory>
+                            <Attributes>
+                                <name>".$item['itemName']."</name>
+                                <brand>".$brand->U_VALUE."</brand>
+                                <delivery_option_sof>".$deliveryOption->U_VALUE."</delivery_option_sof>
+                                <warranty_type>".$warrantyType->U_VALUE."</warranty_type>
+                            </Attributes>
+                            <Skus>
+                                <Sku>
+                                    <SellerSku>".$item['sellerSku']."</SellerSku>
+                                    <quantity>".$item['quantity']."</quantity>
+                                    <price>".$item['price']."</price>
+                                    <package_length>".$packageLength->U_VALUE."</package_length>
+                                    <package_height>".$packageHeight->U_VALUE."</package_height>
+                                    <package_weight>".$packageWeight->U_VALUE."</package_weight>
+                                    <package_width>".$packageWidth->U_VALUE."</package_width>
+                                </Sku>
+                            </Skus>
+                        </Product>
+                    </Request>";
+                
+                $lazadaAPI = new LazadaAPIController();
+                
+                $response = $lazadaAPI->createProduct($createProductPayload);
+                
+                if(!empty($response['data'])){
+                    $itemId = $response['data']['item_id'];
+                    $sellerSku = $response['data']['sku_list']['0']['seller_sku'];
+                    $update = $odataClient->getOdataClient()->from('Items')
+                                ->whereKey($item['sellerSku'])
+                                ->patch([
+                                    'U_LAZ_ITEM_CODE' => $itemId,
+                                    'U_OLD_SKU' => $sellerSku //Live - U_LAZ_SELLER_SKU
+                                ]);
+                    
+                    ($update ? $itemCount++ : '');
+                }
+
             }
 
             if($itemCount > 0){
