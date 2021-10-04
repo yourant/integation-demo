@@ -176,7 +176,7 @@ class LazadaItemSync extends Command
             }
 
             if($itemCount > 0){
-                Log::channel('lazada.item_master')->info($itemCount.' Item Id UDFs updated.');
+                Log::channel('lazada.item_master')->info($itemCount.' Item UDFs updated.');
             
             }else{
                 Log::channel('lazada.item_master')->info('No new Lazada items to be sync.');
