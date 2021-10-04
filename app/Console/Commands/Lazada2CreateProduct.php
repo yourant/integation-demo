@@ -42,15 +42,15 @@ class Lazada2CreateProduct extends Command
     {
         try {
             $odataClient = new SapService();
-            //LIVE - U_MPS_ECOMMERCE
-            $brand = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_BRAND')->first();
-            $primaryCategory = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_CATEGORY')->first();
-            $deliveryOption = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_DELIVERY_OPTION')->first();
-            $packageHeight = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_HEIGHT')->first();
-            $packageLength = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_LENGTH')->first();
-            $packageWeight = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_WEIGHT')->first();
-            $packageWidth = $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_PACKAGE_WIDTH')->first();
-            $warrantyType= $odataClient->getOdataClient()->from('U_L2DD')->where('Code','L2_DFLT_WARRANTY_TYPE')->first();
+
+            $brand = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_BRAND')->first();
+            $primaryCategory = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_CATEGORY')->first();
+            $deliveryOption = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_DELIVERY_OPTION')->first();
+            $packageHeight = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_PACKAGE_HEIGHT')->first();
+            $packageLength = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_PACKAGE_LENGTH')->first();
+            $packageWeight = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_PACKAGE_WEIGHT')->first();
+            $packageWidth = $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_PACKAGE_WIDTH')->first();
+            $warrantyType= $odataClient->getOdataClient()->from('U_LDD')->where('Code','L_DFLT_WARRANTY_TYPE')->first();
             
             $count = 0;
 
