@@ -60,7 +60,7 @@ class LazadaCreateProduct extends Command
 
             while($moreItems){
                 $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y
+                                                    ->where('U_LAZ_INTEGRATION','Y')
                                                     ->where('U_LAZ_ITEM_CODE',null)
                                                     ->skip($count)
                                                     ->get();
@@ -73,7 +73,7 @@ class LazadaCreateProduct extends Command
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
-                            'price' => $item['ItemPrices']['8']['Price'],
+                            'price' => $item['ItemPrices']['3']['Price'],
                         ];
                     
                     }
@@ -124,7 +124,7 @@ class LazadaCreateProduct extends Command
                                 ->whereKey($item['sellerSku'])
                                 ->patch([
                                     'U_LAZ_ITEM_CODE' => $itemId,
-                                    'U_OLD_SKU' => $sellerSku //Live - U_LAZ_SELLER_SKU
+                                    'U_LAZ_SELLER_SKU' => $sellerSku
                                 ]);
                     
                     ($update ? $itemCount++ : '');

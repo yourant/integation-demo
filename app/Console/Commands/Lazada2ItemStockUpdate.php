@@ -53,9 +53,9 @@ class Lazada2ItemStockUpdate extends Command
             while($moreItems){
                 
                 $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ2_INTEGRATION','Yes')//Live - Y/N
+                                                    ->where('U_LAZ2_INTEGRATION','Y')
                                                     ->where('U_LAZ2_ITEM_CODE','!=',null)
-                                                    ->where('U_OLD_SKU','!=',null)//Live - U_LAZ2_SELLER_SKU
+                                                    ->where('U_LAZ2_SELLER_SKU','!=',null)
                                                     ->skip($count)
                                                     ->get();
                 if($getItems->isNotEmpty()){
@@ -63,7 +63,7 @@ class Lazada2ItemStockUpdate extends Command
                     foreach($getItems as $item){
 
                         $items[] = [
-                            'sellerSku' => $item['U_OLD_SKU'],//Live - U_LAZ2_SELLER_SKU
+                            'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
                             'stock' => $item['QuantityOnStock'],
                             'invItem' => $item['InventoryItem']

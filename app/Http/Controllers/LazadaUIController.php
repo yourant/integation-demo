@@ -94,7 +94,7 @@ class LazadaUIController extends Controller
 
             while($moreItems){
                 $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y
+                                                    ->where('U_LAZ_INTEGRATION','Y')
                                                     ->where('U_LAZ_ITEM_CODE',null)
                                                     ->skip($count)
                                                     ->get();
@@ -107,7 +107,7 @@ class LazadaUIController extends Controller
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
-                            'price' => $item['ItemPrices']['8']['Price'],
+                            'price' => $item['ItemPrices']['3']['Price'],
                         ];
                     
                     }
@@ -158,7 +158,7 @@ class LazadaUIController extends Controller
                                 ->whereKey($item['sellerSku'])
                                 ->patch([
                                     'U_LAZ_ITEM_CODE' => $itemId,
-                                    'U_OLD_SKU' => $sellerSku //Live - U_LAZ_SELLER_SKU
+                                    'U_LAZ_SELLER_SKU' => $sellerSku
                                 ]);
                     
                     ($update ? $itemCount++ : '');
@@ -214,8 +214,9 @@ class LazadaUIController extends Controller
             
                 $getItems = $odataClient->getOdataClient()
                                 ->from('Items')
-                                ->where('U_LAZ_INTEGRATION','Yes')
-                                ->where('U_LAZ_ITEM_CODE',null) // ->where('U_LAZ_SELLER_SKU',null)
+                                ->where('U_LAZ_INTEGRATION','Y')
+                                ->where('U_LAZ_ITEM_CODE',null)
+                                ->where('U_LAZ_SELLER_SKU',null)
                                 ->skip($count)
                                 ->get();
                 
@@ -225,7 +226,7 @@ class LazadaUIController extends Controller
                         
                         $items[] = [
                             'itemCode' => $item['ItemCode'],
-                            'oldSku' => $item['U_OLD_SKU'] // Live - U_MPS_OLDSKU
+                            'oldSku' => $item['U_MPS_OLDSKU']
                         ];
                         
                     }
@@ -277,8 +278,8 @@ class LazadaUIController extends Controller
                                                                             ->whereKey($itemCodes[$key])
                                                                             ->patch([
                                                                                 'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                                                'U_LAZ_SELLER_SKU' => $sku['SellerSku']
                                                                             ]);
-                                                                            //live - 'U_LAZ_SELLER_SKU' => $sku['SellerSku']
                                         ($update ? $itemCount ++ : '');
     
                                     }
@@ -308,15 +309,15 @@ class LazadaUIController extends Controller
                                     }else{
 
                                         $get = $odataClient->getOdataClient()->from('Items')
-                                                        ->where('U_OLD_SKU',$oldSkus[$key])//Live - U_MPS_OLDSKU
+                                                        ->where('U_MPS_OLDSKU',$oldSkus[$key])
                                                         ->first();
 
                                         $update = $odataClient->getOdataClient()->from('Items')
                                                                             ->whereKey($get->ItemCode)
                                                                             ->patch([
                                                                                 'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                                                'U_LAZ_SELLER_SKU' => $sku['SellerSku']
                                                                             ]);
-                                                                            //live - 'U_LAZ_SELLER_SKU' => $sku['SellerSku']
                                         ($update ? $itemCount ++ : '');
 
                                     }
@@ -331,12 +332,12 @@ class LazadaUIController extends Controller
             }
 
             if($itemCount > 0){
-                Log::channel('lazada.item_master')->info($itemCount.' Item Id UDFs updated.');
+                Log::channel('lazada.item_master')->info($itemCount.' Item UDFs updated.');
 
                 return response()->json([
                     'title' => 'Success: ',
                     'status' => 'alert-success',
-                    'message' => $itemCount.' Item Id UDFs updated.'
+                    'message' => $itemCount.' Item UDFs updated.'
                 ]);
 
             }else{
@@ -375,9 +376,9 @@ class LazadaUIController extends Controller
             while($moreItems){
 
                 $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y/N
+                                                    ->where('U_LAZ_INTEGRATION','Y')
                                                     ->where('U_LAZ_ITEM_CODE','!=',null)
-                                                    ->where('U_OLD_SKU','!=',null)//Live - U_LAZ_SELLER_SKU
+                                                    ->where('U_LAZ_SELLER_SKU','!=',null)
                                                     ->skip($count)
                                                     ->get();
 
@@ -386,9 +387,9 @@ class LazadaUIController extends Controller
                     foreach($getItems as $item){
 
                         $items[] = [
-                            'sellerSku' => $item['U_OLD_SKU'],//Live - U_LAZ_SELLER_SKU
+                            'sellerSku' => $item['U_LAZ_SELLER_SKU'],
                             'productId' => $item['U_LAZ_ITEM_CODE'],
-                            'price' => $item['ItemPrices']['8']['Price'], //live - $item['ItemPrices']['3']['Price']
+                            'price' => $item['ItemPrices']['3']['Price']
                         ];
                         
                     }
@@ -492,9 +493,9 @@ class LazadaUIController extends Controller
             while($moreItems){
                 
                 $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y/N
+                                                    ->where('U_LAZ_INTEGRATION','Y')
                                                     ->where('U_LAZ_ITEM_CODE','!=',null)
-                                                    ->where('U_OLD_SKU','!=',null)//Live - U_LAZ_SELLER_SKU
+                                                    ->where('U_LAZ_SELLER_SKU','!=',null)
                                                     ->skip($count)
                                                     ->get();
 
@@ -503,7 +504,7 @@ class LazadaUIController extends Controller
                     foreach($getItems as $item){
 
                         $items[] = [
-                            'sellerSku' => $item['U_OLD_SKU'],//Live - U_LAZ_SELLER_SKU
+                            'sellerSku' => $item['U_LAZ_SELLER_SKU'],
                             'productId' => $item['U_LAZ_ITEM_CODE'],
                             'stock' => $item['QuantityOnStock'],
                             'invItem' => $item['InventoryItem']
@@ -602,11 +603,11 @@ class LazadaUIController extends Controller
     {
         try {
             $odataClient = new SapService();
-            //LIVE - U_MPS_ECOMMERCE
-            $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
-            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
-            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
-            $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
+
+            $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA1_CUSTOMER')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','PERCENTAGE')->first();
+            $whsCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','WAREHOUSE_CODE')->first();
 
             $lazadaAPI = new LazadaAPIController();
 
@@ -884,10 +885,10 @@ class LazadaUIController extends Controller
         try {
             $odataClient = new SapService();
             //LIVE - U_MPS_ECOMMERCE
-            $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA1_CUSTOMER')->first();
-            $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
-            $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
-            $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
+            $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA1_CUSTOMER')->first();
+            $taxCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','TAX_CODE')->first();
+            $percentage = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','PERCENTAGE')->first();
+            $whsCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','WAREHOUSE_CODE')->first();
 
             $lazadaAPI = new LazadaAPIController();
             

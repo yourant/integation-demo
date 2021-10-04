@@ -53,9 +53,9 @@ class LazadaItemPriceUpdate extends Command
             while($moreItems){
 
                 $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Yes')//Live - Y/N
+                                                    ->where('U_LAZ_INTEGRATION','Y')
                                                     ->where('U_LAZ_ITEM_CODE','!=',null)
-                                                    ->where('U_OLD_SKU','!=',null)//Live - U_LAZ_SELLER_SKU
+                                                    ->where('U_LAZ_SELLER_SKU','!=',null)
                                                     ->skip($count)
                                                     ->get();
 
@@ -64,9 +64,9 @@ class LazadaItemPriceUpdate extends Command
                     foreach($getItems as $item){
 
                         $items[] = [
-                            'sellerSku' => $item['U_OLD_SKU'],//Live - U_LAZ_SELLER_SKU
+                            'sellerSku' => $item['U_LAZ_SELLER_SKU'],
                             'productId' => $item['U_LAZ_ITEM_CODE'],
-                            'price' => $item['ItemPrices']['8']['Price'], //live - $item['ItemPrices']['3']['Price']
+                            'price' => $item['ItemPrices']['3']['Price']
                         ];
                         
                     }
