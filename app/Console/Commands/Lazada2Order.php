@@ -44,8 +44,6 @@ class Lazada2Order extends Command
             $odataClient = new SapService();
             //LIVE - U_MPS_ECOMMERCE
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_ECM')->where('Code','LAZADA2_CUSTOMER')->first();
-            $sellerVoucher = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SELLER_VOUCHER')->first();
-            $shippingFee = $odataClient->getOdataClient()->from('U_ECM')->where('Code','SHIPPING_FEE')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','TAX_CODE')->first();
             $percentage = $odataClient->getOdataClient()->from('U_ECM')->where('Code','PERCENTAGE')->first();
             $whsCode = $odataClient->getOdataClient()->from('U_ECM')->where('Code','WAREHOUSE_CODE')->first();
@@ -77,28 +75,8 @@ class Lazada2Order extends Command
                             'U_Ecommerce_Type' => 'Lazada_2',
                             'U_Order_ID' => $orderId,
                             'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
-                            'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
+                            'DocTotal' => $order['price']
                         ];
-                        
-                        if($order['shipping_fee'] != 0.00){
-                            $fees[$orderId][] = [
-                                'ItemCode' => $shippingFee->Name,
-                                'Quantity' => 1,
-                                'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $order['shipping_fee'] / $percentage->Name,
-                                'WarehouseCode' => $whsCode->Name
-                            ];
-                        }
-    
-                        if($order['voucher'] != 0.00){
-                            $fees[$orderId][] = [
-                                'ItemCode' => $sellerVoucher->Name,
-                                'Quantity' => -1,
-                                'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $order['voucher'] / $percentage->Name,
-                                'WarehouseCode' => $whsCode->Name
-                            ];
-                        }
     
                     }
     
@@ -133,11 +111,7 @@ class Lazada2Order extends Command
                         
                     }
 
-                    if(!empty($fees[$orderId])){
-                        $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
-                    }else{
-                        $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
-                    }
+                    $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
 
                 }
 
