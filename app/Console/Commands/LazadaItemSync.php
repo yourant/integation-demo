@@ -56,8 +56,9 @@ class LazadaItemSync extends Command
             
                 $getItems = $odataClient->getOdataClient()
                                 ->from('Items')
-                                ->where('U_LAZ_INTEGRATION','Yes')
-                                ->where('U_LAZ_ITEM_CODE',null) // ->where('U_LAZ_SELLER_SKU',null)
+                                ->where('U_LAZ_INTEGRATION','Y')
+                                ->where('U_LAZ_ITEM_CODE',null)
+                                ->where('U_LAZ_SELLER_SKU',null)
                                 ->skip($count)
                                 ->get();
                 
@@ -67,7 +68,7 @@ class LazadaItemSync extends Command
                         
                         $items[] = [
                             'itemCode' => $item['ItemCode'],
-                            'oldSku' => $item['U_OLD_SKU'] // Live - U_MPS_OLDSKU
+                            'oldSku' => $item['U_MPS_OLDSKU']
                         ];
                         
                     }
@@ -119,8 +120,9 @@ class LazadaItemSync extends Command
                                                                             ->whereKey($itemCodes[$key])
                                                                             ->patch([
                                                                                 'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                                                'U_LAZ_SELLER_SKU' => $sku['SellerSku']
                                                                             ]);
-                                                                            //live - 'U_LAZ_SELLER_SKU' => $sku['SellerSku']
+                                                                            
                                         ($update ? $itemCount ++ : '');
     
                                     }
@@ -150,15 +152,16 @@ class LazadaItemSync extends Command
                                     }else{
 
                                         $get = $odataClient->getOdataClient()->from('Items')
-                                                        ->where('U_OLD_SKU',$oldSkus[$key])//Live - U_MPS_OLDSKU
+                                                        ->where('U_MPS_OLDSKU',$oldSkus[$key])
                                                         ->first();
 
                                         $update = $odataClient->getOdataClient()->from('Items')
                                                                             ->whereKey($get->ItemCode)
                                                                             ->patch([
                                                                                 'U_LAZ_ITEM_CODE' => $product['item_id'],
+                                                                                'U_LAZ_SELLER_SKU' => $sku['SellerSku']
                                                                             ]);
-                                                                            //live - 'U_LAZ_SELLER_SKU' => $sku['SellerSku']
+                                                                    
                                         ($update ? $itemCount ++ : '');
 
                                     }
