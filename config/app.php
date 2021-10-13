@@ -132,13 +132,13 @@ return [
     |
     */
 
-    'sap_db' => env('SAP_DB', 'TC_DEV'),
+    'sap_db' => env('SAP_DB'),
   
-    'sap_user' => env('SAP_USER', 'paul'),
+    'sap_user' => env('SAP_USER'),
 
-    'sap_pword' => env('SAP_PWORD', '1234'),
+    'sap_pword' => env('SAP_PWORD'),
 
-    'sap_path' => env('SAP_PATH', 'https://192.168.1.250:50000/b1s/v1'),
+    'sap_path' => env('SAP_PATH'),
   
     /*
     |--------------------------------------------------------------------------
@@ -149,17 +149,17 @@ return [
     |
     */
 
-    'shopee_partner_id' => env('SHOPEE_PARTNER_ID', 1000909),
+    'shopee_partner_id' => env('SHOPEE_PARTNER_ID'),
 
-    'shopee_partner_key' => env('SHOPEE_PARTNER_KEY', 'e1b4853065602808a3647497ddde7568daa575c459de48a99b074d97bc9244d0'),
+    'shopee_partner_key' => env('SHOPEE_PARTNER_KEY'),
     
-    'shopee_api_vers_url' => env('SHOPEE_API_VERS_URL', '/api/v2'),
+    'shopee_api_vers_url' => env('SHOPEE_API_VERS_URL'),
 
-    'shopee_host' => env('SHOPEE_HOST', 'https://partner.test-stable.shopeemobile.com'),
+    'shopee_host' => env('SHOPEE_HOST'),
 
-    'shopee_code' => env('SHOPEE_CODE', '8179b136247f8d791c84803f9828b048'),
+    'shopee_code' => env('SHOPEE_CODE'),
 
-    'shopee_shop_id' => env('SHOPEE_SHOP_ID', '12498'),
+    'shopee_shop_id' => env('SHOPEE_SHOP_ID'),
 
     /*
     |--------------------------------------------------------------------------
@@ -170,11 +170,11 @@ return [
     |
     */
   
-    'lazada_app_url' => env('LAZADA_APP_URL','https://api.lazada.sg/rest'),
+    'lazada_app_url' => env('LAZADA_APP_URL'),
 
-    'lazada_app_key' => env('LAZADA_APP_KEY', '102662'),
+    'lazada_app_key' => env('LAZADA_APP_KEY'),
 
-    'lazada_app_secret' => env('LAZADA_APP_SECRET','UMK0OLHzSNgyNHKX7OMowXVSsIn5Gq4G'),
+    'lazada_app_secret' => env('LAZADA_APP_SECRET'),
 
     /*
     |--------------------------------------------------------------------------
@@ -185,11 +185,11 @@ return [
     |
     */
   
-    'lazada2_app_url' => env('LAZADA2_APP_URL','https://api.lazada.sg/rest'),
+    'lazada2_app_url' => env('LAZADA2_APP_URL'),
 
-    'lazada2_app_key' => env('LAZADA2_APP_KEY', '102818'),
+    'lazada2_app_key' => env('LAZADA2_APP_KEY'),
 
-    'lazada2_app_secret' => env('LAZADA2_APP_SECRET','QhSfoBKgn3hosuhly1KnS4mzwBTygHuV'),
+    'lazada2_app_secret' => env('LAZADA2_APP_SECRET'),
     
   
     /*

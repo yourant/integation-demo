@@ -13,14 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Commands\LazadaRefreshToken::class,
-        Commands\LazadaOrder::class,
-        Commands\LazadaInvoice::class,
-        Commands\LazadaCreditMemo::class,
-        Commands\PriceAndStockShopeeUpdate::class,
-        Commands\ShopeeFirstScheduler::class,
-        Commands\SalesOrderShopeeCreate::class,
-        Commands\InvoiceShopeeCreate::class,
+       
     ];
 
     /**
@@ -31,12 +24,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        //Lazada Commands
-        $schedule->command('lazada:refresh-token');
-        $schedule->command('lazada:item-master');
-        $schedule->command('lazada:sales-order');
-        $schedule->command('lazada:ar-invoice');
-        $schedule->command('lazada:credit-memo');
+       
     }
 
     /**
