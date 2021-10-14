@@ -17,11 +17,11 @@
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
-                       Lazada Account 1 Dashboard
+                       Lazada Account 1(TC) Dashboard
                    </div>
                    <div class="float-right">
                         <button class="btn btn-primary" id="refresh-token-btn">Manual Refresh Tokens</button>
-                        <a href="{{ route('lazada2.dashboard') }}" class="btn btn-primary">Switch to Lazada Account 2</a>
+                        <a href="{{ route('lazada2.dashboard') }}" class="btn btn-primary">Switch to Lazada Account 2(MSG)</a>
                    </div>
                </div>
 
@@ -180,6 +180,9 @@
             });
 
             $('#refresh-token-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
 
                 $.ajax({
@@ -208,8 +211,10 @@
             });
 
             $('#item-master-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
-                
                 $.ajax({
                     url: "{{ route('lazada.item-master-integration') }}",
                     method: "POST",
@@ -230,6 +235,7 @@
                     complete: function(response, status) {
                         $("#item-master-btn").attr("disabled", false);
                         $("#item-master-btn").html('CREATE BASE PRODUCTS');
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })
                 
@@ -237,6 +243,9 @@
             });
 
             $('#sync-item-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
                 
                 $.ajax({
@@ -259,6 +268,7 @@
                     complete: function(response, status) {
                         $("#sync-item-btn").attr("disabled", false);
                         $("#sync-item-btn").html('PROCESS ITEMS');
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })
                 
@@ -266,6 +276,9 @@
             });
 
             $('#update-price-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
 
                 $.ajax({
@@ -288,12 +301,16 @@
                     complete: function(response, status) {
                         $("#update-price-btn").attr("disabled", false);
                         $("#update-price-btn").html('UPDATE PRICES');
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })                 
                 
             });
 
             $('#update-stock-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
 
                 $.ajax({
@@ -316,12 +333,16 @@
                     complete: function(response, status) {
                         $("#update-stock-btn").attr("disabled", false);
                         $("#update-stock-btn").html('UPDATE STOCKS');
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })                 
                 
             });
 
             $('#generate-so-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
 
                 $.ajax({
@@ -344,12 +365,16 @@
                     complete: function(response, status) {
                         $("#generate-so-btn").attr("disabled", false);
                         $("#generate-so-btn").html('PROCESS SALES ORDERS');
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })                 
                 
             });
 
             $('#generate-inv-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
 
                 $.ajax({
@@ -372,12 +397,16 @@
                     complete: function(response, status) {
                         $("#generate-inv-btn").attr("disabled", false);
                         $("#generate-inv-btn").html(`PROCESS INVOICE`);
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })                 
             
             });
 
             $('#generate-cm-btn').click(function() {
+                $('#alert').removeClass('alert-danger');
+                $('#alert').removeClass('alert-info');
+                $('#alert').removeClass('alert-success');
                 $('#alert').hide();
 
                 $.ajax({
@@ -400,6 +429,7 @@
                     complete: function(response, status) {
                         $("#generate-cm-btn").attr("disabled", false);
                         $("#generate-cm-btn").html(`PROCESS CREDIT MEMO`);
+                        $('html, body').animate({scrollTop: '0px'}, 300);
                     }
                 })                 
                 
