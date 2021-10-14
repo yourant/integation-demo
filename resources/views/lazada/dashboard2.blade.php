@@ -73,7 +73,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <center>Update Item Price</center>
+                                    <center>Update Item Price (Disabled)</center>
                                 </div>
                                 <div class="card-body">
                                     <p class="card-text">Update the Lazada products based on the price in the Item
@@ -81,7 +81,7 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <button href="#" class="btn btn-primary" id="update-price-btn">
+                                        <button href="#" class="btn btn-primary" id="update-price-btn" disabled>
                                             UPDATE PRICES
                                         </button>
                                     </center>
@@ -92,7 +92,7 @@
                             <div class="card">
 
                                 <div class="card-header">
-                                    <center>Update Item Stock</center>
+                                    <center>Update Item Stock (Disabled)</center>
                                 </div>
                                 <div class="card-body">
                                     <p class="card-text">Update the Lazada products based on the stock in the Item
@@ -100,7 +100,7 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <button class="btn btn-primary" id="update-stock-btn">
+                                        <button class="btn btn-primary" id="update-stock-btn" disabled>
                                             UPDATE STOCKS
                                         </button>
                                     </center>
