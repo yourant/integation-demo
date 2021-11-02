@@ -13,7 +13,13 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-       
+        Commands\PriceAndStockShopeeUpdate::class,
+        Commands\ShopeeFirstScheduler::class,
+        Commands\SalesOrderShopeeCreate::class,
+        Commands\InvoiceShopeeCreate::class,
+        Commands\ShopeeItemCreate::class,
+        Commands\ShopeeDisableIntegration::class,
+        Commands\ShopeeEnableIntegration::class,
     ];
 
     /**
