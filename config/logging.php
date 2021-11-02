@@ -102,6 +102,54 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'shopee' => [
+            'general' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/general_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'item_create' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/item_create_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'item_sync' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/item_sync_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'price_update' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/price_update_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'stock_update' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/stock_update_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'salesorder_generate' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/salesorder_generate_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'invoice_generate' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/invoice_generate_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'creditmemo_generate' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/creditmemo_generate_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+            'authentication' => [
+                'driver' => 'single',
+                'path' => storage_path('logs/shopee/authentication_' . date('m_Y') . '.log'),
+                'level' => 'debug'
+            ],
+        ],
+
         'lazada' => [
             'refresh_token' => [
                 'driver' => 'single',

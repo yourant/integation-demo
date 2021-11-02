@@ -24,6 +24,7 @@ Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
     Route::get('/',[ShopeeController::class, 'index'])->name('shopee.dashboard');
     Route::get('/auth',[ShopeeController::class, 'shopAuth'])->name('shopee.auth');
     Route::get('/init-token',[ShopeeController::class, 'initToken'])->name('shopee.init-token');
+    Route::post('/create-product',[ShopeeController::class, 'createProduct'])->name('shopee.create-product');
     Route::post('/sync-item',[ShopeeController::class, 'syncItem'])->name('shopee.sync-item');
     Route::post('/update-price',[ShopeeController::class, 'updatePrice'])->name('shopee.update-price');
     Route::post('/update-stock',[ShopeeController::class, 'updateStock'])->name('shopee.update-stock');

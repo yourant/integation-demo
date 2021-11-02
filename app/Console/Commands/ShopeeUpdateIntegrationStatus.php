@@ -10,21 +10,21 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Exception\ClientException;
 
-class ShopeeItemCreate extends Command
+class ShopeeUpdateIntegrationStatus extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'shopee:item-create';
+    protected $signature = 'shopee:status-update';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create Shopee Product if it does not exist';
+    protected $description = 'Update integration status for the parsed csv';
 
     /**
      * Create a new command instance.
@@ -43,6 +43,116 @@ class ShopeeItemCreate extends Command
      */
     public function handle()
     {
+        $logger = new LogService('general');
+        $itemSapService = new SapService();
+        
+        $logger->writeLog('Parsing CSV file of Shopee item list . . .');
+
+        $csvFileName = "shopee_items.csv";
+        $csvFile = storage_path('csv/' . $csvFileName);
+
+        $file_handle = fopen($csvFile, 'r');
+        while (!feof($file_handle)) {
+            $shopeeItems[] = fgetcsv($file_handle, 0, ',');
+        }
+
+        fclose($file_handle);
+
+        $successCount = 0;
+
+        $logger->writeLog('Updating item integration status . . .');
+
+        foreach ($shopeeItems as $item) {
+            $validItem = null;
+            $integrationStatus = null;
+            $sku = $item[4] ? $item[4] : $item[5];
+
+            try {
+                $validItem = $itemSapService->getOdataClient()
+                    ->select('ItemCode')
+                    ->from('Items')
+                    ->where('Valid', 'tYES')
+                    ->where('U_SH_INTEGRATION', 'N')
+                    ->whereNested(function($query) use ($sku) {
+                        $query->where('ItemCode', $sku)
+                            ->orWhere('U_MPS_OLDSKU', $sku);
+                    })->first();
+            } catch (ClientException $exception) {
+                $logger->writeSapLog($exception);
+            } 
+
+            if (isset($validItem)) {
+                try {
+                    $integrationStatus = $itemSapService->getOdataClient()->from('Items')
+                        ->whereKey($validItem['properties']['ItemCode'])
+                        ->patch([
+                            'U_SH_INTEGRATION' => 'Y'
+                        ]);
+                } catch (ClientException $exception) {
+                    $logger->writeSapLog($exception);
+                }
+
+                if (isset($integrationStatus)) {
+                    $successCount++;
+                    $logger->writeLog("Item with the Item Code {$validItem['properties']['ItemCode']} was updated with the integration status");
+                }
+            }
+        }
+
+        $logger->writeLog("Updated a total of {$successCount} items with its new integration status.");
+        dd("Updated a total of {$successCount} items with its new integration status.");
+
+
+
+
+
+
+
+
+
+        // $testArrNew = array_unique($testArr);
+        // dd(count($testArr));
+        // $finalTestArr = array_diff_assoc($testArr, $testArrNew);
+
+        // $finalTestArr = array_diff($testArr, $testArrNew);
+        // dd($finalTestArr);
+
+
+        // try {
+        //     $itemUpdateResponse2 = $itemSapService->getOdataClient()->from('Items')
+        //         ->whereKey($itemUpdateResponse['properties']['ItemCode'])
+        //         ->patch([
+        //             'U_SH_INTEGRATION' => 'Y'
+        //         ]);
+        // } catch (ClientException $exception) {
+        //     $logger->writeSapLog($exception);
+        // }
+
+        // if (isset($itemUpdateResponse2)) {
+        //     $successCount2++;
+        //     $logger->writeLog("{$countzzz}- Updated integration for item {$itemUpdateResponse['properties']['ItemCode']}");
+        // }
+
+
+
+        // $logger->writeLog("success count2 {$successCount2}");
+        // dd($successCount2);
+        // $logger->writeLog("success count {$successCount}");
+        
+
+        dd($successCount);
+
+        
+
+        
+
+
+        dd($shopeeItems);
+
+
+
+
+
         $shopeeToken = AccessToken::where('platform', 'shopee')->first(); 
         $logger = new LogService('item_create');
         

@@ -23,6 +23,8 @@ class Kernel extends ConsoleKernel
         Commands\SalesOrderShopeeCreate::class,
         Commands\InvoiceShopeeCreate::class,
         Commands\ShopeeItemCreate::class,
+        Commands\ShopeeDisableIntegration::class,
+        Commands\ShopeeEnableIntegration::class,
     ];
 
     /**
