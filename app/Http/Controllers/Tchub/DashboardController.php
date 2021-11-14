@@ -6,9 +6,9 @@ use App\Services\SapService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
-class TchubController extends Controller
+class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function __invoke()
     {
         return view('tchub.dashboard');
     }

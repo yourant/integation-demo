@@ -7,7 +7,7 @@ use App\Http\Controllers\LazadaController;
 use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaUIController;
 use App\Http\Controllers\Lazada2UIController;
-use App\Http\Controllers\Tchub\TchubController;
+use App\Http\Controllers\Tchub\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,7 +73,7 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
 });
 
 Route::prefix('tchub')->middleware(['auth', 'ec.tchub'])->group(function () {
-    Route::get('/', [TchubController::class, 'index'])->name('tchub.index');
+    Route::get('/', DashboardController::class)->name('tchub.dashboard');
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');

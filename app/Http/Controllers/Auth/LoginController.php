@@ -44,11 +44,7 @@ class LoginController extends Controller
         } elseif ($user->platform == 'lazada') {
             return redirect()->route('lazada.dashboard');
         } elseif ($user->platform === 'tchub') {
-            if ($user->tokens->isEmpty())
-            {
-                $user->createToken('tchubToken');
-            }
-            return redirect()->route('tchub.index');
+            return redirect()->route('tchub.dashboard');
         } else {
             abort(403);
         }
