@@ -7,6 +7,7 @@ use App\Http\Controllers\LazadaController;
 use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaUIController;
 use App\Http\Controllers\Lazada2UIController;
+use App\Http\Controllers\Tchub\TchubController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +20,11 @@ use App\Http\Controllers\Lazada2UIController;
 |
 */
 
-Auth::routes();
+Auth::routes(['register'=>false]);
+
+Route::get('/', function () {
+    return redirect('login');
+});
 
 Route::prefix('shopee')->middleware(['auth', 'ec.shopee'])->group(function () {
     // Dashboard
@@ -65,6 +70,10 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
     Route::post('/credit-memo-generate',[Lazada2UIController::class, 'generateCreditMemo'])->name('lazada2.credit-memo-generate');
 
     
+});
+
+Route::prefix('tchub')->middleware(['auth', 'ec.tchub'])->group(function () {
+    Route::get('/', [TchubController::class, 'index'])->name('tchub.index');
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');
