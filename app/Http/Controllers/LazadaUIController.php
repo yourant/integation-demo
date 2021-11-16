@@ -663,8 +663,13 @@ class LazadaUIController extends Controller
                     $orderId = $item['order_id'];
         
                     foreach($item['order_items'] as $orderItem){
+                        $result = $odataClient->getOdataClient()->from('Items')
+                                                        ->select('ItemCode','ItemName')
+                                                        ->where('U_LAZ_SELLER_SKU',$orderItem['sku'])
+                                                        ->first();
+
                         $items[$orderId][] = [
-                            'ItemCode' => $orderItem['sku'],
+                            'ItemCode' => $result->ItemCode,
                             'Quantity' => 1,
                             'VatGroup' => $taxCode->Name,
                             'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
@@ -945,9 +950,13 @@ class LazadaUIController extends Controller
 
                     foreach($item['order_items'] as $orderItem){
                         if($orderItem['status'] == 'returned'){
+                            $result = $odataClient->getOdataClient()->from('Items')
+                                                ->select('ItemCode','ItemName')
+                                                ->where('U_LAZ_SELLER_SKU',$orderItem['sku'])
+                                                ->first();
                             
                             $items[$orderId][] = [
-                                'ItemCode' => $orderItem['sku'],
+                                'ItemCode' => $result->ItemCode,
                                 'Quantity' => 1,
                                 'VatGroup' => $taxCode->Name,
                                 'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
