@@ -139,6 +139,8 @@ return [
     'sap_pword' => env('SAP_PWORD'),
 
     'sap_path' => env('SAP_PATH'),
+
+    'sap_udt' => env('USER_DEFINED_TABLE'),
   
     /*
     |--------------------------------------------------------------------------
@@ -190,21 +192,6 @@ return [
     'lazada2_app_key' => env('LAZADA2_APP_KEY'),
 
     'lazada2_app_secret' => env('LAZADA2_APP_SECRET'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tchug info
-    |--------------------------------------------------------------------------
-    |
-    | This key is used for accessing tchub.sg
-    |
-    */
-
-    'tchub_site_url' => env('TCHUB_SITE_URL'),
-
-    'tchub_site_url_order' => env('TCHUB_SITE_URL_ORDER'),
-
-    'tchub_access_token' => env('TCHUB_ACCESS_TOKEN'),
     
   
     /*

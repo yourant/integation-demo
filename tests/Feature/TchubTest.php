@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\WithFaker;
-use App\Http\Controllers\Tchub\TchubController;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Http\Controllers\Tchub\DashboardController;
 
 class TchubTest extends TestCase
 {
@@ -23,7 +23,7 @@ class TchubTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->get(action([TchubController::class, 'index']));
+        $response = $this->actingAs($user)->get(action(DashboardController::class));
 
         $response->assertStatus(200);
     }
