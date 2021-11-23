@@ -65,11 +65,18 @@ class ShopeeController extends Controller
                 'shop_id' => (int) $request->shop_id,
             ]);
 
+            $resultArr = [];
+        
         if ($updatedToken) {
-            dd('Successfully authorize shop');
+            $resultArr['status'] = 'success';
+            $resultArr['msg'] = 'Successfully authorize shop';
         } else {
-            dd('Failed to authorized shop');
+            $resultArr['status'] = 'error';
+            $resultArr['msg'] = 'Failed to authorized shop';
         }
+
+        return redirect()->route('shopee.dashboard')
+            ->with(['status' => $resultArr['status'], 'msg' => $resultArr['msg']]);
     }
 
     public function createProduct()
