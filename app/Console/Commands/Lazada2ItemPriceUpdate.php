@@ -66,7 +66,7 @@ class Lazada2ItemPriceUpdate extends Command
                         $items[] = [
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
-                            'price' => $item['ItemPrices']['4']['Price']
+                            'price' => $item['ItemPrices']['7']['Price']
                         ];
 
                     }
