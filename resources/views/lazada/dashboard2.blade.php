@@ -152,7 +152,7 @@
                                     <center>Generate Credit Memo</center>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Generate A/R Invoice for every order in Lazada with "Returned"
+                                    <p class="card-text">Generate A/R Credit Memo for every order in Lazada with "Returned"
                                         status</p>
                                 </div>
                                 <div class="card-footer">
