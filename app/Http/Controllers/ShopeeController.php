@@ -331,9 +331,9 @@ class ShopeeController extends Controller
 
                 try {
                     $sapItems = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'ItemName', 'QuantityOnStock', 'ItemPrices', 'U_OLD_SKU')
+                        ->select('ItemCode', 'ItemName', 'QuantityOnStock', 'ItemPrices', 'U_MPS_OLDSKU')
                         ->from('Items')
-                        ->where('U_SH_INTEGRATION','Yes')
+                        ->where('U_SH_INTEGRATION','Y')
                         ->whereNested(function($query) {
                             $query->where('U_SH_ITEM_CODE', NULL)
                                 ->orWhere('U_SH_ITEM_CODE', '');
@@ -370,7 +370,7 @@ class ShopeeController extends Controller
     
             foreach ($sapItemArr as $sapItem) {
                 $itemProp = $sapItem['properties'];
-                $itemSku = $itemProp['U_OLD_SKU'] ?? $itemProp['ItemCode'];
+                $itemSku = $itemProp['U_MPS_OLDSKU'] ?? $itemProp['ItemCode'];
 
                 if (!in_array($itemSku, $skuList)) {
                     $shopeeAddProduct = new ShopeeService('/product/add_item', 'shop', $shopeeToken->access_token);
