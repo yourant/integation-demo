@@ -1011,36 +1011,36 @@ class ShopeeController extends Controller
 
                         try {
                             $item = $itemSapService->getOdataClient()
-                            ->select('ItemCode', 'QuantityOnStock', 'InventoryItem')
+                            ->select('ItemCode', 'QuantityOnStock')
                             ->from('Items')
                             ->whereNested(function($query) use ($sku) {
                                 $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
+                                    ->orWhere('U_MPS_OLDSKU', $sku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->where('InventoryItem', 'tYES')
+                            ->where('U_UPDATE_INVENTORY', 'Y')
                             ->first();
                         } catch (ClientException $exception) {
                             $logger->writeSapLog($exception);
                         }
 
-                        if (isset($item)) {
-                            if ($item['InventoryItem'] == 'tYES' && $item['Valid'] == 'tYES') {
-                                $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
-                                $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-                                    'item_id' => (int) $productId,
-                                    'stock_list' => [
-                                        [
-                                            'model_id' => (int) $modelId,
-                                            'normal_stock' => (int) $item['QuantityOnStock']
-                                        ]
+                        if (isset($item)) {  
+                            $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
+                            $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
+                                'item_id' => (int) $productId,
+                                'stock_list' => [
+                                    [
+                                        'model_id' => (int) $modelId,
+                                        'normal_stock' => (int) $item['QuantityOnStock']
                                     ]
-                                ]);
+                                ]
+                            ]);
 
-                                $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
-                                
-                                if ($shopeeStockUpdateResponseArr) {
-                                    $successCount++;
-                                    $logger->writeLog("The product's stock with {$sku} variant SKU was updated.");
-                                }
+                            $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
+                            
+                            if ($shopeeStockUpdateResponseArr) {
+                                $successCount++;
+                                $logger->writeLog("The product's stock with {$sku} variant SKU was updated.");
                             }
                         }
                     }
@@ -1048,36 +1048,36 @@ class ShopeeController extends Controller
             } else {
                 try {
                     $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'QuantityOnStock', 'InventoryItem')
+                        ->select('ItemCode', 'QuantityOnStock')
                         ->from('Items')
                         ->whereNested(function($query) use ($parentSku) {
                             $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_OLD_SKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Yes')
+                                ->orWhere('U_MPS_OLDSKU', $parentSku);
+                        })->where('U_SH_INTEGRATION', 'Y')
+                        ->where('InventoryItem', 'tYES')
+                        ->where('U_UPDATE_INVENTORY', 'Y')
                         ->first();
                 } catch (ClientException $exception) {
                     $logger->writeSapLog($exception);
                 }
 
                 if (isset($item)) {
-                    if ($item['InventoryItem'] == 'tYES' && $item['Valid'] == 'tYES') {
-                        $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
-                        $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-                            'item_id' => (int) $productId,
-                            'stock_list' => [
-                                [
-                                    'model_id' => (int) 0,
-                                    'normal_stock' => (int) $item['QuantityOnStock']
-                                ]
+                    $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
+                    $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
+                        'item_id' => (int) $productId,
+                        'stock_list' => [
+                            [
+                                'model_id' => (int) 0,
+                                'normal_stock' => (int) $item['QuantityOnStock']
                             ]
-                        ]);
+                        ]
+                    ]);
 
-                        $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
+                    $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
 
-                        if ($shopeeStockUpdateResponseArr) {
-                            $successCount++;
-                            $logger->writeLog("The product's stock with {$parentSku} parent SKU was updated.");
-                        }
+                    if ($shopeeStockUpdateResponseArr) {
+                        $successCount++;
+                        $logger->writeLog("The product's stock with {$parentSku} parent SKU was updated.");
                     }
                 }
             }
