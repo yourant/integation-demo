@@ -1005,7 +1005,7 @@ class ShopeeController extends Controller
                 $shopeeModelsResponseArr = $logger->validateResponse(json_decode($shopeeModelsResponse->body(), true));
 
                 if ($shopeeModelsResponseArr) {
-                    foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
+                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) { 
                         $modelId = $model['model_id'];
                         $sku = $model['model_sku'];
 
@@ -1023,7 +1023,7 @@ class ShopeeController extends Controller
                         }
 
                         if (isset($item)) {
-                            if ($item['InventoryItem'] == 'tYES') {
+                            if ($item['InventoryItem'] == 'tYES' && $item['Valid'] == 'tYES') {
                                 $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
                                 $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
                                     'item_id' => (int) $productId,
@@ -1060,7 +1060,7 @@ class ShopeeController extends Controller
                 }
 
                 if (isset($item)) {
-                    if ($item['InventoryItem'] == 'tYES') {
+                    if ($item['InventoryItem'] == 'tYES' && $item['Valid'] == 'tYES') {
                         $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
                         $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
                             'item_id' => (int) $productId,
