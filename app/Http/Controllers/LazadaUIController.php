@@ -789,7 +789,7 @@ class LazadaUIController extends Controller
                 $counter = 0;
                 
                 foreach($orderArray as $id){
-                    $orderDocEntry = $odataClient->getOdataClient()->select('DocNum')->from('Orders')
+                    $orderDocEntry = $odataClient->getOdataClient()->select('DocEntry')->from('Orders')
                                         ->where('U_Order_ID',(string)$id)
                                         ->where('U_Ecommerce_Type','Lazada_1')
                                         ->where('DocumentStatus','bost_Open')
@@ -806,7 +806,7 @@ class LazadaUIController extends Controller
                                         ->first();
 
                     if($orderDocEntry && !$getInv){
-                        $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocNum']);
+                        $getSO = $odataClient->getOdataClient()->from('Orders')->find($orderDocEntry['DocEntry']);
                         $items = [];
                         foreach ($getSO['DocumentLines'] as $key => $value) {
                             $batchList = [];
