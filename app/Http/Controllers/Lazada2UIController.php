@@ -386,7 +386,8 @@ class Lazada2UIController extends Controller
                         $items[] = [
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
-                            'price' => $item['ItemPrices']['7']['Price']
+                            'origPrice' => $item['U_ORIGINAL_PRICE'],
+                            'specialPrice' => $item['ItemPrices']['7']['Price']
                         ];
 
                     }
@@ -413,13 +414,15 @@ class Lazada2UIController extends Controller
                         
                     $sellerSku = $key['sellerSku'];
                     $productId = $key['productId'];
-                    $price = $key['price'];
+                    $origPrice = $key['origPrice'];
+                    $specialPrice = $key['specialPrice'];
 
                     //Create SKU Payload
                     $skuPayload[] = "<Sku>
                                         <ItemId>".$productId."</ItemId>
                                         <SellerSku>".$sellerSku."</SellerSku>
-                                        <Price>".$price."</Price>
+                                        <Price>".$origPrice."</Price>
+                                        <SalePrice>".$specialPrice."</SalePrice>
                                     </Sku>";
                 
                 }
