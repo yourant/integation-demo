@@ -753,7 +753,7 @@ class LazadaUIController extends Controller
 
     public function generateInvoice()
     {
-        try {
+        
             $odataClient = new SapService();
         
             $lazadaAPI = new LazadaAPIController();
@@ -827,22 +827,33 @@ class LazadaUIController extends Controller
                                 'BatchNumbers' => $batchList
                             ];
                         }
-                        //Copy sales order to invoice
-                        $odataClient->getOdataClient()->post('Invoices',[
-                            'CardCode' => $getSO['CardCode'],
-                            'DocDate' => $getSO['DocDate'],
-                            'DocDueDate' => $getSO['DocDueDate'],
-                            'PostingDate' => $getSO['TaxDate'],
-                            'NumAtCard' => $getSO['NumAtCard'],
-                            'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
-                            'U_Order_ID' => $getSO['U_Order_ID'],
-                            'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
-                            'DocumentLines' => $items 
-                        ]);
+
+                        try {
+                            //Copy sales order to invoice
+                            $odataClient->getOdataClient()->post('Invoices',[
+                                'CardCode' => $getSO['CardCode'],
+                                'DocDate' => $getSO['DocDate'],
+                                'DocDueDate' => $getSO['DocDueDate'],
+                                'PostingDate' => $getSO['TaxDate'],
+                                'NumAtCard' => $getSO['NumAtCard'],
+                                'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
+                                'U_Order_ID' => $getSO['U_Order_ID'],
+                                'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
+                                'DocumentLines' => $items 
+                            ]);
+                            
+                            $counter++;
+                            Log::channel('lazada.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
                         
-                        $counter++;
-                        
-                        Log::channel('lazada.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
+                        } catch (\Exception $e) {
+                            Log::channel('lazada.ar_invoice')->emergency('Order: '.$getSO['U_Order_ID'].' - '$e->getMessage());
+                
+                            return response()->json([
+                                'title' => 'Error: ',
+                                'status' => 'alert-danger',
+                                'message' => $e->getMessage()
+                            ]);
+                        }
 
                     }
                     
@@ -875,15 +886,7 @@ class LazadaUIController extends Controller
                     'message' => 'No ready to ship orders for now.'
                 ]);
             }
-        } catch (\Exception $e) {
-            Log::channel('lazada.ar_invoice')->emergency($e->getMessage());
-
-            return response()->json([
-                'title' => 'Error: ',
-                'status' => 'alert-danger',
-                'message' => $e->getMessage()
-            ]);
-        }
+         
     }
 
     public function generateCreditMemo()

@@ -40,7 +40,7 @@ class Lazada2Invoice extends Command
      */
     public function handle()
     {
-        try {
+        
             $odataClient = new SapService();
         
             $lazadaAPI = new Lazada2APIController();
@@ -113,20 +113,26 @@ class Lazada2Invoice extends Command
                                 'BatchNumbers' => $batchList
                             ];
                         }
-                        //Copy sales order to invoice
-                        $odataClient->getOdataClient()->post('Invoices',[
-                            'CardCode' => $getSO['CardCode'],
-                            'DocDate' => $getSO['DocDate'],
-                            'DocDueDate' => $getSO['DocDueDate'],
-                            'PostingDate' => $getSO['TaxDate'],
-                            'NumAtCard' => $getSO['NumAtCard'],
-                            'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
-                            'U_Order_ID' => $getSO['U_Order_ID'],
-                            'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
-                            'DocumentLines' => $items 
-                        ]);
                         
-                        Log::channel('lazada2.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
+                        try {
+                            //Copy sales order to invoice
+                            $odataClient->getOdataClient()->post('Invoices',[
+                                'CardCode' => $getSO['CardCode'],
+                                'DocDate' => $getSO['DocDate'],
+                                'DocDueDate' => $getSO['DocDueDate'],
+                                'PostingDate' => $getSO['TaxDate'],
+                                'NumAtCard' => $getSO['NumAtCard'],
+                                'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
+                                'U_Order_ID' => $getSO['U_Order_ID'],
+                                'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
+                                'DocumentLines' => $items 
+                            ]);
+                            
+                            Log::channel('lazada2.ar_invoice')->info('A/R invoice for Lazada order:'.$getSO['U_Order_ID'].' created successfully.');
+
+                        }catch (\Exception $e) {
+                            Log::channel('lazada2.ar_invoice')->emergency('Order: '.$getSO['U_Order_ID'].' - '$e->getMessage());
+                        }
                     }
                     
                 }
@@ -135,8 +141,6 @@ class Lazada2Invoice extends Command
                 Log::channel('lazada2.ar_invoice')->info('No ready to ship orders for now.');
             }
             
-        } catch (\Exception $e) {
-            Log::channel('lazada2.ar_invoice')->emergency($e->getMessage());
-        }
+        
     }
 }
