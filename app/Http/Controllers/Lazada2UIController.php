@@ -842,12 +842,6 @@ class Lazada2UIController extends Controller
 
                         } catch (\Exception $e) {
                             Log::channel('lazada2.ar_invoice')->emergency('Order: '.$getSO['U_Order_ID'].' - '.$e->getMessage());
-                
-                            return response()->json([
-                                'title' => 'Error: ',
-                                'status' => 'alert-danger',
-                                'message' => $e->getMessage()
-                            ]);
                         }
 
                     }
