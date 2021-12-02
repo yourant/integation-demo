@@ -66,7 +66,8 @@ class Lazada2ItemStockUpdate extends Command
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
                             'stock' => $item['QuantityOnStock'],
-                            'invItem' => $item['InventoryItem']
+                            'invItem' => $item['InventoryItem'],
+                            'updateInv' => $item['U_UPDATE_INVENTORY']
                         ];
                         
                     }
@@ -91,7 +92,7 @@ class Lazada2ItemStockUpdate extends Command
 
                 foreach($b as $key){
 
-                    if($key['invItem'] == 'tYES'){
+                    if($key['invItem'] == 'tYES' && $key['updateInv'] == 'Y'){
 
                         $sellerSku = $key['sellerSku'];
                         $productId = $key['productId'];
