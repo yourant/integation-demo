@@ -107,7 +107,7 @@ class LazadaUIController extends Controller
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
-                            'price' => $item['ItemPrices']['3']['Price'],
+                            'price' => $item['ItemPrices']['6']['Price'],
                         ];
                     
                     }
