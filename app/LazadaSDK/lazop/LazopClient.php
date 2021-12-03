@@ -271,7 +271,7 @@ class LazopClient
 		}
 		catch (Exception $e)
 		{
-			$this->logApiError($requestUrl,"HTTP_ERROR_" . $e->getCode(),$e->getMessage());
+			//$this->logApiError($requestUrl,"HTTP_ERROR_" . $e->getCode(),$e->getMessage());
 			throw $e;
 		}
 
@@ -280,18 +280,18 @@ class LazopClient
 		$respObject = json_decode($resp);
 		if(isset($respObject->code) && $respObject->code != "0") 
 		{
-			$this->logApiError($requestUrl, $respObject->code, $respObject->message);
+			//$this->logApiError($requestUrl, $respObject->code, $respObject->message);
 		} else 
 		{
 			if($this->logLevel == Constants::$log_level_debug || $this->logLevel == Constants::$log_level_info) 
 			{
-				$this->logApiError($requestUrl, '', '');
+				//$this->logApiError($requestUrl, '', '');
 			}
 		}
 		return $resp;
 	}
 
-	protected function logApiError($requestUrl, $errorCode, $responseTxt)
+	/*protected function logApiError($requestUrl, $errorCode, $responseTxt)
 	{
 		$localIp = isset($_SERVER["SERVER_ADDR"]) ? $_SERVER["SERVER_ADDR"] : "CLI";
 		$logger = new LazopLogger;
@@ -308,7 +308,7 @@ class LazopClient
 		str_replace("\n","",$responseTxt)
 		);
 		$logger->log($logData);
-	}
+	}*/
 
 	function msectime() {
 	   list($msec, $sec) = explode(' ', microtime());
