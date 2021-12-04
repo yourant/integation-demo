@@ -74,6 +74,7 @@ class LazadaCreateProduct extends Command
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
                             'price' => $item['ItemPrices']['6']['Price'],
+                            'status' => $item['Valid']
                         ];
                     
                     }
@@ -116,7 +117,7 @@ class LazadaCreateProduct extends Command
                 $lazadaAPI = new LazadaAPIController();
                 
                 $response = $lazadaAPI->createProduct($createProductPayload);
-                
+
                 if(!empty($response['data'])){
                     $itemId = $response['data']['item_id'];
                     $sellerSku = $response['data']['sku_list']['0']['seller_sku'];
@@ -128,6 +129,30 @@ class LazadaCreateProduct extends Command
                                 ]);
                     
                     ($update ? $itemCount++ : '');
+
+                }else{
+
+                    if($item['status'] == 'tYES'){
+                        $payload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    <Sku>
+                                                        <SellerSku>".$item['sellerSku']."</SellerSku>
+                                                        <Status>active</Status>
+                                                    </Sku>
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        $activate = $lazadaAPI->activateProduct($payload);
+                        dd($activate);
+                    }
+                   
+                    /*$getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
+                    $itemId = $getDetail['data']['item_id'];
+                    $sellerSku = $getDetail['skus']['0']['SellerSku'];
+                    dd($sellerSku);*/
+                    
+                    
                 }
 
             }
