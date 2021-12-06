@@ -145,8 +145,10 @@ class LazadaCreateProduct extends Command
                                             </Product>
                                         </Request>";
                         $activate = $lazadaAPI->activateProduct($payload);
-                        $updateCount++;
-                        print_r($activate);
+
+                        if($activate['code'] == '0'){
+                            $updateCount++;
+                        }
 
                     }else if($item['status'] == 'tNO'){
                         $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
@@ -160,8 +162,10 @@ class LazadaCreateProduct extends Command
                                         </Product>
                                     </Request>";
                         $deactivate = $lazadaAPI->deactivateProduct($payload);
-                        $updateCount++;
-                        print_r($activate);
+                       
+                        if($deactivate['code'] == '0'){
+                            $updateCount++;
+                        }
                         
                     }
                     

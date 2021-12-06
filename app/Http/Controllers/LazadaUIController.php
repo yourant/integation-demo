@@ -108,6 +108,7 @@ class LazadaUIController extends Controller
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
                             'price' => $item['ItemPrices']['6']['Price'],
+                            'status' => $item['Valid']
                         ];
                     
                     }
@@ -120,6 +121,7 @@ class LazadaUIController extends Controller
             }
 
             $itemCount = 0;
+            $updateCount = 0;
 
             foreach($items as $item){
 
@@ -162,19 +164,57 @@ class LazadaUIController extends Controller
                                 ]);
                     
                     ($update ? $itemCount++ : '');
+                
+                }else{
+
+                    if($item['status'] == 'tYES'){
+                        $payload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    <Sku>
+                                                        <SellerSku>".$item['sellerSku']."</SellerSku>
+                                                        <Status>active</Status>
+                                                    </Sku>
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        $activate = $lazadaAPI->activateProduct($payload);
+
+                        if($activate['code'] == '0'){
+                            $updateCount++;
+                        }
+
+                    }else if($item['status'] == 'tNO'){
+                        $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
+                        $itemId = $getDetail['data']['item_id'];
+                        $payload = "<Request>
+                                        <Product>
+                                            <ItemId>".$itemId."</ItemId>
+                                            <Skus>
+                                                <SellerSku>".$item['sellerSku']."</SellerSku>
+                                            </Skus>
+                                        </Product>
+                                    </Request>";
+                        $deactivate = $lazadaAPI->deactivateProduct($payload);
+
+                        if($deactivate['code'] == '0'){
+                            $updateCount++;
+                        }
+                        
+                    }
+                    
                 }
 
             }
 
-            if($itemCount > 0){
-                Log::channel('lazada.item_master')->info($itemCount.' new product/s added.');
-
-                return response()->json([
-                    'title' => 'Success: ',
-                    'status' => 'alert-success',
-                    'message' => $itemCount.' new product/s added.'
-                ]);
-
+            $message = null;
+            
+            if($itemCount > 0 && $updateCount == 0){
+                $message = $itemCount.' new product/s added.';
+            }else if($itemCount == 0 && $updateCount > 0){
+                $message = $updateCount.' SKU/s status updated.';
+            }else if($itemCount > 0 && $updateCount > 0){
+                $message = $itemCount.' new product/s added and '.$updateCount.' SKU/s status updated.';
             }else{
                 Log::channel('lazada.item_master')->info('No new Lazada products to be added.');
 
@@ -184,6 +224,17 @@ class LazadaUIController extends Controller
                     'message' => 'No new Lazada products to be added.'
                 ]);
             }
+
+            if($message != null){
+                Log::channel('lazada.item_master')->info($message);
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => $message
+                ]);
+            }
+    
 
         } catch (\Exception $e) {
             Log::channel('lazada.item_master')->emergency($e->getMessage());
