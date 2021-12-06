@@ -87,6 +87,7 @@ class LazadaCreateProduct extends Command
             }
 
             $itemCount = 0;
+            $updateCount = 0;
 
             foreach($items as $item){
 
@@ -144,14 +145,25 @@ class LazadaCreateProduct extends Command
                                             </Product>
                                         </Request>";
                         $activate = $lazadaAPI->activateProduct($payload);
-                        dd($activate);
+                        $updateCount++;
+                        print_r($activate);
+
+                    }else if($item['status'] == 'tNO'){
+                        $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
+                        $itemId = $getDetail['data']['item_id'];
+                        $payload = "<Request>
+                                        <Product>
+                                            <ItemId>".$itemId."</ItemId>
+                                            <Skus>
+                                                <SellerSku>".$item['sellerSku']."</SellerSku>
+                                            </Skus>
+                                        </Product>
+                                    </Request>";
+                        $deactivate = $lazadaAPI->deactivateProduct($payload);
+                        $updateCount++;
+                        print_r($activate);
+                        
                     }
-                   
-                    /*$getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
-                    $itemId = $getDetail['data']['item_id'];
-                    $sellerSku = $getDetail['skus']['0']['SellerSku'];
-                    dd($sellerSku);*/
-                    
                     
                 }
 
@@ -159,6 +171,9 @@ class LazadaCreateProduct extends Command
 
             if($itemCount > 0){
                 Log::channel('lazada.item_master')->info($itemCount.' new product/s added');
+            }
+            if($updateCount > 0){
+                Log::channel('lazada2.item_master')->info($updateCount.' SKU/s status updated');
             }else{
                 Log::channel('lazada.item_master')->info('No new Lazada products to be added.');
             }
