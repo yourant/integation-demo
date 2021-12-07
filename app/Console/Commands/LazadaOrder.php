@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Services\SapService;
 use Illuminate\Console\Command;
+use App\Services\LazadaLogService;
 use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Exception\ClientException;
 use App\Http\Controllers\LazadaAPIController;
 
 class LazadaOrder extends Command
@@ -42,6 +44,7 @@ class LazadaOrder extends Command
     {
         try {
             $odataClient = new SapService();
+            $lazadaLog = new LazadaLogService('lazada.sales_order');
             
             $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA1_CUSTOMER')->first();
             $taxCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','TAX_CODE')->first();
@@ -133,9 +136,22 @@ class LazadaOrder extends Command
                                     ->first();
 
                     if(!$getSO){
-                        $odataClient->getOdataClient()->post('Orders',$finalSO);
+
+                        try {
+                            $salesOrder = $odataClient->getOdataClient()->post('Orders',$finalSO);
+                        } catch (ClientException $e) {
+                            $response = $e->getResponse();
+                            $statusCode = $response->getStatusCode();
+                            $reasonPhrase = $response->getReasonPhrase();
+                            $fullErrorMsg = $statusCode."(".$reasonPhrase.")"." - ".$response->getBody(true);
+                            
+                            Log::channel('lazada.sales_order')->emergency("Order ".$finalSO['U_Order_ID']." has problems"."\n".$fullErrorMsg);
+                        }
+
+                        if(isset($salesOrder)){
+                            Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
+                        }
                         
-                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
                     }else{
                         unset($finalSO);
                     }
