@@ -140,12 +140,8 @@ class LazadaOrder extends Command
                         try {
                             $salesOrder = $odataClient->getOdataClient()->post('Orders',$finalSO);
                         } catch (ClientException $e) {
-                            $response = $e->getResponse();
-                            $statusCode = $response->getStatusCode();
-                            $reasonPhrase = $response->getReasonPhrase();
-                            $fullErrorMsg = $statusCode."(".$reasonPhrase.")"." - ".$response->getBody(true);
-                            
-                            Log::channel('lazada.sales_order')->emergency("Order ".$finalSO['U_Order_ID']." has problems"."\n".$fullErrorMsg);
+                            $msg = "Order ".$finalSO['U_Order_ID']." has problems";
+                            $lazadaLog->writeSapLog($e,$msg);                            
                         }
 
                         if(isset($salesOrder)){
