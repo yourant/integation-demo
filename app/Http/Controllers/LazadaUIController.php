@@ -659,7 +659,8 @@ class LazadaUIController extends Controller
                 $orderIds = '['.implode(',',$orderIdArray).']';
                 $orderItems = $lazadaAPI->getMultipleOrderItems($orderIds);
                 $counter = 0;
-                
+                $errorOrders = [];
+
                 foreach ($orderItems['data'] as $item) {
                     $orderId = $item['order_id'];
         
@@ -700,33 +701,51 @@ class LazadaUIController extends Controller
                                     ->first();
 
                     if(!$getSO){
-                        $odataClient->getOdataClient()->post('Orders',$finalSO);
+
+                        try {
+                            $salesOrder = $odataClient->getOdataClient()->post('Orders',$finalSO);
+                        } catch (ClientException $e) {
+                            $msg = "Order ".$finalSO['U_Order_ID']." has problems";
+                            
+                            array_push($errorOrders,$finalSO['U_Order_ID']);
+                            
+                            $lazadaLog->writeSapLog($e,$msg);   
+                        }
+
+                        if(isset($salesOrder)){
+                            Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
+                            $counter++;
+                        }
                         
-                        $counter++;
                         
-                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
                     }else{
                         unset($finalSO);
                     }
 
                 }
+
+                $success = array(
+                    'success-title' => 'Success: ',
+                    'success-message' => $counter. ' New Sales Orders Generated.',
+                );
+
+                $error = array(
+                    'error-title' => 'Error: ',
+                    'error-message' => 'The orders '.$errors.' encountered some problems.'
+                );
                 
-                if($counter > 0){
+                if($counter > 0 && count($errorOrders) > 0){
 
-                    return response()->json([
-                        'title' => 'Success: ',
-                        'status' => 'alert-success',
-                        'message' => $counter. ' New Sales Orders Generated.'
-                    ]);
+                    $errors = implode(",",$errorOrders);
 
-                }else{
+                    return response()->json(array_merge($success,$error));
 
-                    return response()->json([
-                        'title' => 'Information: ',
-                        'status' => 'alert-info',
-                        'message' => 'No pending orders for now.'
-                    ]);
+                }else if($counter > 0 && count($errorOrders) == 0){
 
+                    return response()->json($success);
+
+                }else if($counter == 0 && count($errorOrders) > 0){
+                    return response()->json($errorOrders);
                 }
 
             }else{

@@ -104,22 +104,32 @@ class LazadaOrder extends Command
                     $orderId = $item['order_id'];
         
                     foreach($item['order_items'] as $orderItem){
-                        $result = $odataClient->getOdataClient()->from('Items')
+                        
+                        try {
+                            $result = $odataClient->getOdataClient()->from('Items')
                                                         ->select('ItemCode','ItemName')
                                                         ->where('U_LAZ_SELLER_SKU',$orderItem['sku'])
                                                         ->first();
+                        } catch (ClientException $e) {
+                            $msg = "Item ".$orderItem['sku']." on order ".$orderId." has problem".
+                            $lazadaLog->writeSapLog($e,$msg);
+                        }
                         
-                        $items[$orderId][] = [
-                            'ItemCode' => $result->ItemCode,
-                            'Quantity' => 1,
-                            'VatGroup' => $taxCode->Name,
-                            'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
-                            'WarehouseCode' => $whsCode->Name
-                        ];
+                        if(isset($result)){
+                            $items[$orderId][] = [
+                                'ItemCode' => $result->ItemCode,
+                                'Quantity' => 1,
+                                'VatGroup' => $taxCode->Name,
+                                'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
+                                'WarehouseCode' => $whsCode->Name
+                            ];
+                        }
                         
                     }
-                    
-                    $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+
+                    if(isset($items[$orderId])){
+                        $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
+                    }
                     
                 }
 
