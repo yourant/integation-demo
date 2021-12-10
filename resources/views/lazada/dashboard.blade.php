@@ -365,9 +365,9 @@
                             $('#alert-success strong').text(data.success-title)
                             $('#alert-success #alert-msg').text(data.success-message)
                             $('#alert-success').show();
-                        }if(data.error-title != undefined){
-                            $('#alert-danger strong').text(data.error-title)
-                            $('#alert-danger #alert-msg').text(data.error-message)
+                        }if(data.danger-title != undefined){
+                            $('#alert-danger strong').text(data.danger-title)
+                            $('#alert-danger #alert-msg').text(data.danger-message)
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
