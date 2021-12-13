@@ -9,6 +9,7 @@ use App\Models\AccessToken;
 use App\Services\SapService;
 use Illuminate\Http\Request;
 use App\Services\LazadaService;
+use App\Services\LazadaLogService;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Exception\ClientException;
 use App\Http\Controllers\LazadaAPIController;
@@ -605,7 +606,8 @@ class LazadaUIController extends Controller
     {
  
         $odataClient = new SapService();
-
+        $lazadaLog = new LazadaLogService('lazada.sales_order');
+        
         $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA1_CUSTOMER')->first();
         $taxCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','TAX_CODE')->first();
         $percentage = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','PERCENTAGE')->first();
@@ -730,16 +732,16 @@ class LazadaUIController extends Controller
 
             }
 
-            $errors = implode(",",$errorOrders);
+            $errors = implode(", ",$errorOrders);
             
             $success = array(
-                'success-title' => 'Success: ',
-                'success-message' => $counter. ' New Sales Orders Generated.',
+                'success_title' => 'Success: ',
+                'success_message' => $counter. ' New Sales Orders Generated.',
             );
 
             $danger = array(
-                'danger-title' => 'Error: ',
-                'danger-message' => 'The orders '.$errors.' encountered some problems.'
+                'danger_title' => 'Error Total('.count($errorOrders).'): ',
+                'danger_message' => 'The orders '.$errors.' encountered some problems.'
             );
             
             if($counter > 0 && count($errorOrders) > 0){

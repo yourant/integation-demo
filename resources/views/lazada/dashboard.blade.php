@@ -361,13 +361,13 @@
                         $("#generate-so-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
                     },
                     success: function(data) {
-                        if(data.success-title != undefined){
-                            $('#alert-success strong').text(data.success-title)
-                            $('#alert-success #alert-msg').text(data.success-message)
+                        if(data.success_title != undefined){
+                            $('#alert-success strong').text(data.success_title)
+                            $('#alert-success #alert-msg').text(data.success_message)
                             $('#alert-success').show();
-                        }if(data.danger-title != undefined){
-                            $('#alert-danger strong').text(data.danger-title)
-                            $('#alert-danger #alert-msg').text(data.danger-message)
+                        }if(data.danger_title != undefined){
+                            $('#alert-danger strong').text(data.danger_title)
+                            $('#alert-danger #alert-msg').text(data.danger_message)
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
