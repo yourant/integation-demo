@@ -18,7 +18,7 @@ class LazadaAPIController extends Controller
         $lazadaService = new LazadaService();
         $this->client = new LazopClient($lazadaService->getAppUrl(),$lazadaService->getAppKey(),$lazadaService->getAppSecret());
         $this->accessToken = $lazadaService->getAccessToken();
-        $this->dateStart = date('Y-m-d', strtotime('-3 days')).'T23:59:59+08:00'; // Output: Date start will be yesterday until today.
+        $this->dateStart = date('Y-m-d', strtotime('-16 days')).'T23:59:59+08:00'; // Output: Date start will be 15 days until today.
     }
 
     public function getProducts($skus){
