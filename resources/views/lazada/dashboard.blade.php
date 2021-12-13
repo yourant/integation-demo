@@ -400,10 +400,20 @@
                         $("#generate-inv-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
                     },
                     success: function(data) {
-                        $('#alert').addClass(data.status);
-                        $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
-                        $('#alert').show();
+                        if(data.success_title != undefined){
+                            $('#alert-success strong').text(data.success_title)
+                            $('#alert-success #alert-msg').text(data.success_message)
+                            $('#alert-success').show();
+                        }if(data.danger_title != undefined){
+                            $('#alert-danger strong').text(data.danger_title)
+                            $('#alert-danger #alert-msg').text(data.danger_message)
+                            $('#alert-danger').show();
+                        }else{
+                            $('#alert').addClass(data.status);
+                            $('#alert strong').text(data.title);
+                            $('#alert-msg').text(data.message)
+                            $('#alert').show();
+                        }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         $("#error-msg").text(xhr.responseText);
