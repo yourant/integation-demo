@@ -774,6 +774,8 @@ class Lazada2UIController extends Controller
     {
         
         $odataClient = new SapService();
+
+        $lazadaLog = new LazadaLogService('lazada2.ar_invoice');
     
         $lazadaAPI = new Lazada2APIController();
         
