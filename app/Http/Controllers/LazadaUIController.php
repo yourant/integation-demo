@@ -712,19 +712,17 @@ class LazadaUIController extends Controller
                 if(!$getSO){
 
                     try {
-                        $salesOrder = $odataClient->getOdataClient()->post('Orders',$finalSO);
+                        $odataClient->getOdataClient()->post('Orders',$finalSO);
+
+                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
+                        $counter++;
+
                     } catch (ClientException $e) {
                         $msg = "Order ".$finalSO['U_Order_ID']." has problems";
                         $lazadaLog->writeSapLog($e,$msg);
 
                         array_push($errorOrders,$finalSO['U_Order_ID']);
                     }
-
-                    if(isset($salesOrder)){
-                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
-                        $counter++;
-                    }
-                    
                     
                 }else{
                     unset($finalSO);
@@ -755,11 +753,18 @@ class LazadaUIController extends Controller
             }else if($counter == 0 && count($errorOrders) > 0){
 
                 return response()->json($danger);
-            
+
+            }else{
+
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'Pending orders were already processed.'
+                ]);
+                
             }
 
         }else{
-            Log::channel('lazada.sales_order')->info('No pending orders for now.');
 
             return response()->json([
                 'title' => 'Information: ',
