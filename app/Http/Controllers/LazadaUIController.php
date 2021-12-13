@@ -761,7 +761,7 @@ class LazadaUIController extends Controller
                 return response()->json([
                     'title' => 'Information: ',
                     'status' => 'alert-info',
-                    'message' => 'Pending orders were already processed.'
+                    'message' => 'Pending orders were already generated.'
                 ]);
             }
 
