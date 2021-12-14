@@ -148,16 +148,15 @@ class LazadaOrder extends Command
                 if(!$getSO){
 
                     try {
-                        $salesOrder = $odataClient->getOdataClient()->post('Orders',$finalSO);
+                        $odataClient->getOdataClient()->post('Orders',$finalSO);
+
+                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
+                        
                     } catch (ClientException $e) {
                         $msg = "Order ".$finalSO['U_Order_ID']." has problems";
                         $lazadaLog->writeSapLog($e,$msg);                            
                     }
 
-                    if(isset($salesOrder)){
-                        Log::channel('lazada.sales_order')->info('Sales order for Lazada order:'.$finalSO['U_Order_ID'].' created successfully.');
-                    }
-                    
                 }else{
                     unset($finalSO);
                 }
