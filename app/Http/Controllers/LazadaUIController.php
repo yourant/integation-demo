@@ -736,12 +736,12 @@ class LazadaUIController extends Controller
             
             $success = array(
                 'success_title' => 'Success: ',
-                'success_message' => $counter. ' New Sales Orders Generated.',
+                'success_message' => '<b>'.$counter.'</b> New Sales Orders Generated.',
             );
 
             $danger = array(
-                'danger_title' => 'Error Total('.count($errorOrders).'): ',
-                'danger_message' => 'The orders '.$errors.' encountered some problems.'
+                'danger_title' => 'Error: ',
+                'danger_message' => 'Problems encountered while generating <b>'.count($errorOrders).'</b> order/s: '.$errors.'.'
             );
             
             if($counter > 0 && count($errorOrders) > 0){
@@ -891,12 +891,12 @@ class LazadaUIController extends Controller
             
             $success = array(
                 'success_title' => 'Success: ',
-                'success_message' => $counter. ' New A/R Invoices Generated.',
+                'success_message' => '<b>'.$counter.'</b> New Sales Orders Generated.',
             );
 
             $danger = array(
-                'danger_title' => 'Error Total('.count($errorOrders).'): ',
-                'danger_message' => 'The orders '.$errors.' encountered some problems.'
+                'danger_title' => 'Error: ',
+                'danger_message' => 'Problems encountered while generating <b>'.count($errorOrders).'</b> order/s: '.$errors.'.'
             );
             
             if($counter > 0 && count($errorOrders) > 0){
@@ -1072,12 +1072,12 @@ class LazadaUIController extends Controller
 
             $success = array(
                 'success_title' => 'Success: ',
-                'success_message' => $counter. ' New A/R Credit Memos Generated.',
+                'success_message' => '<b>'.$counter.'</b> New Sales Orders Generated.',
             );
 
             $danger = array(
-                'danger_title' => 'Error Total('.count($errorOrders).'): ',
-                'danger_message' => 'The orders '.$errors.' encountered some problems.'
+                'danger_title' => 'Error: ',
+                'danger_message' => 'Problems encountered while generating <b>'.count($errorOrders).'</b> order/s: '.$errors.'.'
             );
 
             if($counter > 0 && count($errorOrders) > 0){
