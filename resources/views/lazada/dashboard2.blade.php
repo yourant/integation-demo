@@ -14,6 +14,22 @@
                 </button>
             </div>
 
+            <div id="alert-success" class="alert alert-success alert-dismissible fade show" style="display: none;" role="alert">
+                <strong></strong>
+                <span id="alert-msg"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div id="alert-danger" class="alert alert-danger alert-dismissible fade show" style="display: none;" role="alert">
+                <strong></strong>
+                <span id="alert-msg"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
@@ -182,11 +198,17 @@
                 }
             });
 
-            $('#refresh-token-btn').click(function() {
+            function clearAlerts(){
                 $('#alert').removeClass('alert-danger');
                 $('#alert').removeClass('alert-info');
                 $('#alert').removeClass('alert-success');
                 $('#alert').hide();
+                $('#alert-success').hide();
+                $('#alert-danger').hide();
+            }
+
+            $('#refresh-token-btn').click(function() {
+                clearAlerts();
 
                 $.ajax({
                     url: "{{ route('lazada2.refresh-token') }}",
@@ -198,12 +220,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#refresh-token-btn").attr("disabled", false);
@@ -214,10 +238,7 @@
             });
 
             $('#item-master-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
                 
                 $.ajax({
                     url: "{{ route('lazada2.item-master-integration') }}",
@@ -229,12 +250,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#item-master-btn").attr("disabled", false);
@@ -247,10 +270,7 @@
             });
 
             $('#sync-item-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
                 
                 $.ajax({
                     url: "{{ route('lazada2.sync-item') }}",
@@ -262,12 +282,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#sync-item-btn").attr("disabled", false);
@@ -280,10 +302,7 @@
             });
 
             $('#update-price-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
 
                 $.ajax({
                     url: "{{ route('lazada2.update-price') }}",
@@ -295,12 +314,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#update-price-btn").attr("disabled", false);
@@ -312,10 +333,7 @@
             });
 
             $('#update-stock-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
 
                 $.ajax({
                     url: "{{ route('lazada2.update-stock') }}",
@@ -327,12 +345,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#update-stock-btn").attr("disabled", false);
@@ -344,10 +364,7 @@
             });
 
             $('#generate-so-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
 
                 $.ajax({
                     url: "{{ route('lazada2.sales-order-generate') }}",
@@ -357,14 +374,26 @@
                         $("#generate-so-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
                     },
                     success: function(data) {
-                        $('#alert').addClass(data.status);
-                        $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
-                        $('#alert').show();
+                        if(data.success_title != undefined){
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
+                            $('#alert-success').show();
+                        }if(data.danger_title != undefined){
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
+                            $('#alert-danger').show();
+                        }else{
+                            $('#alert').addClass(data.status);
+                            $('#alert strong').text(data.title);
+                            $('#alert-msg').text(data.message);
+                            $('#alert').show();
+                        }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#generate-so-btn").attr("disabled", false);
@@ -376,10 +405,7 @@
             });
 
             $('#generate-inv-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
 
                 $.ajax({
                     url: "{{ route('lazada2.invoice-generate') }}",
@@ -389,14 +415,26 @@
                         $("#generate-inv-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
                     },
                     success: function(data) {
-                        $('#alert').addClass(data.status);
-                        $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
-                        $('#alert').show();
+                        if(data.success_title != undefined){
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
+                            $('#alert-success').show();
+                        }if(data.danger_title != undefined){
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
+                            $('#alert-danger').show();
+                        }else{
+                            $('#alert').addClass(data.status);
+                            $('#alert strong').text(data.title);
+                            $('#alert-msg').text(data.message);
+                            $('#alert').show();
+                        }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#generate-inv-btn").attr("disabled", false);
@@ -408,10 +446,7 @@
             });
 
             $('#generate-cm-btn').click(function() {
-                $('#alert').removeClass('alert-danger');
-                $('#alert').removeClass('alert-info');
-                $('#alert').removeClass('alert-success');
-                $('#alert').hide();
+                clearAlerts();
 
                 $.ajax({
                     url: "{{ route('lazada2.credit-memo-generate') }}",
@@ -421,14 +456,26 @@
                         $("#generate-cm-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`);
                     },
                     success: function(data) {
-                        $('#alert').addClass(data.status);
-                        $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
-                        $('#alert').show();
+                        if(data.success_title != undefined){
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
+                            $('#alert-success').show();
+                        }if(data.danger_title != undefined){
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
+                            $('#alert-danger').show();
+                        }else{
+                            $('#alert').addClass(data.status);
+                            $('#alert strong').text(data.title);
+                            $('#alert-msg').text(data.message);
+                            $('#alert').show();
+                        }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#generate-cm-btn").attr("disabled", false);
