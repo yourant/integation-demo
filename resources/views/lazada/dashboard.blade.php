@@ -363,11 +363,11 @@
                     success: function(data) {
                         if(data.success_title != undefined){
                             $('#alert-success strong').text(data.success_title)
-                            $('#alert-success #alert-msg').text(data.success_message)
+                            $('#alert-success #alert-msg').html(data.success_message)
                             $('#alert-success').show();
                         }if(data.danger_title != undefined){
                             $('#alert-danger strong').text(data.danger_title)
-                            $('#alert-danger #alert-msg').text(data.danger_message)
+                            $('#alert-danger #alert-msg').html(data.danger_message)
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
@@ -402,11 +402,11 @@
                     success: function(data) {
                         if(data.success_title != undefined){
                             $('#alert-success strong').text(data.success_title)
-                            $('#alert-success #alert-msg').text(data.success_message)
+                            $('#alert-success #alert-msg').html(data.success_message)
                             $('#alert-success').show();
                         }if(data.danger_title != undefined){
                             $('#alert-danger strong').text(data.danger_title)
-                            $('#alert-danger #alert-msg').text(data.danger_message)
+                            $('#alert-danger #alert-msg').html(data.danger_message)
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
@@ -441,11 +441,11 @@
                     success: function(data, status) {
                         if(data.success_title != undefined){
                             $('#alert-success strong').text(data.success_title)
-                            $('#alert-success #alert-msg').text(data.success_message)
+                            $('#alert-success #alert-msg').html(data.success_message)
                             $('#alert-success').show();
                         }if(data.danger_title != undefined){
                             $('#alert-danger strong').text(data.danger_title)
-                            $('#alert-danger #alert-msg').text(data.danger_message)
+                            $('#alert-danger #alert-msg').html(data.danger_message)
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
