@@ -886,7 +886,9 @@ class LazadaUIController extends Controller
                             'NumAtCard' => $getSO['NumAtCard'],
                             'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
                             'U_Order_ID' => $getSO['U_Order_ID'],
-                            'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
+                            'U_Basic_Information' => $getSO['U_Basic_Information'],
+                            'U_Shipping_Address' => $getSO['U_Shipping_Address'],
+                            'U_Billing_Address' => $getSO['U_Billing_Address'],
                             'DocumentLines' => $items 
                         ]);
 
