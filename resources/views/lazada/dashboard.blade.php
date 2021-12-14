@@ -217,12 +217,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#refresh-token-btn").attr("disabled", false);
@@ -245,12 +247,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#item-master-btn").attr("disabled", false);
@@ -275,12 +279,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#sync-item-btn").attr("disabled", false);
@@ -305,12 +311,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#update-price-btn").attr("disabled", false);
@@ -334,12 +342,14 @@
                     success: function(data) {
                         $('#alert').addClass(data.status);
                         $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message)
+                        $('#alert-msg').text(data.message);
                         $('#alert').show();
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#update-stock-btn").attr("disabled", false);
@@ -362,23 +372,25 @@
                     },
                     success: function(data) {
                         if(data.success_title != undefined){
-                            $('#alert-success strong').text(data.success_title)
-                            $('#alert-success #alert-msg').html(data.success_message)
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
                             $('#alert-success').show();
                         }if(data.danger_title != undefined){
-                            $('#alert-danger strong').text(data.danger_title)
-                            $('#alert-danger #alert-msg').html(data.danger_message)
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
                             $('#alert strong').text(data.title);
-                            $('#alert-msg').text(data.message)
+                            $('#alert-msg').text(data.message);
                             $('#alert').show();
                         }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#generate-so-btn").attr("disabled", false);
@@ -401,23 +413,25 @@
                     },
                     success: function(data) {
                         if(data.success_title != undefined){
-                            $('#alert-success strong').text(data.success_title)
-                            $('#alert-success #alert-msg').html(data.success_message)
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
                             $('#alert-success').show();
                         }if(data.danger_title != undefined){
-                            $('#alert-danger strong').text(data.danger_title)
-                            $('#alert-danger #alert-msg').html(data.danger_message)
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
                             $('#alert strong').text(data.title);
-                            $('#alert-msg').text(data.message)
+                            $('#alert-msg').text(data.message);
                             $('#alert').show();
                         }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#generate-inv-btn").attr("disabled", false);
@@ -440,23 +454,25 @@
                     },
                     success: function(data, status) {
                         if(data.success_title != undefined){
-                            $('#alert-success strong').text(data.success_title)
-                            $('#alert-success #alert-msg').html(data.success_message)
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
                             $('#alert-success').show();
                         }if(data.danger_title != undefined){
-                            $('#alert-danger strong').text(data.danger_title)
-                            $('#alert-danger #alert-msg').html(data.danger_message)
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
                             $('#alert-danger').show();
                         }else{
                             $('#alert').addClass(data.status);
                             $('#alert strong').text(data.title);
-                            $('#alert-msg').text(data.message)
+                            $('#alert-msg').text(data.message);
                             $('#alert').show();
                         }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
-                        $("#error-msg").text(xhr.responseText);
-                        $('#error-alert').show();
+                        var err = JSON.parse(xhr.responseText);
+                        $('#alert-danger strong').html("<b>Error:</b>");
+                        $('#alert-danger #alert-msg').text(err.message);
+                        $('#alert-danger').show();
                     },
                     complete: function(response, status) {
                         $("#generate-cm-btn").attr("disabled", false);
