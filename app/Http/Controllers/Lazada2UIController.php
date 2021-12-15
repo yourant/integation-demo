@@ -885,7 +885,7 @@ class Lazada2UIController extends Controller
         
             $success = array(
                 'success_title' => 'Success: ',
-                'success_message' => '<b>'.$counter.'</b> New Sales Orders Generated.',
+                'success_message' => '<b>'.$counter.'</b> New A/R Invoices Generated.',
             );
 
             $danger = array(
@@ -1067,7 +1067,7 @@ class Lazada2UIController extends Controller
 
             $success = array(
                 'success_title' => 'Success: ',
-                'success_message' => '<b>'.$counter.'</b> New Sales Orders Generated.',
+                'success_message' => '<b>'.$counter.'</b> New A/R Credit Memos Generated.',
             );
 
             $danger = array(
