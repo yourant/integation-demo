@@ -55,6 +55,8 @@ class LazadaInvoice extends Command
         $moreOrders= true;
 
         $orderArray = [];
+
+        $customerInfo = [];
         
         while($moreOrders){
 
@@ -64,6 +66,29 @@ class LazadaInvoice extends Command
                 foreach($orders['data']['orders'] as $order){
                     $orderId = $order['order_id'];
                     array_push($orderArray,$orderId);
+                    //Basic Information
+                    $customerName = $order['customer_first_name'].' '.$order['customer_last_name'];
+                    $receiverPhone = $order['address_shipping']['phone'];
+                    //Shipping Address
+                    $sName = $order['address_shipping']['first_name'] .' '. $order['address_shipping']['last_name'];
+                    $sPhone = $order['address_shipping']['phone'];
+                    $sAddress = $order['address_shipping']['address1'];
+                    $sPostCode = $order['address_shipping']['post_code'];
+                    $sCountry = $order['address_shipping']['country'];
+                    $shippingAddress = $sName."\n".$sPhone."\n".$sAddress.', '.$sPostCode.', '.$sCountry;
+                    //Billing Address
+                    $bName = $order['address_billing']['first_name'] .' '. $order['address_billing']['last_name'];
+                    $bPhone = $order['address_billing']['phone'];
+                    $bAddress = $order['address_billing']['address1'];
+                    $bPostCode = $order['address_billing']['post_code'];
+                    $bCountry = $order['address_billing']['country'];
+                    $billingAddress = $bName."\n".$bPhone."\n".$bAddress.', '.$bPostCode.', '.$bCountry;
+                    
+                    $customerInfo[$orderId] = [
+                        'U_Basic_Information' => 'Customer Name: '.$customerName."\n".'Receiver Phone: '.$receiverPhone,
+                        'U_Shipping_Address' => $shippingAddress,
+                        'U_Billing_Address' => $billingAddress,
+                    ];
                 }
 
                 if($orders['data']['count'] == $orders['data']['countTotal']){
@@ -128,9 +153,9 @@ class LazadaInvoice extends Command
                             'NumAtCard' => $getSO['NumAtCard'],
                             'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
                             'U_Order_ID' => $getSO['U_Order_ID'],
-                            'U_Basic_Information' => $getSO['U_Basic_Information'],
-                            'U_Shipping_Address' => $getSO['U_Shipping_Address'],
-                            'U_Billing_Address' => $getSO['U_Billing_Address'],
+                            'U_Basic_Information' =>  $customerInfo[$getSO['U_Order_ID']]['U_Basic_Information'],
+                            'U_Shipping_Address' => $customerInfo[$getSO['U_Order_ID']]['U_Shipping_Address'],
+                            'U_Billing_Address' => $customerInfo[$getSO['U_Order_ID']]['U_Billing_Address'],
                             'DocumentLines' => $items 
                         ]);
                         
