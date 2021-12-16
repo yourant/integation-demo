@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use LazopClient;
 use LazopRequest;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Services\LazadaService;
 use Illuminate\Support\Facades\Http;
@@ -29,14 +28,6 @@ class LazadaAPIController extends Controller
 
         return json_decode($this->client->execute($request, $this->accessToken),true);
         
-    }
-
-    public function getProductItem($sku){
-        $request = new LazopRequest('/product/item/get','GET');
-        $request->addApiParam('seller_sku',$sku);
-
-        return json_decode($this->client->execute($request, $this->accessToken),true);
-
     }
 
     public function createProduct($payload){
@@ -93,22 +84,14 @@ class LazadaAPIController extends Controller
     public function updatePriceQuantity($payload){
         $request = new LazopRequest('/product/price_quantity/update');
         $request->addApiParam('payload',$payload);
-        
-        return json_decode($this->client->execute($request, $this->accessToken),true);
-    }
-
-    public function activateProduct($payload){
-        $request = new LazopRequest('/product/update');
-        $request->addApiParam('payload',$payload);
 
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }
 
-    public function deactivateProduct($payload){
+    public function deactivateProduct(){
         $request = new LazopRequest('/product/deactivate');
-        $request->addApiParam('apiRequestBody',$payload);
-
-        return json_decode($this->client->execute($request, $this->accessToken),true);
+        $payload = "";
+        $request->addApiParam('payload');
     }
 
 
