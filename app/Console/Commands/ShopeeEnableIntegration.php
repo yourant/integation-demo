@@ -55,6 +55,7 @@ class ShopeeEnableIntegration extends Command
 
         fclose($file_handle);
 
+        $shopeeItems = array_splice($shopeeItems, 4);
         $successCount = 0;
 
         $logger->writeLog('Updating item integration status . . .');
@@ -62,20 +63,21 @@ class ShopeeEnableIntegration extends Command
         foreach ($shopeeItems as $key => $item) {
             $validItem = null;
             $integrationStatus = null;
-            $sku = $item[4] ? $item[4] : $item[5];
+            $sku = $item[4] ? $item[4] : $item[11];
 
-            $counterz = $key + 1;
+            $prodCount = $key + 1;
             $parentSku = $item[4]; 
-            $varSku = $item[5];
-
+            $varSku = $item[11];
 
             try {
                 $validItem = $itemSapService->getOdataClient()
                     ->select('ItemCode')
                     ->from('Items')
                     ->where('Valid', 'tYES')
-                    ->where('U_SH_INTEGRATION', 'N')
                     ->whereNested(function($query) use ($sku) {
+                        $query->where('U_SH_INTEGRATION', 'N')
+                            ->orWhere('U_SH_INTEGRATION', null);
+                    })->whereNested(function($query) use ($sku) {
                         $query->where('ItemCode', $sku)
                             ->orWhere('U_MPS_OLDSKU', $sku);
                     })->first();
@@ -96,12 +98,11 @@ class ShopeeEnableIntegration extends Command
 
                 if (isset($integrationStatus)) {
                     $successCount++;
-                    // $logger->writeLog("{$counterz} - successs");
-                    // $logger->writeLog("Item with the Item Code {$validItem['properties']['ItemCode']} was updated with the integration status");
+                    $logger->writeLog("{$prodCount} - successs");
                 }
             } else {
-                $logger->writeLog("{$counterz} - parent: {$parentSku}");
-                $logger->writeLog("{$counterz} - variant: {$varSku}");
+                $logger->writeLog("{$prodCount} - parent: {$parentSku}");
+                $logger->writeLog("{$prodCount} - variant: {$varSku}");
             }
         }
 
