@@ -29,6 +29,14 @@ class Lazada2APIController extends Controller
         
     }
 
+    public function getProductItem($sku){
+        $request = new LazopRequest('/product/item/get','GET');
+        $request->addApiParam('seller_sku',$sku);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+
+    }
+
     public function createProduct($payload){
         $request = new LazopRequest('/product/create');
         $request->addApiParam('payload',$payload);
@@ -83,6 +91,20 @@ class Lazada2APIController extends Controller
     public function updatePriceQuantity($payload){
         $request = new LazopRequest('/product/price_quantity/update');
         $request->addApiParam('payload',$payload);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
+    public function activateProduct($payload){
+        $request = new LazopRequest('/product/update');
+        $request->addApiParam('payload',$payload);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
+    public function deactivateProduct($payload){
+        $request = new LazopRequest('/product/deactivate');
+        $request->addApiParam('apiRequestBody',$payload);
 
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }
