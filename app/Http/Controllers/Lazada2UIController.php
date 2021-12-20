@@ -389,7 +389,7 @@ class Lazada2UIController extends Controller
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
                             'origPrice' => $item['U_ORIGINAL_PRICE'],
-                            'specialPrice' => $item['ItemPrices']['7']['Price']
+                            'specialPrice' => $item['ItemPrices']['1']['Price']
                         ];
 
                     }
