@@ -87,5 +87,19 @@ class Lazada2APIController extends Controller
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }
 
+    public function activateProduct($payload){
+        $request = new LazopRequest('/product/update');
+        $request->addApiParam('payload',$payload);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
+    public function deactivateProduct($payload){
+        $request = new LazopRequest('/product/deactivate');
+        $request->addApiParam('apiRequestBody',$payload);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
 
 }
