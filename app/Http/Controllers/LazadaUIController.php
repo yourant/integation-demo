@@ -630,7 +630,24 @@ class LazadaUIController extends Controller
                 foreach($orders['data']['orders'] as $order){
                     $orderId = $order['order_id'];
                     array_push($orderIdArray,$orderId);
-                    
+                    //Basic Information
+                    $customerName = $order['customer_first_name'].' '.$order['customer_last_name'];
+                    $receiverPhone = $order['address_shipping']['phone'];
+                    //Shipping Address
+                    $sName = $order['address_shipping']['first_name'] .' '. $order['address_shipping']['last_name'];
+                    $sPhone = $order['address_shipping']['phone'];
+                    $sAddress = $order['address_shipping']['address1'];
+                    $sPostCode = $order['address_shipping']['post_code'];
+                    $sCountry = $order['address_shipping']['country'];
+                    $shippingAddress = $sName."\n".$sPhone."\n".$sAddress.', '.$sPostCode.', '.$sCountry;
+                    //Billing Address
+                    $bName = $order['address_billing']['first_name'] .' '. $order['address_billing']['last_name'];
+                    $bPhone = $order['address_billing']['phone'];
+                    $bAddress = $order['address_billing']['address1'];
+                    $bPostCode = $order['address_billing']['post_code'];
+                    $bCountry = $order['address_billing']['country'];
+                    $billingAddress = $bName."\n".$bPhone."\n".$bAddress.', '.$bPostCode.', '.$bCountry;
+
                     $tempSO[$orderId] = [
                         'CardCode' => $lazadaCustomer->Name,
                         'DocDate' => substr($order['created_at'],0,10),
@@ -639,7 +656,9 @@ class LazadaUIController extends Controller
                         'NumAtCard' => $orderId,
                         'U_Ecommerce_Type' => 'Lazada_1',
                         'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        'U_Basic_Information' => 'Customer Name: '.$customerName."\n".'Receiver Phone: '.$receiverPhone,
+                        'U_Shipping_Address' => $shippingAddress,
+                        'U_Billing_Address' => $billingAddress,
                         'DocTotal' => $order['price']
                     ];
 
@@ -791,6 +810,8 @@ class LazadaUIController extends Controller
 
         $orderArray = [];
 
+        $customerInfo = [];
+
         while($moreOrders){
 
             $orders = $lazadaAPI->getReadyToShipOrders($offset);
@@ -799,6 +820,29 @@ class LazadaUIController extends Controller
                 foreach($orders['data']['orders'] as $order){
                     $orderId = $order['order_id'];
                     array_push($orderArray,$orderId);
+                    //Basic Information
+                    $customerName = $order['customer_first_name'].' '.$order['customer_last_name'];
+                    $receiverPhone = $order['address_shipping']['phone'];
+                    //Shipping Address
+                    $sName = $order['address_shipping']['first_name'] .' '. $order['address_shipping']['last_name'];
+                    $sPhone = $order['address_shipping']['phone'];
+                    $sAddress = $order['address_shipping']['address1'];
+                    $sPostCode = $order['address_shipping']['post_code'];
+                    $sCountry = $order['address_shipping']['country'];
+                    $shippingAddress = $sName."\n".$sPhone."\n".$sAddress.', '.$sPostCode.', '.$sCountry;
+                    //Billing Address
+                    $bName = $order['address_billing']['first_name'] .' '. $order['address_billing']['last_name'];
+                    $bPhone = $order['address_billing']['phone'];
+                    $bAddress = $order['address_billing']['address1'];
+                    $bPostCode = $order['address_billing']['post_code'];
+                    $bCountry = $order['address_billing']['country'];
+                    $billingAddress = $bName."\n".$bPhone."\n".$bAddress.', '.$bPostCode.', '.$bCountry;
+                    
+                    $customerInfo[$orderId] = [
+                        'U_Basic_Information' => 'Customer Name: '.$customerName."\n".'Receiver Phone: '.$receiverPhone,
+                        'U_Shipping_Address' => $shippingAddress,
+                        'U_Billing_Address' => $billingAddress,
+                    ];
                 }
 
                 if($orders['data']['count'] == $orders['data']['countTotal']){
@@ -867,7 +911,9 @@ class LazadaUIController extends Controller
                             'NumAtCard' => $getSO['NumAtCard'],
                             'U_Ecommerce_Type' => $getSO['U_Ecommerce_Type'],
                             'U_Order_ID' => $getSO['U_Order_ID'],
-                            'U_Customer_Name' => $getSO['U_Customer_Name'].' '.$getSO['U_Customer_Email'],
+                            'U_Basic_Information' =>  $customerInfo[$getSO['U_Order_ID']]['U_Basic_Information'],
+                            'U_Shipping_Address' => $customerInfo[$getSO['U_Order_ID']]['U_Shipping_Address'],
+                            'U_Billing_Address' => $customerInfo[$getSO['U_Order_ID']]['U_Billing_Address'],
                             'DocumentLines' => $items 
                         ]);
 
@@ -960,6 +1006,23 @@ class LazadaUIController extends Controller
                 foreach($orders['data']['orders'] as $order){
                     $orderId = $order['order_id'];
                     array_push($orderIdArray,$orderId);
+                    //Basic Information
+                    $customerName = $order['customer_first_name'].' '.$order['customer_last_name'];
+                    $receiverPhone = $order['address_shipping']['phone'];
+                    //Shipping Address
+                    $sName = $order['address_shipping']['first_name'] .' '. $order['address_shipping']['last_name'];
+                    $sPhone = $order['address_shipping']['phone'];
+                    $sAddress = $order['address_shipping']['address1'];
+                    $sPostCode = $order['address_shipping']['post_code'];
+                    $sCountry = $order['address_shipping']['country'];
+                    $shippingAddress = $sName."\n".$sPhone."\n".$sAddress.', '.$sPostCode.', '.$sCountry;
+                    //Billing Address
+                    $bName = $order['address_billing']['first_name'] .' '. $order['address_billing']['last_name'];
+                    $bPhone = $order['address_billing']['phone'];
+                    $bAddress = $order['address_billing']['address1'];
+                    $bPostCode = $order['address_billing']['post_code'];
+                    $bCountry = $order['address_billing']['country'];
+                    $billingAddress = $bName."\n".$bPhone."\n".$bAddress.', '.$bPostCode.', '.$bCountry;
                     
                     $tempCM[$orderId] = [
                         'CardCode' => $lazadaCustomer->Name,
@@ -969,7 +1032,9 @@ class LazadaUIController extends Controller
                         'NumAtCard' => $orderId,
                         'U_Ecommerce_Type' => 'Lazada_1',
                         'U_Order_ID' => $orderId,
-                        'U_Customer_Name' => $order['customer_first_name'].' '.$order['customer_last_name'],
+                        'U_Basic_Information' => 'Customer Name: '.$customerName."\n".'Receiver Phone: '.$receiverPhone,
+                        'U_Shipping_Address' => $shippingAddress,
+                        'U_Billing_Address' => $billingAddress,
                     ];
                 
                 }
