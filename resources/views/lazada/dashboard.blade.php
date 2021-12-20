@@ -89,14 +89,14 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <center>Update Item Price (Disabled)</center>
+                                    <center>Update Item Price</center>
                                 </div>
                                 <div class="card-body">
                                     <p class="card-text">Update the Lazada products based on the price in the Item Master</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <button href="#" class="btn btn-primary" id="update-price-btn" disabled>
+                                        <button href="#" class="btn btn-primary" id="update-price-btn">
                                             UPDATE PRICES
                                         </button>
                                     </center>
