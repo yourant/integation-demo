@@ -122,7 +122,6 @@ class Lazada2UIController extends Controller
             }
             
             $itemCount = 0;
-            $updateCount = 0;
 
             foreach($items as $item){
 
@@ -165,56 +164,17 @@ class Lazada2UIController extends Controller
                                 ]);
                     
                     ($update ? $itemCount++ : '');
-                
-                }else{
-
-                    if($item['status'] == 'tYES'){
-                        $payload = "<Request>
-                                            <Product>
-                                                <Skus>
-                                                    <Sku>
-                                                        <SellerSku>".$item['sellerSku']."</SellerSku>
-                                                        <Status>active</Status>
-                                                    </Sku>
-                                                </Skus>
-                                            </Product>
-                                        </Request>";
-                        $activate = $lazadaAPI->activateProduct($payload);
-
-                        if($activate['code'] == '0'){
-                            $updateCount++;
-                        }
-
-                    }else if($item['status'] == 'tNO'){
-                        $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
-                        $itemId = $getDetail['data']['item_id'];
-                        $payload = "<Request>
-                                        <Product>
-                                            <ItemId>".$itemId."</ItemId>
-                                            <Skus>
-                                                <SellerSku>".$item['sellerSku']."</SellerSku>
-                                            </Skus>
-                                        </Product>
-                                    </Request>";
-                        $deactivate = $lazadaAPI->deactivateProduct($payload);
-
-                        if($deactivate['code'] == '0'){
-                            $updateCount++;
-                        }
-                        
-                    }
-
                 }
             }
 
-            $message = null;
+            if($itemCount > 0){
+                Log::channel('lazada2.item_master')->info($itemCount.' new product/s added');
 
-            if($itemCount > 0 && $updateCount == 0){
-                $message = $itemCount.' new product/s added.';
-            }else if($itemCount == 0 && $updateCount > 0){
-                $message = $updateCount.' SKU/s status updated.';
-            }else if($itemCount > 0 && $updateCount > 0){
-                $message = $itemCount.' new product/s added and '.$updateCount.' SKU/s status updated.';
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => $itemCount.' new product/s added.'
+                ]);
             }else{
                 Log::channel('lazada2.item_master')->info('No new Lazada products to be added.');
 
@@ -222,16 +182,6 @@ class Lazada2UIController extends Controller
                     'title' => 'Information: ',
                     'status' => 'alert-info',
                     'message' => 'No new Lazada products to be added.'
-                ]);
-            }
-
-            if($message != null){
-                Log::channel('lazada2.item_master')->info($message);
-
-                return response()->json([
-                    'title' => 'Success: ',
-                    'status' => 'alert-success',
-                    'message' => $message
                 ]);
             }
 
