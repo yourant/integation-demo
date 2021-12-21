@@ -561,43 +561,42 @@ class ShopeeController extends Controller
 
                 if ($shopeeModelsResponseArr) {
                     foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
-                        if ((string) $key2 == '247') {
-                            dd($model);
-                        }
-                        $sku = $model['model_sku'];
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
 
-                        try {
-                            $item = $itemSapService->getOdataClient()
-                                ->select('ItemCode')
-                                ->from('Items')
-                                ->whereNested(function($query) {
-                                    $query->where('U_SH_ITEM_CODE', NULL)
-                                        ->orWhere('U_SH_ITEM_CODE', '');
-                                })->whereNested(function($query) use ($sku) {
-                                    $query->where('ItemCode', $sku)
-                                        ->orWhere('U_MPS_OLDSKU', $sku);
-                                })->where('U_SH_INTEGRATION', 'Y')
-                                ->first();
-                        } catch (ClientException $exception) {
-                            $logger->writeSapLog($exception);
-                        }
-
-                        if (isset($item)) {
                             try {
-                                $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
-                                    ->whereKey($item->ItemCode)
-                                    ->patch([
-                                        'U_SH_ITEM_CODE' => $productId
-                                    ]);    
+                                $item = $itemSapService->getOdataClient()
+                                    ->select('ItemCode')
+                                    ->from('Items')
+                                    ->whereNested(function($query) {
+                                        $query->where('U_SH_ITEM_CODE', NULL)
+                                            ->orWhere('U_SH_ITEM_CODE', '');
+                                    })->whereNested(function($query) use ($sku) {
+                                        $query->where('ItemCode', $sku)
+                                            ->orWhere('U_MPS_OLDSKU', $sku);
+                                    })->where('U_SH_INTEGRATION', 'Y')
+                                    ->first();
                             } catch (ClientException $exception) {
                                 $logger->writeSapLog($exception);
                             }
 
-                            if (isset($itemUpdateResponse)) {
-                                $successCount++;
-                                $logger->writeLog("Product with {$sku} variant SKU was synced to the item master.");
-                            }
-                        }  
+                            if (isset($item)) {
+                                try {
+                                    $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
+                                        ->whereKey($item->ItemCode)
+                                        ->patch([
+                                            'U_SH_ITEM_CODE' => $productId
+                                        ]);    
+                                } catch (ClientException $exception) {
+                                    $logger->writeSapLog($exception);
+                                }
+
+                                if (isset($itemUpdateResponse)) {
+                                    $successCount++;
+                                    $logger->writeLog("Product with {$sku} variant SKU was synced to the item master.");
+                                }
+                            }  
+                        }
                     }
                 }  
             } else {
