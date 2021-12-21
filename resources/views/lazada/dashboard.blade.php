@@ -29,7 +29,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-
+            <p>Tokens Validity: <strong>20 Days</strong></p>
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
@@ -194,6 +194,15 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
+
+
+            $.ajax({
+                url: "{{ route('lazada.token-status') }}",
+                method: "GET",
+                success: function(data){        
+                    console.log(data);
+                }
+            })
 
             function clearAlerts(){
                 $('#alert').removeClass('alert-danger');

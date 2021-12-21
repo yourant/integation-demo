@@ -21,6 +21,14 @@ class LazadaUIController extends Controller
         return view('lazada.dashboard');
     }
 
+    public function displayTokenStatus()
+    {
+        $lazadaToken = AccessToken::where('platform','lazada')->first();
+        
+        return response()->json(date('Y-m-d', strtotime("+ 28 days",strtotime($lazadaToken->updated_at))));
+
+    }
+
     public function refreshToken()
     {
         try
