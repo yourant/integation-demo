@@ -541,13 +541,13 @@ class ShopeeController extends Controller
         $successCount = 0;
         
         $logger->writeLog("Updating Shopee Item Code UDF . . .");
-
-        foreach ($productList as $product) {
+        // dd($productList[248]);
+        foreach ($productList as $key2 => $product) {
             $itemSapService = new SapService();
 
             $parentSku = $product['item_sku'];
             $productId = $product['item_id'];            
-
+            $logger->writeLog($key2 + 1);
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
                 $logger->writeLog('Retrieving product models . . .');
@@ -561,6 +561,9 @@ class ShopeeController extends Controller
 
                 if ($shopeeModelsResponseArr) {
                     foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
+                        if ((string) $key2 == '247') {
+                            dd($model);
+                        }
                         $sku = $model['model_sku'];
 
                         try {
@@ -572,8 +575,8 @@ class ShopeeController extends Controller
                                         ->orWhere('U_SH_ITEM_CODE', '');
                                 })->whereNested(function($query) use ($sku) {
                                     $query->where('ItemCode', $sku)
-                                        ->orWhere('U_OLD_SKU', $sku);
-                                })->where('U_SH_INTEGRATION', 'Yes')
+                                        ->orWhere('U_MPS_OLDSKU', $sku);
+                                })->where('U_SH_INTEGRATION', 'Y')
                                 ->first();
                         } catch (ClientException $exception) {
                             $logger->writeSapLog($exception);
@@ -607,8 +610,8 @@ class ShopeeController extends Controller
                                 ->orWhere('U_SH_ITEM_CODE', '');
                         })->whereNested(function($query) use ($parentSku) {
                             $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_OLD_SKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Yes')
+                                ->orWhere('U_MPS_OLDSKU', $parentSku);
+                        })->where('U_SH_INTEGRATION', 'Y')
                         ->first();
                 } catch (ClientException $exception) {
                     $logger->writeSapLog($exception);
@@ -792,8 +795,8 @@ class ShopeeController extends Controller
                             ->from('Items')
                             ->whereNested(function($query) use ($sku) {
                                 $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
+                                    ->orWhere('U_MPS_OLDSKU', $sku);
+                            })->where('U_SH_INTEGRATION', 'Y')
                             ->first();
                         } catch (ClientException $exception) {
                             $logger->writeSapLog($exception);
@@ -827,8 +830,8 @@ class ShopeeController extends Controller
                         ->from('Items')
                         ->whereNested(function($query) use ($parentSku) {
                             $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_OLD_SKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Yes')
+                                ->orWhere('U_MPS_OLDSKU', $parentSku);
+                        })->where('U_SH_INTEGRATION', 'Y')
                         ->first();
                 } catch (ClientException $exception) {
                     $logger->writeSapLog($exception);
@@ -1215,8 +1218,8 @@ class ShopeeController extends Controller
                             ->from('Items')
                             ->whereNested(function($query) use ($sku) {
                                 $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
+                                    ->orWhere('U_MPS_OLDSKU', $sku);
+                            })->where('U_SH_INTEGRATION', 'Y')
                             ->first();
                     } catch (ClientException $exception) {
                         $logger->writeSapLog($exception);
@@ -1354,7 +1357,7 @@ class ShopeeController extends Controller
         //                 $response = $salesOrderSapService->getOdataClient()
         //                     ->from('Items')
         //                     ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
-        //                     ->where('U_SH_INTEGRATION', 'Yes')
+        //                     ->where('U_SH_INTEGRATION', 'Y')
         //                     ->first();
         //             } catch(ClientException $e) {
         //                 dd($e->getResponse()->getBody()->getContents());
@@ -1767,8 +1770,8 @@ class ShopeeController extends Controller
                             ->from('Items')
                             ->whereNested(function($query) use ($sku) {
                                 $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
+                                    ->orWhere('U_MPS_OLDSKU', $sku);
+                            })->where('U_SH_INTEGRATION', 'Y')
                             ->first();
                     } catch(ClientException $exception) {
                         $logger->writeSapLog($exception);
@@ -1911,7 +1914,7 @@ class ShopeeController extends Controller
         //                 $response = $returnSapService->getOdataClient()
         //                     ->from('Items')
         //                     ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
-        //                     ->where('U_SH_INTEGRATION', 'Yes')
+        //                     ->where('U_SH_INTEGRATION', 'Y')
         //                     ->first();
         //             } catch(ClientException $e) {
         //                 dd($e->getResponse()->getBody()->getContents());
