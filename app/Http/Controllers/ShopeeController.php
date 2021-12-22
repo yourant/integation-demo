@@ -83,7 +83,7 @@ class ShopeeController extends Controller
     {
         $shopeeToken = AccessToken::where('platform', 'shopee')->first(); 
         $logger = new LogService('item_create');
-        
+
         $logger->writeLog('EXECUTING SHOPEE ITEM CREATE SCRIPT . . .');
 
         $productList = [];
@@ -543,13 +543,14 @@ class ShopeeController extends Controller
         $successCount = 0;
         
         $logger->writeLog("Updating Shopee Item Code UDF . . .");
-
+        //  dd($productList[1]);
         foreach ($productList as $key2 => $product) {
             $itemSapService = new SapService();
 
             $parentSku = $product['item_sku'];
             $productId = $product['item_id'];            
             $logger->writeLog($key2 + 1);
+            $logger->writeLog($product['item_name']);
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
                 $logger->writeLog('Retrieving product models . . .');
@@ -583,6 +584,7 @@ class ShopeeController extends Controller
                             }
 
                             if (isset($item)) {
+                                $logger->writeLog($item->ItemCode);
                                 try {
                                     $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
                                         ->whereKey($item->ItemCode)
@@ -619,6 +621,7 @@ class ShopeeController extends Controller
                 }
 
                 if (isset($item)) {
+                    $logger->writeLog($item->ItemCode);
                     try {
                         $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
                             ->whereKey($item->ItemCode)
