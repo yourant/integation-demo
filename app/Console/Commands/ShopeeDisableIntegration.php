@@ -43,6 +43,8 @@ class ShopeeDisableIntegration extends Command
         $logger = new LogService('general');
         $itemSapService = new SapService();
 
+        $logger->writeLog('EXECUTING SHOPEE INTEGRATION DISABLE SCRIPT . . .');
+
         $count = 0;
         $moreItems = true; 
         $sapItemArr = [];
@@ -96,6 +98,7 @@ class ShopeeDisableIntegration extends Command
                     ->from('Items')
                     ->whereKey($item)
                     ->patch([
+                        'U_SH_ITEM_CODE' => NULL,
                         'U_SH_INTEGRATION' => 'N'
                     ]);  
             } catch (ClientException $exception) {
