@@ -270,7 +270,9 @@ class ShopeeController extends Controller
 
                 if ($shopeeModelsResponseArr) {
                     foreach ($shopeeModelsResponseArr['response']['model'] as $model) {
-                        array_push($skuList, $model['model_sku']);
+                        if (isset($model['model_sku'])) {
+                            array_push($skuList, $model['model_sku']);
+                        }
                     }
                 }
             } else {
@@ -541,7 +543,7 @@ class ShopeeController extends Controller
         $successCount = 0;
         
         $logger->writeLog("Updating Shopee Item Code UDF . . .");
-        // dd($productList[248]);
+
         foreach ($productList as $key2 => $product) {
             $itemSapService = new SapService();
 
