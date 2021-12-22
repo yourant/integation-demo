@@ -543,14 +543,16 @@ class ShopeeController extends Controller
         $successCount = 0;
         
         $logger->writeLog("Updating Shopee Item Code UDF . . .");
-        //  dd($productList[1]);
-        foreach ($productList as $key2 => $product) {
+
+        foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
 
             $parentSku = $product['item_sku'];
-            $productId = $product['item_id'];            
-            $logger->writeLog($key2 + 1);
+            $productId = $product['item_id']; 
+           
+            $logger->writeLog($prodCount);
             $logger->writeLog($product['item_name']);
+
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
                 $logger->writeLog('Retrieving product models . . .');
@@ -584,7 +586,6 @@ class ShopeeController extends Controller
                             }
 
                             if (isset($item)) {
-                                $logger->writeLog($item->ItemCode);
                                 try {
                                     $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
                                         ->whereKey($item->ItemCode)
@@ -597,9 +598,11 @@ class ShopeeController extends Controller
 
                                 if (isset($itemUpdateResponse)) {
                                     $successCount++;
-                                    $logger->writeLog("Product with {$sku} variant SKU was synced to the item master.");
+                                    $logger->writeLog("{$prodCount} - SUCCESS - Product with {$sku} variant SKU was synced to the item master.");
                                 }
-                            }  
+                            } else {
+                                $logger->writeLog("{$prodCount} - variant: {$sku}");
+                            }
                         }
                     }
                 }  
@@ -621,7 +624,6 @@ class ShopeeController extends Controller
                 }
 
                 if (isset($item)) {
-                    $logger->writeLog($item->ItemCode);
                     try {
                         $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
                             ->whereKey($item->ItemCode)
@@ -634,8 +636,10 @@ class ShopeeController extends Controller
 
                     if (isset($itemUpdateResponse)) {
                         $successCount++;
-                        $logger->writeLog("Product with {$parentSku} parent SKU was synced to the item master.");
+                        $logger->writeLog("{$prodCount} - SUCCESS - Product with {$parentSku} parent SKU was synced to the item master.");
                     }
+                } else {
+                    $logger->writeLog("{$prodCount} - variant: {$parentSku}");
                 }
             }
         }
