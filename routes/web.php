@@ -54,7 +54,8 @@ Route::prefix('lazada')->middleware(['auth', 'ec.lazada'])->group(function () {
 });
 
 Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
-    // Dashboard for lazada Account 1
+    // Dashboard for lazada Account 2
+    Route::get('/token-status',[Lazada2UIController::class, 'displayTokenStatus'])->name('lazada2.token-status');
     Route::get('/',[Lazada2UIController::class, 'index'])->name('lazada2.dashboard');
     Route::post('/refresh-token',[Lazada2UIController::class, 'refreshToken'])->name('lazada2.refresh-token');
     Route::post('/item-master-integration',[Lazada2UIController::class, 'itemMasterIntegration'])->name('lazada2.item-master-integration');

@@ -29,7 +29,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <p>Tokens Validity: <strong>20 Days</strong></p>
+            <p>Tokens Validity: <strong id="days"></strong></p>
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
@@ -199,8 +199,17 @@
             $.ajax({
                 url: "{{ route('lazada.token-status') }}",
                 method: "GET",
-                success: function(data){        
-                    console.log(data);
+                beforeSend: function() { 
+                    $("#days").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`);
+                },
+                success: function(days){
+                    if(days > 1){
+                        $("#days").text(days + ' Days');
+                    }else if(days == 1){
+                        $("#days").text(days + ' Day. Please refresh tokens now!').css('color','red');;
+                    }else if (days < 1){
+                        $("#days").text(days + ' Days. Please refresh tokens now!').css('color','red');;
+                    }        
                 }
             })
 
