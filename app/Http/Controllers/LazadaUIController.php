@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DateTime;
 use LazopClient;
 use LazopRequest;
 use Carbon\Carbon;
@@ -19,6 +20,18 @@ class LazadaUIController extends Controller
     public function index()
     {
         return view('lazada.dashboard');
+    }
+
+    public function displayTokenStatus()
+    {
+        $lazadaToken = AccessToken::where('platform','lazada')->first();
+        $currentDate = new DateTime('now');
+        $expiryDate = new DateTime($lazadaToken->updated_at);
+        $expiryDate = $expiryDate->modify('+28 days');
+        $days = $currentDate->diff($expiryDate)->format('%r%a');
+
+        return response()->json($days);
+
     }
 
     public function refreshToken()
