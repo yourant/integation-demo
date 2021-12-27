@@ -45,6 +45,7 @@ class ShopeeEnableIntegration extends Command
     {
         $shopeeToken = AccessToken::where('platform', 'shopee')->first(); 
         $logger = new LogService('general'); 
+        $genErrorMsg = "Something went wrong. Please review the log for the details.";
 
         $logger->writeLog('EXECUTING SHOPEE INTEGRATION ENABLE SCRIPT . . .');
 
@@ -170,9 +171,9 @@ class ShopeeEnableIntegration extends Command
         foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
 
+            $prodCount++;
+            $prodName = $product['item_name'];
             $parentSku = $product['item_sku'];
-
-            $logger->writeLog($product['item_name']);
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -206,6 +207,9 @@ class ShopeeEnableIntegration extends Command
                                 $logger->writeSapLog($exception);
                             }
 
+                            $successMsg = "{$prodCount} - Item {$prodName} with {$sku} SKU was successfully enabled";
+                            $errorMsg = "{$prodCount} - Variant SKU ({$sku}) - {$genErrorMsg}";
+
                             if (isset($validItem)) {
                                 try {
                                     $integrationStatus = $itemSapService->getOdataClient()->from('Items')
@@ -219,11 +223,17 @@ class ShopeeEnableIntegration extends Command
 
                                 if (isset($integrationStatus)) {
                                     $successCount++;
-                                    $logger->writeLog("{$prodCount} - successs");
+                                    
+                                    $logger->writeLog($successMsg);
+                                    $this->info($successMsg);
+                                } else {
+                                    $logger->writeLog($errorMsg);
+                                    $this->error($errorMsg);
                                 }
-                            } else {
-                                $logger->writeLog("{$prodCount} - variant: {$sku}");
-                            } 
+                            } else {                
+                                $logger->writeLog($errorMsg);
+                                $this->error($errorMsg);
+                            }
                         }
                     }
                 }  
@@ -244,6 +254,9 @@ class ShopeeEnableIntegration extends Command
                     $logger->writeSapLog($exception);
                 }
 
+                $successMsg = "{$prodCount} - Item {$prodName} with {$parentSku} SKU was successfully enabled";
+                $errorMsg = "{$prodCount} - Parent SKU ({$parentSku}) - {$genErrorMsg}";
+
                 if (isset($validItem)) {
                     try {
                         $integrationStatus = $itemSapService->getOdataClient()->from('Items')
@@ -257,14 +270,22 @@ class ShopeeEnableIntegration extends Command
 
                     if (isset($integrationStatus)) {
                         $successCount++;
-                        $logger->writeLog("{$prodCount} - successs");
+                        
+                        $logger->writeLog($successMsg);
+                        $this->info($successMsg);
+                    } else {
+                        $logger->writeLog($errorMsg);
+                        $this->error($errorMsg);
                     }
-                } else {
-                    $logger->writeLog("{$prodCount} - parent: {$parentSku}");
+                } else {                
+                    $logger->writeLog($errorMsg);
+                    $this->error($errorMsg);
                 }
             }
         }
 
-        $logger->writeLog("Synced a total of {$successCount} Shopee SKUs.");
+        $responseMsg = "Successfully enabled a total of {$successCount} item(s)";
+        $logger->writeLog($responseMsg);
+        $this->info($responseMsg);
     }
 }

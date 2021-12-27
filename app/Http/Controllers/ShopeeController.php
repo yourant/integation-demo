@@ -549,10 +549,7 @@ class ShopeeController extends Controller
 
             $parentSku = $product['item_sku'];
             $productId = $product['item_id']; 
-           
-            //testing comment
-            $logger->writeLog($prodCount);
-            $logger->writeLog($product['item_name']);
+            $productName = $product['item_name'];
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -599,12 +596,11 @@ class ShopeeController extends Controller
 
                                 if (isset($itemUpdateResponse)) {
                                     $successCount++;
-                                    //testing comment
-                                    $logger->writeLog("{$prodCount} - SUCCESS - Product with {$sku} variant SKU was synced to the item master.");
+
+                                    $logger->writeLog("{$prodCount} - Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
                                 }
                             } else {
-                                //testing comment
-                                $logger->writeLog("{$prodCount} - variant: {$sku}");
+                                $logger->writeLog("{$prodCount} - Variant SKU ({$parentSku})");
                             }
                         }
                     }
@@ -639,17 +635,16 @@ class ShopeeController extends Controller
 
                     if (isset($itemUpdateResponse)) {
                         $successCount++;
-                        //testing comment
-                        $logger->writeLog("{$prodCount} - SUCCESS - Product with {$parentSku} parent SKU was synced to the item master.");
+
+                        $logger->writeLog("{$prodCount} - Product {$productName} with {$parentSku} parent SKU was successfully synced to the item master.");
                     }
                 } else {
-                    //testing comment
-                    $logger->writeLog("{$prodCount} - parent: {$parentSku}");
+                    $logger->writeLog("{$prodCount} - Parent SKU ({$parentSku})");
                 }
             }
         }
 
-        $logger->writeLog("Synced a total of {$successCount} Shopee SKUs.");
+        $logger->writeLog("Successfully Synced a total of {$successCount} Shopee SKUs.");
 
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'Shopee SKUs', 'synced'));
     }

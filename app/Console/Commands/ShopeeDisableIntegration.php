@@ -42,6 +42,7 @@ class ShopeeDisableIntegration extends Command
     {
         $logger = new LogService('general');
         $itemSapService = new SapService();
+        $genErrorMsg = "Something went wrong. Please review the log for the details.";
 
         $logger->writeLog('EXECUTING SHOPEE INTEGRATION DISABLE SCRIPT . . .');
 
@@ -90,7 +91,8 @@ class ShopeeDisableIntegration extends Command
         
         $logger->writeLog("Updating item integration status . . .");
 
-        foreach ($sapItemArr as $item) {
+        foreach ($sapItemArr as $itemCounter => $item) {
+            $itemCounter++;
             $itemUpdateResponse = null;
             
             try {  
@@ -107,10 +109,17 @@ class ShopeeDisableIntegration extends Command
 
             if (isset($itemUpdateResponse)) {
                 $successCount++;
-                $logger->writeLog("Item with the Item Code {$item} was updated with the integration status");
+
+                $successMsg = "{$itemCounter} - Item with {$item} Item Code was successfully disabled";
+                $logger->writeLog($successMsg);
+                $this->info($successMsg);
+            } else {
+                $this->error($genErrorMsg);
             }
         }
 
-        $logger->writeLog("Updated a total of {$successCount} items with its new integration status.");
+        $responseMsg = "Successfully disabled a total of {$successCount} item(s)";
+        $logger->writeLog($responseMsg);
+        $this->info($responseMsg);
     }
 }
