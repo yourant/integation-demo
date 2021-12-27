@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DateTime;
 use LazopClient;
 use LazopRequest;
 use App\Models\AccessToken;
@@ -18,6 +19,18 @@ class Lazada2UIController extends Controller
     public function index()
     {
         return view('lazada.dashboard2');
+    }
+
+    public function displayTokenStatus()
+    {
+        $lazadaToken = AccessToken::where('platform','lazada2')->first();
+        $currentDate = new DateTime('now');
+        $expiryDate = new DateTime($lazadaToken->updated_at);
+        $expiryDate = $expiryDate->modify('+28 days');
+        $days = $currentDate->diff($expiryDate)->format('%r%a');
+
+        return response()->json($days);
+
     }
 
     public function refreshToken()
@@ -439,7 +452,8 @@ class Lazada2UIController extends Controller
                         $items[] = [
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
-                            'price' => $item['ItemPrices']['7']['Price']
+                            'origPrice' => $item['U_ORIGINAL_PRICE'],
+                            'specialPrice' => $item['ItemPrices']['7']['Price']
                         ];
 
                     }
@@ -466,13 +480,15 @@ class Lazada2UIController extends Controller
                         
                     $sellerSku = $key['sellerSku'];
                     $productId = $key['productId'];
-                    $price = $key['price'];
+                    $origPrice = $key['origPrice'];
+                    $specialPrice = $key['specialPrice'];
 
                     //Create SKU Payload
                     $skuPayload[] = "<Sku>
                                         <ItemId>".$productId."</ItemId>
                                         <SellerSku>".$sellerSku."</SellerSku>
-                                        <Price>".$price."</Price>
+                                        <Price>".$origPrice."</Price>
+                                        <SalePrice>".$specialPrice."</SalePrice>
                                     </Sku>";
                 
                 }
