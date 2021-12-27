@@ -229,18 +229,6 @@ class ShopeeEnableIntegration extends Command
                 }  
             } else {
                 try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode')
-                        ->from('Items')
-                        ->whereNested(function($query) {
-                            $query->where('U_SH_ITEM_CODE', NULL)
-                                ->orWhere('U_SH_ITEM_CODE', '');
-                        })->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_MPS_OLDSKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Y')
-                        ->first();
-
                     $validItem = $itemSapService->getOdataClient()
                         ->select('ItemCode')
                         ->from('Items')

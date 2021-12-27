@@ -550,6 +550,7 @@ class ShopeeController extends Controller
             $parentSku = $product['item_sku'];
             $productId = $product['item_id']; 
            
+            //testing comment
             $logger->writeLog($prodCount);
             $logger->writeLog($product['item_name']);
 
@@ -598,9 +599,11 @@ class ShopeeController extends Controller
 
                                 if (isset($itemUpdateResponse)) {
                                     $successCount++;
+                                    //testing comment
                                     $logger->writeLog("{$prodCount} - SUCCESS - Product with {$sku} variant SKU was synced to the item master.");
                                 }
                             } else {
+                                //testing comment
                                 $logger->writeLog("{$prodCount} - variant: {$sku}");
                             }
                         }
@@ -636,10 +639,12 @@ class ShopeeController extends Controller
 
                     if (isset($itemUpdateResponse)) {
                         $successCount++;
+                        //testing comment
                         $logger->writeLog("{$prodCount} - SUCCESS - Product with {$parentSku} parent SKU was synced to the item master.");
                     }
                 } else {
-                    $logger->writeLog("{$prodCount} - variant: {$parentSku}");
+                    //testing comment
+                    $logger->writeLog("{$prodCount} - parent: {$parentSku}");
                 }
             }
         }
