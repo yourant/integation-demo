@@ -26,7 +26,7 @@ class Lazada2UIController extends Controller
         $lazadaToken = AccessToken::where('platform','lazada2')->first();
         $currentDate = new DateTime('now');
         $expiryDate = new DateTime($lazadaToken->updated_at);
-        $expiryDate = $expiryDate->modify('+28 days');
+        $expiryDate = $expiryDate->modify('+29 days'); //28 + 1
         $days = $currentDate->diff($expiryDate)->format('%r%a');
 
         return response()->json($days);
