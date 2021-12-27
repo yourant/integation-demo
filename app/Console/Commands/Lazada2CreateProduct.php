@@ -73,7 +73,7 @@ class Lazada2CreateProduct extends Command
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
-                            'price' => $item['ItemPrices']['7']['Price'],
+                            'price' => $item['U_ORIGINAL_PRICE'],
                         ];
                     
                     }
