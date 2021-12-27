@@ -107,14 +107,14 @@
                             <div class="card">
                                 
                                 <div class="card-header">
-                                    <center>Update Item Stock (Disabled)</center>
+                                    <center>Update Item Stock</center>
                                 </div>
                                 <div class="card-body">
                                     <p class="card-text">Update the Lazada products based on the stock in the Item Master</p>
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <button class="btn btn-primary" id="update-stock-btn" disabled>
+                                        <button class="btn btn-primary" id="update-stock-btn">
                                             UPDATE STOCKS
                                         </button>
                                     </center>
