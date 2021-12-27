@@ -29,7 +29,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-
+            <p>Tokens Validity: <strong id="days"></strong></p>
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
@@ -89,7 +89,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <center>Update Item Price (Disabled)</center>
+                                    <center>Update Item Price</center>
                                 </div>
                                 <div class="card-body">
                                     <p class="card-text">Update the Lazada products based on the price in the Item
@@ -97,7 +97,7 @@
                                 </div>
                                 <div class="card-footer">
                                     <center>
-                                        <button href="#" class="btn btn-primary" id="update-price-btn" disabled>
+                                        <button href="#" class="btn btn-primary" id="update-price-btn">
                                             UPDATE PRICES
                                         </button>
                                     </center>
@@ -197,6 +197,23 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
+
+            $.ajax({
+                url: "{{ route('lazada2.token-status') }}",
+                method: "GET",
+                beforeSend: function() { 
+                    $("#days").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`);
+                },
+                success: function(days){
+                    if(days > 1){
+                        $("#days").text(days + ' Days');
+                    }else if(days == 1){
+                        $("#days").text(days + ' Day. Please refresh tokens now!').css('color','red');;
+                    }else if (days < 1){
+                        $("#days").text(days + ' Days. Please refresh tokens now!').css('color','red');;
+                    }        
+                }
+            })
 
             function clearAlerts(){
                 $('#alert').removeClass('alert-danger');

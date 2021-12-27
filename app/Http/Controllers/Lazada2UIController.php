@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DateTime;
 use LazopClient;
 use LazopRequest;
 use App\Models\AccessToken;
@@ -18,6 +19,18 @@ class Lazada2UIController extends Controller
     public function index()
     {
         return view('lazada.dashboard2');
+    }
+
+    public function displayTokenStatus()
+    {
+        $lazadaToken = AccessToken::where('platform','lazada2')->first();
+        $currentDate = new DateTime('now');
+        $expiryDate = new DateTime($lazadaToken->updated_at);
+        $expiryDate = $expiryDate->modify('+28 days');
+        $days = $currentDate->diff($expiryDate)->format('%r%a');
+
+        return response()->json($days);
+
     }
 
     public function refreshToken()
@@ -108,7 +121,8 @@ class Lazada2UIController extends Controller
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
-                            'price' => $item['ItemPrices']['7']['Price'],
+                            'price' => $item['U_ORIGINAL_PRICE'],
+                            'status' => $item['Valid']
                         ];
                     
                     }
@@ -121,6 +135,7 @@ class Lazada2UIController extends Controller
             }
             
             $itemCount = 0;
+            $updateCount = 0;
 
             foreach($items as $item){
 
@@ -163,17 +178,56 @@ class Lazada2UIController extends Controller
                                 ]);
                     
                     ($update ? $itemCount++ : '');
+                
+                }else{
+
+                    if($item['status'] == 'tYES'){
+                        $payload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    <Sku>
+                                                        <SellerSku>".$item['sellerSku']."</SellerSku>
+                                                        <Status>active</Status>
+                                                    </Sku>
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        $activate = $lazadaAPI->activateProduct($payload);
+
+                        if($activate['code'] == '0'){
+                            $updateCount++;
+                        }
+
+                    }else if($item['status'] == 'tNO'){
+                        $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
+                        $itemId = $getDetail['data']['item_id'];
+                        $payload = "<Request>
+                                        <Product>
+                                            <ItemId>".$itemId."</ItemId>
+                                            <Skus>
+                                                <SellerSku>".$item['sellerSku']."</SellerSku>
+                                            </Skus>
+                                        </Product>
+                                    </Request>";
+                        $deactivate = $lazadaAPI->deactivateProduct($payload);
+
+                        if($deactivate['code'] == '0'){
+                            $updateCount++;
+                        }
+                        
+                    }
+
                 }
             }
 
-            if($itemCount > 0){
-                Log::channel('lazada2.item_master')->info($itemCount.' new product/s added');
+            $message = null;
 
-                return response()->json([
-                    'title' => 'Success: ',
-                    'status' => 'alert-success',
-                    'message' => $itemCount.' new product/s added.'
-                ]);
+            if($itemCount > 0 && $updateCount == 0){
+                $message = $itemCount.' new product/s added.';
+            }else if($itemCount == 0 && $updateCount > 0){
+                $message = $updateCount.' SKU/s status updated.';
+            }else if($itemCount > 0 && $updateCount > 0){
+                $message = $itemCount.' new product/s added and '.$updateCount.' SKU/s status updated.';
             }else{
                 Log::channel('lazada2.item_master')->info('No new Lazada products to be added.');
 
@@ -181,6 +235,16 @@ class Lazada2UIController extends Controller
                     'title' => 'Information: ',
                     'status' => 'alert-info',
                     'message' => 'No new Lazada products to be added.'
+                ]);
+            }
+
+            if($message != null){
+                Log::channel('lazada2.item_master')->info($message);
+
+                return response()->json([
+                    'title' => 'Success: ',
+                    'status' => 'alert-success',
+                    'message' => $message
                 ]);
             }
 
@@ -388,7 +452,8 @@ class Lazada2UIController extends Controller
                         $items[] = [
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
-                            'price' => $item['ItemPrices']['7']['Price']
+                            'origPrice' => $item['U_ORIGINAL_PRICE'],
+                            'specialPrice' => $item['ItemPrices']['7']['Price']
                         ];
 
                     }
@@ -415,13 +480,15 @@ class Lazada2UIController extends Controller
                         
                     $sellerSku = $key['sellerSku'];
                     $productId = $key['productId'];
-                    $price = $key['price'];
+                    $origPrice = $key['origPrice'];
+                    $specialPrice = $key['specialPrice'];
 
                     //Create SKU Payload
                     $skuPayload[] = "<Sku>
                                         <ItemId>".$productId."</ItemId>
                                         <SellerSku>".$sellerSku."</SellerSku>
-                                        <Price>".$price."</Price>
+                                        <Price>".$origPrice."</Price>
+                                        <SalePrice>".$specialPrice."</SalePrice>
                                     </Sku>";
                 
                 }
