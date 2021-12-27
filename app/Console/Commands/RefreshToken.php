@@ -47,7 +47,7 @@ class RefreshToken extends Command
         $refreshTokenResponse = Http::post($shopeeRefreshToken->getFullPath() . $shopeeRefreshToken->getAccessTokenQueryString(), [
             'refresh_token' => $shopeeToken->refresh_token,
             'partner_id' => $shopeeRefreshToken->getPartnerId(),
-            'shop_id' => $shopeeRefreshToken->getShopId()
+            'shop_id' => (int) $shopeeRefreshToken->getShopId()
         ]);
 
         $refreshTokenResponseArr = json_decode($refreshTokenResponse->body(), true);
