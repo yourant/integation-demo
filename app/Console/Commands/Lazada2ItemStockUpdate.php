@@ -123,6 +123,8 @@ class Lazada2ItemStockUpdate extends Command
                     if($updateStock['code'] == 0){
                         $skuPayloadCount += count($skuPayload);
                         unset($skuPayload);
+                    }else{
+                        Log::channel('lazada2.item_master')->warning("Some SKUs has issues while updating stock: "."\n".$updateStock);                                         
                     }
         
                 }
