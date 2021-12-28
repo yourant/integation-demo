@@ -8,7 +8,7 @@ use App\Services\ShopeeService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
-class RefreshToken extends Command
+class ShopeeRefreshToken extends Command
 {
     /**
      * The name and signature of the console command.
