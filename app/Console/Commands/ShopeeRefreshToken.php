@@ -44,6 +44,10 @@ class ShopeeRefreshToken extends Command
         $shopeeToken = AccessToken::where('platform', 'shopee')->first();
         $logger = new LogService('general'); 
 
+        $successMsg = 'Successfully refreshed token';
+        $failMsg = 'Failed to refresh token';
+        $shopeeErrorMsg = 'Failed to retrieve data from the Shopee API';
+
         $logger->writeLog('EXECUTING REFRESH TOKEN SCRIPT . . .');
 
         $shopeeRefreshToken = new ShopeeService('/auth/access_token/get', 'public');
@@ -63,12 +67,15 @@ class ShopeeRefreshToken extends Command
             ]);
 
             if ($updatedToken) {
-                $this->info('Successfully refreshed token');
+                $logger->writeLog($successMsg);
+                $this->info($successMsg);
             } else {
-                $this->error('Failed to refresh token');
+                $logger->writeLog($failMsg, true);
+                $this->error($failMsg);
             }
         } else {
-            $this->error('Failed to retrieve data from the Shopee API');
+            $logger->writeLog($shopeeErrorMsg, true);
+            $this->error($shopeeErrorMsg);
         }
     }
 }
