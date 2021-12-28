@@ -125,7 +125,7 @@ class LazadaItemStockUpdate extends Command
                         $skuPayloadCount += count($skuPayload);
                         unset($skuPayload);
                     }else{
-                        Log::channel('lazada.item_master')->warning("Some SKUs has issues: "."\n".$updateStock);                                         
+                        Log::channel('lazada.item_master')->warning("Some SKUs has issues while updating stock: "."\n".$updateStock);                                         
                     }
         
                 }
