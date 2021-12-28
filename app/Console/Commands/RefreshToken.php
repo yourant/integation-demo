@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AccessToken;
+use App\Services\LogService;
 use App\Services\ShopeeService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -41,6 +42,9 @@ class RefreshToken extends Command
     public function handle()
     {
         $shopeeToken = AccessToken::where('platform', 'shopee')->first();
+        $logger = new LogService('general'); 
+
+        $logger->writeLog('EXECUTING REFRESH TOKEN SCRIPT . . .');
 
         $shopeeRefreshToken = new ShopeeService('/auth/access_token/get', 'public');
 
@@ -50,17 +54,21 @@ class RefreshToken extends Command
             'shop_id' => (int) $shopeeRefreshToken->getShopId()
         ]);
 
-        $refreshTokenResponseArr = json_decode($refreshTokenResponse->body(), true);
-
-        $updatedToken = $shopeeToken->update([
+        $refreshTokenResponseArr = $logger->validateResponse(json_decode($refreshTokenResponse->body(), true));
+        
+        if ($refreshTokenResponseArr) {
+            $updatedToken = $shopeeToken->update([
                 'refresh_token' => $refreshTokenResponseArr['refresh_token'],
                 'access_token' => $refreshTokenResponseArr['access_token']
             ]);
 
-        if ($updatedToken) {
-            $this->info('Successfully refreshed token');
+            if ($updatedToken) {
+                $this->info('Successfully refreshed token');
+            } else {
+                $this->error('Failed to refresh token');
+            }
         } else {
-            $this->error('Successfully refreshed token');
+            $this->error('Failed to retrieve data from the Shopee API');
         }
     }
 }
