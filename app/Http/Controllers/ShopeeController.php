@@ -1119,17 +1119,18 @@ class ShopeeController extends Controller
 
             $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
             $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
-                // 'time_range_field' => 'update_time',
-                // 'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                // 'time_to' => strtotime(date("Y-m-d 23:59:59")),
-                // testing
-                'time_range_field' => 'create_time',
-                'time_from' => 1626735608,
-                'time_to' => 1627686008,
+                // 'time_range_field' => 'create_time',
+                // 'time_from' => 1626735608,
+                // 'time_to' => 1627686008,
+                'time_range_field' => 'update_time',
+                'time_from' => strtotime(date("Y-m-d 00:00:00")),
+                'time_to' => strtotime(date("Y-m-d 23:59:59")),
+                // 'time_from' => strtotime(date("2021-12-27 00:00:00")),
+                // 'time_to' => strtotime(date("2021-12-27 23:59:59")),
                 'page_size' => $pageSize,
                 'cursor' => $offset,
-                'order_status' => 'SHIPPED',
-                // 'order_status' => 'READY_TO_SHIP',
+                'order_status' => 'READY_TO_SHIP',
+                // 'order_status' => 'SHIPPED',
                 'response_optional_fields' => 'order_status'
             ], $shopeeReadyOrders->getShopCommonParameter()));
 
@@ -1174,7 +1175,7 @@ class ShopeeController extends Controller
 
         try {
             $ecm = $salesOrderSapService->getOdataClient()
-                ->from('U_ECM')
+                ->from('U_MPS_ECOMMERCE')
                 ->get();
         } catch (ClientException $exception) {
             $logger->writeSapLog($exception);
@@ -1188,15 +1189,9 @@ class ShopeeController extends Controller
                     $taxCode = $ecmItem['properties']['Name'];
                 } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
                     $taxPercentage = (float) $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SHIPPING_FEE') {
-                    $shippingItem = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SHOP_VOUCHER') {
-                    $shopVoucherItem = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SELLER_VOUCHER') {
-                    $sellerVoucherItem = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SHOPEE_COIN') {
-                    $shopeeCoinItem = $ecmItem['properties']['Name'];
-                } 
+                } elseif ($ecmItem['properties']['Code'] == 'WAREHOUSE_CODE') {
+                    $warehouse = $ecmItem['properties']['Name'];
+                }
             }
         }
 
@@ -1216,8 +1211,9 @@ class ShopeeController extends Controller
                 $logger->writeSapLog($exception);
             }
             
-            if (isset($existedSO)) {
+            if (!isset($existedSO)) {
                 $itemList = [];
+                $itemTotal = 0;
 
                 foreach ($order['item_list'] as $item) {         
                     $sku = $item['model_sku'] ? $item['model_sku'] : $item['item_sku'];
@@ -1236,213 +1232,48 @@ class ShopeeController extends Controller
 
                     if (isset($sapItemResponse)) {
                         $sapItem = $sapItemResponse['properties'];
+                        $itemTotal += $item['model_discounted_price'] * $item['model_quantity_purchased'];
+                        $basicInfo = "Phone: " . $order['recipient_address']['phone'];
 
                         $itemList[] = [
                             'ItemCode' => $sapItem['ItemCode'],
                             'Quantity' => $item['model_quantity_purchased'],
                             'VatGroup' => $taxCode,
-                            'UnitPrice' => $item['model_discounted_price'] / $taxPercentage
+                            'UnitPrice' => $item['model_discounted_price'] / $taxPercentage,
+                            'WarehouseCode' => $warehouse
                         ];
                     }
                 }
 
-                try {
-                    $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', [
-                        'CardCode' => $shopeeCust,
-                        'NumAtCard' => $order['order_sn'],
-                        'DocDate' => date('Y-m-d', $order['create_time']),
-                        'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
-                        'TaxDate' => date('Y-m-d', $order['create_time']),
-                        'U_Ecommerce_Type' => 'Shopee',
-                        'U_Order_ID' => $order['order_sn'],
-                        'U_Customer_Name' => $order['recipient_address']['name'],
-                        'U_Customer_Phone' => $order['recipient_address']['phone'],
-                        'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
-                        'DocTotal' => $order['total_amount'],
-                        'DocumentLines' => $itemList
-                    ]);
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($salesOrder)) {
-                    $successCount++;
-                    $logger->writeLog("SAP B1 sales order with {$order['order_sn']} Shopee order ID was generated.");
+                if (count($order['item_list']) == count($itemList)) {
+                    try {
+                        $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', [
+                            'CardCode' => $shopeeCust,
+                            'NumAtCard' => $order['order_sn'],
+                            'DocDate' => date('Y-m-d', $order['create_time']),
+                            'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
+                            'TaxDate' => date('Y-m-d', $order['create_time']),
+                            'U_Ecommerce_Type' => 'Shopee',
+                            'U_Order_ID' => $order['order_sn'],
+                            'U_Customer_Name' => $order['recipient_address']['name'],
+                            'U_Basic_Information' => $basicInfo,
+                            'U_Shipping_Address' => $order['recipient_address']['full_address'],
+                            'DocTotal' => $itemTotal,
+                            'DocumentLines' => $itemList
+                        ]);
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
+                    }
+    
+                    if (isset($salesOrder)) {
+                        $successCount++;
+                        $logger->writeLog("SAP B1 sales order with {$order['order_sn']} Shopee order ID was generated.");
+                    }
                 }
             }      
         }
 
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'sales orders', 'generated'));
-
-        // OLDDDDDDDDD
-        // $shopeeToken = AccessToken::where('platform', 'shopee')->first();
-        
-        // $orderList = [];
-        // $moreReadyOrders = true;
-        // $offset = 0;
-        // $pageSize = 50;
-        
-        // while ($moreReadyOrders) {
-        //     $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
-        //     $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
-        //         'time_range_field' => 'update_time',
-        //         'time_from' => strtotime(date("Y-m-d 00:00:00")),
-        //         'time_to' => strtotime(date("Y-m-d 23:59:59")),
-        //         'page_size' => $pageSize,
-        //         'cursor' => $offset,
-        //         'order_status' => 'READY_TO_SHIP',
-        //         'response_optional_fields' => 'order_status'
-        //     ], $shopeeReadyOrders->getShopCommonParameter()));
-
-        //     $shopeeReadyOrdersResponseArr = json_decode($shopeeReadyOrdersResponse->body(), true);
-
-        //     foreach ($shopeeReadyOrdersResponseArr['response']['order_list'] as $order) {
-        //         array_push($orderList, $order['order_sn']);
-        //     }
-
-        //     if ($shopeeReadyOrdersResponseArr['response']['more']) {
-        //         $offset += $pageSize;
-        //     } else {
-        //         $moreReadyOrders = false;
-        //     }   
-        // }
-        // // dd($orderList);
-        // $orderStr = implode(",", $orderList);
-        // // for testing
-        // // $orderStr = '18033000113B04H';
-        
-        // $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
-        // $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
-        //     'order_sn_list' => $orderStr,
-        //     'response_optional_fields' => 'total_amount,item_list,buyer_user_id,buyer_username,recipient_address,estimated_shipping_fee,actual_shipping_fee,actual_shipping_fee_confirmed'
-        // ], $shopeeOrderDetail->getShopCommonParameter()));
-
-        // $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
-        // $orderListDetails = $shopeeOrderDetailResponseArr['response']['order_list'];
-
-        // $salesOrderSapService = new SapService();
-
-        // $salesOrderList = [];
-        // $ecm = $salesOrderSapService->getOdataClient()->from('U_ECM')->get();
-
-        // foreach ($ecm as $ecmItem) {
-        //     if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
-        //         $shopeeCust = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
-        //         $taxCode = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
-        //         $taxPercentage = (float) $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SHIPPING_FEE') {
-        //         $shippingItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SHOP_VOUCHER') {
-        //         $shopVoucherItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SELLER_VOUCHER') {
-        //         $sellerVoucherItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SHOPEE_COIN') {
-        //         $shopeeCoinItem = $ecmItem['properties']['Name'];
-        //     } 
-        // }
-        
-        // foreach ($orderListDetails as $order) {
-        //     $existedSO = $salesOrderSapService->getOdataClient()
-        //         ->select('DocNum')
-        //         ->from('Orders')
-        //         ->where('U_Order_ID', (string)$order['order_sn'])
-        //         ->where('CancelStatus', 'csNo')
-        //         ->first();
-
-        //     if (!$existedSO) {
-        //         $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
-        //         $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
-        //             'order_sn' => $order['order_sn']
-        //         ], $escrowDetail->getShopCommonParameter()));
-        //         $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
-        //         $escrow = $escrowDetailResponseArr['response'];
-
-        //         $itemList = [];
-
-        //         foreach ($order['item_list'] as $item) {                   
-        //             try {
-        //                 $response = $salesOrderSapService->getOdataClient()
-        //                     ->from('Items')
-        //                     ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
-        //                     ->where('U_SH_INTEGRATION', 'Y')
-        //                     ->first();
-        //             } catch(ClientException $e) {
-        //                 dd($e->getResponse()->getBody()->getContents());
-        //             }
-
-        //             $sapItem = $response['properties'];
-
-        //             $itemList[] = [
-        //                 'ItemCode' => $sapItem['ItemCode'],
-        //                 'Quantity' => $item['model_quantity_purchased'],
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $item['model_discounted_price'] / $taxPercentage
-        //             ];
-        //         }
-
-        //         if ($escrow['order_income']['buyer_paid_shipping_fee']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $shippingItem,
-        //                 'Quantity' => 1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['buyer_paid_shipping_fee'] / $taxPercentage
-        //             ];           
-        //         }
-
-        //         if ($escrow['order_income']['voucher_from_shopee']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $shopVoucherItem,
-        //                 'Quantity' => -1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['voucher_from_shopee'] / $taxPercentage
-        //             ];           
-        //         }
-
-        //         if ($escrow['order_income']['voucher_from_seller']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $sellerVoucherItem,
-        //                 'Quantity' => -1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['voucher_from_seller'] / $taxPercentage
-        //             ];           
-        //         }
-                
-        //         if ($escrow['order_income']['coins']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $shopeeCoinItem,
-        //                 'Quantity' => -1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['coins'] / $taxPercentage
-        //             ];           
-        //         }
-
-        //         $salesOrderList = [
-        //             'CardCode' => $shopeeCust,
-        //             'NumAtCard' => $order['order_sn'],
-        //             'DocDate' => date('Y-m-d', $order['create_time']),
-        //             'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
-        //             'TaxDate' => date('Y-m-d', $order['create_time']),
-        //             'U_Ecommerce_Type' => 'Shopee',
-        //             'U_Order_ID' => $order['order_sn'],
-        //             'U_Customer_Name' => $order['recipient_address']['name'],
-        //             'U_Customer_Phone' => $order['recipient_address']['phone'],
-        //             'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
-        //             'DocTotal' => $order['total_amount'],
-        //             'DocumentLines' => $itemList
-        //         ];
-
-        //         $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
-
-        //         if ($salesOrder) {
-        //             return response()->json(null, 200);
-        //         } else {
-        //             return response()->json(null, 500);
-        //         }
-        //     }        
-        // }
-
     }
 
     public function generateInvoice()
@@ -1462,13 +1293,13 @@ class ShopeeController extends Controller
         while ($moreShippedOrders) {
             $shopeeShippedOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
             $shopeeShippedOrdersResponse = Http::get($shopeeShippedOrders->getFullPath(), array_merge([
-                // 'time_range_field' => 'update_time',
-                // 'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                // 'time_to' => strtotime(date("Y-m-d 23:59:59")),
                 // testing
-                'time_range_field' => 'create_time',
-                'time_from' => 1626735608,
-                'time_to' => 1627686008,
+                // 'time_range_field' => 'create_time',
+                // 'time_from' => 1626735608,
+                // 'time_to' => 1627686008,
+                'time_range_field' => 'update_time',
+                'time_from' => strtotime(date("Y-m-d 00:00:00")),
+                'time_to' => strtotime(date("Y-m-d 23:59:59")),            
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'SHIPPED',
@@ -1516,173 +1347,102 @@ class ShopeeController extends Controller
                 $existInv = $invoiceSapService->getOdataClient()
                     ->from('Invoices')
                     ->where('U_Order_ID', (string)$order)
+                    ->where('U_Ecommerce_Type', 'Shopee')
+                    ->where(function($query){
+                        $query->where('DocumentStatus', 'bost_Open');
+                        $query->orWhere('DocumentStatus', 'bost_Close');
+                    })
+                    ->where('Cancelled', 'tNO')
                     ->first();
             } catch (ClientException $exception) {
                 $logger->writeSapLog($exception);
             }
-            
-            if (isset($salesOrder) && isset($existInv)) {
-                if ($salesOrder && !$existInv) {
-                    $itemList = [];
+            // dd($existInv);
+            // dd($salesOrder);
+            // dd(!isset($existInv));
+            if (isset($salesOrder) && !isset($existInv)) {
+                // dd($salesOrder);
+                $batchSO = $invoiceSapService->getOdataClient()
+                    ->from('Orders')
+                    ->find($salesOrder['DocEntry']);
 
-                    foreach ($salesOrder['DocumentLines'] as $itemLine => $item) {
-                        $batchList = [];
+                $itemList = [];
 
-                        if ($item['BatchNumbers']) {                  
-                            foreach ($item['BatchNumbers'] as $batch) {
-                                $batchList[] = [
-                                    'BatchNumber' => $batch['BatchNumber'],
-                                    'Quantity' => $batch['Quantity']
-                                ];
-                            }
+                foreach ($batchSO['DocumentLines'] as $itemLine => $item) {
+                    $batchList = [];
+                    // dd($batchSO);
+                    if ($item['BatchNumbers']) {                  
+                        foreach ($item['BatchNumbers'] as $batch) {
+                            $batchList[] = [
+                                'BatchNumber' => $batch['BatchNumber'],
+                                'Quantity' => $batch['Quantity']
+                            ];
                         }
-
-                        $itemList[] = [
-                            'BaseType' => 17,
-                            'BaseEntry' => $salesOrder['DocEntry'],
-                            'BaseLine' => $itemLine,
-                            'BatchNumbers' => $batchList
-                        ];
                     }
 
-                    try {
-                        $invoice = $invoiceSapService->getOdataClient()->post('Invoices', [
-                            'CardCode' => $salesOrder['CardCode'],
-                            'NumAtCard' => $salesOrder['NumAtCard'],
-                            'DocDate' => $salesOrder['DocDate'],
-                            'DocDueDate' => $salesOrder['DocDueDate'],
-                            'TaxDate' => $salesOrder['TaxDate'],
-                            'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
-                            'U_Order_ID' => $salesOrder['U_Order_ID'],
-                            'U_Customer_Name' => $salesOrder['U_Customer_Name'],
-                            'U_Customer_Phone' => $salesOrder['U_Customer_Phone'],
-                            'U_Customer_Shipping_Address' => $salesOrder['U_Customer_Shipping_Address'],
-                            'DocTotal' => $salesOrder['DocTotal'],
-                            'DocumentLines' => $itemList
-                        ]);
-                    } catch (ClientException $exception) {
-                        $logger->writeSapLog($exception);
-                    }
-    
-                    if (isset($invoice)) {
-                        $successCount++;
-                        $logger->writeLog("SAP B1 A/R invoice with {$salesOrder['U_Order_ID']} Shopee order ID was generated.");
-                    }
+                    $itemList[] = [
+                        'BaseType' => 17,
+                        'BaseEntry' => $batchSO['DocEntry'],
+                        'BaseLine' => $itemLine,
+                        'BatchNumbers' => $batchList
+                    ];
+                }
+
+                    // dd($itemList);
+
+                // $itemList = [];
+
+                // foreach ($salesOrder['DocumentLines'] as $itemLine => $item) {
+                //     $batchList = [];
+
+                //     if ($item['BatchNumbers']) {                  
+                //         foreach ($item['BatchNumbers'] as $batch) {
+                //             $batchList[] = [
+                //                 'BatchNumber' => $batch['BatchNumber'],
+                //                 'Quantity' => $batch['Quantity']
+                //             ];
+                //         }
+                //     }
+
+                //     $itemList[] = [
+                //         'BaseType' => 17,
+                //         'BaseEntry' => $salesOrder['DocEntry'],
+                //         'BaseLine' => $itemLine,
+                //         'BatchNumbers' => $batchList
+                //     ];
+                // }
+                
+
+                try {
+                    $invoice = $invoiceSapService->getOdataClient()->post('Invoices', [
+                        'CardCode' => $salesOrder['CardCode'],
+                        'NumAtCard' => $salesOrder['NumAtCard'],
+                        'DocDate' => $salesOrder['DocDate'],
+                        'DocDueDate' => $salesOrder['DocDueDate'],
+                        'TaxDate' => $salesOrder['TaxDate'],
+                        'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
+                        'U_Order_ID' => $salesOrder['U_Order_ID'],
+                        'U_Customer_Name' => $salesOrder['U_Customer_Name'],
+                        'U_Basic_Information' => $salesOrder['U_Basic_Information'],
+                        'U_Shipping_Address' => $salesOrder['U_Shipping_Address'],
+                        'DocTotal' => $salesOrder['DocTotal'],
+                        'DocumentLines' => $itemList
+                    ]);
+                } catch (ClientException $exception) {
+                    // $response = $exception->getResponse();
+                    // $responseBodyAsString = $response->getBody()->getContents();
+                    // dd($responseBodyAsString);
+                    $logger->writeSapLog($exception);
+                }
+
+                if (isset($invoice)) {
+                    $successCount++;
+                    $logger->writeLog("SAP B1 A/R invoice with {$salesOrder['U_Order_ID']} Shopee order ID was generated.");
                 }
             }    
         }
             
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'A/R invoices', 'generated'));
-        
-
-
-
-
-        //OLDDDDD
-        // $shopeeToken = AccessToken::where('platform', 'shopee')->first();
-        
-        // $orderList = [];
-        // $moreShippedOrders = true;
-        // $offset = 0;
-        // $pageSize = 50;
-        
-        // while ($moreShippedOrders) {
-        //     $shopeeShippedOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
-        //     $shopeeShippedOrdersResponse = Http::get($shopeeShippedOrders->getFullPath(), array_merge([
-        //         'time_range_field' => 'update_time',
-        //         'time_from' => strtotime(date("Y-m-d 00:00:00")),
-        //         'time_to' => strtotime(date("Y-m-d 23:59:59")),
-        //         // 'time_from' => 1627833600,
-        //         // 'time_to' => 1627919999,
-        //         'page_size' => $pageSize,
-        //         'cursor' => $offset,
-        //         'order_status' => 'SHIPPED',
-        //         'response_optional_fields' => 'order_status'
-        //     ], $shopeeShippedOrders->getShopCommonParameter()));
-
-        //     $shopeeShippedOrdersResponseArr = json_decode($shopeeShippedOrdersResponse->body(), true);
-
-        //     foreach ($shopeeShippedOrdersResponseArr['response']['order_list'] as $order) {
-        //         array_push($orderList, $order['order_sn']);
-        //     }
-
-        //     if ($shopeeShippedOrdersResponseArr['response']['more']) {
-        //         $offset += $pageSize;
-        //     } else {
-        //         $moreShippedOrders = false;
-        //     }   
-        // }
-
-        // // for testing
-        // // $orderList = ['210803K1WFX89R'];
-
-        // $invoiceSapService = new SapService();
-        // $invoiceList = [];
-
-        // foreach ($orderList as $order) {
-
-        //     $salesOrder = $invoiceSapService->getOdataClient()
-        //         ->from('Orders')
-        //         ->where('U_Order_ID', (string)$order)
-        //         ->where('DocumentStatus', 'bost_Open')
-        //         ->where('CancelStatus', 'csNo')
-        //         ->first();
-
-        //     $existInv = $invoiceSapService->getOdataClient()
-        //         ->from('Invoices')
-        //         ->where('U_Order_ID', (string)$order)
-        //         ->first();
-
-        //     if ($salesOrder && !$existInv) {
-        //         $itemList = [];
-
-        //         foreach ($salesOrder['DocumentLines'] as $itemLine => $item) {
-        //             $batchList = [];
-
-        //             if ($item['BatchNumbers']) {                  
-        //                 foreach ($item['BatchNumbers'] as $batch) {
-        //                     $batchList[] = [
-        //                         'BatchNumber' => $batch['BatchNumber'],
-        //                         'Quantity' => $batch['Quantity']
-        //                     ];
-        //                 }
-        //             }
-
-        //             $itemList[] = [
-        //                 'BaseType' => 17,
-        //                 'BaseEntry' => $salesOrder['DocEntry'],
-        //                 'BaseLine' => $itemLine,
-        //                 'BatchNumbers' => $batchList
-        //             ];
-        //         }
-
-        //         $invoiceList = [
-        //             'CardCode' => $salesOrder['CardCode'],
-        //             'NumAtCard' => $salesOrder['NumAtCard'],
-        //             'DocDate' => $salesOrder['DocDate'],
-        //             'DocDueDate' => $salesOrder['DocDueDate'],
-        //             'TaxDate' => $salesOrder['TaxDate'],
-        //             'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
-        //             'U_Order_ID' => $salesOrder['U_Order_ID'],
-        //             'U_Customer_Name' => $salesOrder['U_Customer_Name'],
-        //             'U_Customer_Phone' => $salesOrder['U_Customer_Phone'],
-        //             'U_Customer_Shipping_Address' => $salesOrder['U_Customer_Shipping_Address'],
-        //             'DocTotal' => $salesOrder['DocTotal'],
-        //             'DocumentLines' => $itemList
-        //         ];
-
-        //         $invoice = $invoiceSapService->getOdataClient()->post('Invoices', $invoiceList);
-
-        //         if ($invoice) {
-        //             return response()->json(null, 200);
-        //         } else {
-        //             return response()->json(null, 500);
-        //         }
-        //     }
-        // }
-
-
-
     }
 
     public function generateCreditmemo()
