@@ -58,9 +58,9 @@ class RefreshToken extends Command
             ]);
 
         if ($updatedToken) {
-            dd('Successfully refreshed token');
+            $this->info('Successfully refreshed token');
         } else {
-            dd('Failed to refresh token');
+            $this->error('Successfully refreshed token');
         }
     }
 }
