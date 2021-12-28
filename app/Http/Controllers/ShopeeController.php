@@ -547,6 +547,7 @@ class ShopeeController extends Controller
         foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
 
+            $prodCount++;
             $parentSku = $product['item_sku'];
             $productId = $product['item_id']; 
             $productName = $product['item_name'];
@@ -600,7 +601,7 @@ class ShopeeController extends Controller
                                     $logger->writeLog("{$prodCount} - Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
                                 }
                             } else {
-                                $logger->writeLog("{$prodCount} - Variant SKU ({$parentSku})");
+                                $logger->writeLog("{$prodCount} - Variant SKU ({$sku})");
                             }
                         }
                     }
