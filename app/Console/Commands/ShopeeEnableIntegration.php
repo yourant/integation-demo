@@ -50,12 +50,12 @@ class ShopeeEnableIntegration extends Command
         $logger->writeLog('EXECUTING SHOPEE INTEGRATION ENABLE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
-        $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
+        $pageSize = 50;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -108,7 +108,9 @@ class ShopeeEnableIntegration extends Command
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
+        $pageSize = 50;   
         
         $logger->writeLog('Retrieving unlisted products . . .');
         

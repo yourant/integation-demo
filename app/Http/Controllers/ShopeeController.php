@@ -426,12 +426,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE ITEM SYNC SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
-        $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
+        $pageSize = 50;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -484,7 +484,9 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
+        $pageSize = 50;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -551,7 +553,7 @@ class ShopeeController extends Controller
             $parentSku = $product['item_sku'];
             $productId = $product['item_id']; 
             $productName = $product['item_name'];
-
+            // $logger->writeLog("{$prodCount} - {$productName}");
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
                 $logger->writeLog('Retrieving product models . . .');
@@ -1125,8 +1127,8 @@ class ShopeeController extends Controller
                 'time_range_field' => 'update_time',
                 'time_from' => strtotime(date("Y-m-d 00:00:00")),
                 'time_to' => strtotime(date("Y-m-d 23:59:59")),
-                // 'time_from' => strtotime(date("2021-12-27 00:00:00")),
-                // 'time_to' => strtotime(date("2021-12-27 23:59:59")),
+                // 'time_from' => strtotime(date("2021-12-28 00:00:00")),
+                // 'time_to' => strtotime(date("2021-12-28 23:59:59")),
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'READY_TO_SHIP',
