@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         Commands\ShopeeItemCreate::class,
         Commands\ShopeeDisableIntegration::class,
         Commands\ShopeeEnableIntegration::class,
+        Commands\ShopeeRefreshToken::class,
     ];
 
     /**

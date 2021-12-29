@@ -2,9 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AccessToken;
 use App\Services\LogService;
 use App\Services\SapService;
+use App\Services\ShopeeService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Exception\ClientException;
 
 class ShopeeEnableIntegration extends Command
@@ -40,72 +43,249 @@ class ShopeeEnableIntegration extends Command
      */
     public function handle()
     {
-        $logger = new LogService('general');
-        $itemSapService = new SapService();
+        $shopeeToken = AccessToken::where('platform', 'shopee')->first(); 
+        $logger = new LogService('general'); 
+        $genErrorMsg = "Something went wrong. Please review the log for the details.";
+
+        $logger->writeLog('EXECUTING SHOPEE INTEGRATION ENABLE SCRIPT . . .');
+
+        $productList = [];
+        $offset = 0;
+        $pageSize = 50;
+
+        // retrieve detailed normal products
+        $detailedNormalProductList = [];
+        $moreNormalProducts = true;
         
-        $logger->writeLog('Parsing CSV file of Shopee item list . . .');
+        $logger->writeLog('Retrieving normal products . . .');
 
-        $csvFileName = "shopee_items.csv";
-        $csvFile = storage_path('csv/' . $csvFileName);
+        while ($moreNormalProducts) {
+            $normalProductList = [];
 
-        $file_handle = fopen($csvFile, 'r');
-        while (!feof($file_handle)) {
-            $shopeeItems[] = fgetcsv($file_handle, 0, ',');
+            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeToken->access_token);
+            $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
+                'page_size' => $pageSize,
+                'offset' => $offset,
+                'item_status' => 'NORMAL',
+            ], $shopeeProducts->getShopCommonParameter()));
+
+            $shopeeProductsResponseArr = $logger->validateResponse(json_decode($shopeeProductsResponse->body(), true));
+
+            if ($shopeeProductsResponseArr) {
+                if (array_key_exists('item', $shopeeProductsResponseArr['response'])) {
+                    foreach ($shopeeProductsResponseArr['response']['item'] as $item) {
+                        array_push($normalProductList, $item['item_id']);
+                    }
+                }
+    
+                if ($normalProductList) {
+                    // get base info of product
+                    $logger->writeLog('Retrieving base for normal products . . .');
+
+                    $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                    $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                        'item_id_list' => implode(",", $normalProductList)
+                    ], $shopeeBaseProducts->getShopCommonParameter()));
+    
+                    $shopeeBaseProductsResponseArr = $logger->validateResponse(json_decode($shopeeBaseProductsResponse->body(), true));
+    
+                    if ($shopeeBaseProductsResponseArr) {
+                        foreach ($shopeeBaseProductsResponseArr['response']['item_list'] as $item) {
+                            array_push($detailedNormalProductList, $item);
+                        }
+                    }
+                }
+    
+                if ($shopeeProductsResponseArr['response']['has_next_page']) {
+                    $offset += $pageSize;
+                } else {
+                    $moreNormalProducts = false;
+                }
+            } else {
+                break;
+            }
         }
 
-        fclose($file_handle);
+        // retrieve detailed unlisted products
+        $detailedUnlistedProductList = [];
+        $moreUnlistedProducts = true;    
+        
+        $logger->writeLog('Retrieving unlisted products . . .');
+        
+        while ($moreUnlistedProducts) {
+            $unlistedProductList = [];
 
-        $shopeeItems = array_splice($shopeeItems, 4);
+            $shopeeProducts = new ShopeeService('/product/get_item_list', 'shop', $shopeeToken->access_token);
+            $shopeeProductsResponse = Http::get($shopeeProducts->getFullPath(), array_merge([
+                'page_size' => $pageSize,
+                'offset' => $offset,
+                'item_status' => 'UNLIST',
+            ], $shopeeProducts->getShopCommonParameter()));
+
+            $shopeeProductsResponseArr = $logger->validateResponse(json_decode($shopeeProductsResponse->body(), true));
+
+            if ($shopeeProductsResponseArr) {
+                if (array_key_exists('item', $shopeeProductsResponseArr['response'])) {
+                    foreach ($shopeeProductsResponseArr['response']['item'] as $item) {
+                        array_push($unlistedProductList, $item['item_id']);
+                    }
+                }
+
+                if ($unlistedProductList) {
+                    // get base info of product
+                    $logger->writeLog('Retrieving base for unlisted products . . .');
+
+                    $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                    $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                        'item_id_list' => implode(",", $unlistedProductList)
+                    ], $shopeeBaseProducts->getShopCommonParameter()));
+
+                    $shopeeBaseProductsResponseArr = $logger->validateResponse(json_decode($shopeeBaseProductsResponse->body(), true));
+
+                    if ($shopeeBaseProductsResponseArr) {
+                        foreach ($shopeeBaseProductsResponseArr['response']['item_list'] as $item) {
+                            array_push($detailedUnlistedProductList, $item);
+                        }
+                    }
+                }
+
+                if ($shopeeProductsResponseArr['response']['has_next_page']) {
+                    $offset += $pageSize;
+                } else {
+                    $moreUnlistedProducts = false;
+                } 
+            } else {
+                break;
+            }  
+        }
+
+        // combine product base from products with normal and unlist status
+        $productList = array_merge($detailedNormalProductList, $detailedUnlistedProductList);
+
+        $logger->writeLog("Retrieved a total of " . count($productList) . " products.");
+
         $successCount = 0;
+        
+        $logger->writeLog("Updating Shopee Item Code UDF . . .");
 
-        $logger->writeLog('Updating item integration status . . .');
+        foreach ($productList as $prodCount => $product) {
+            $itemSapService = new SapService();
 
-        foreach ($shopeeItems as $key => $item) {
-            $validItem = null;
-            $integrationStatus = null;
-            $sku = $item[4] ? $item[4] : $item[11];
+            $prodCount++;
+            $prodName = $product['item_name'];
+            $parentSku = $product['item_sku'];
 
-            $prodCount = $key + 1;
-            $parentSku = $item[4]; 
-            $varSku = $item[11];
+            // retrieve the model if it's applicable to the current product
+            if ($product['has_model']) {
+                $logger->writeLog('Retrieving product models . . .');
 
-            try {
-                $validItem = $itemSapService->getOdataClient()
-                    ->select('ItemCode')
-                    ->from('Items')
-                    ->where('Valid', 'tYES')
-                    ->whereNested(function($query) use ($sku) {
-                        $query->where('U_SH_INTEGRATION', 'N')
-                            ->orWhere('U_SH_INTEGRATION', null);
-                    })->whereNested(function($query) use ($sku) {
-                        $query->where('ItemCode', $sku)
-                            ->orWhere('U_MPS_OLDSKU', $sku);
-                    })->first();
-            } catch (ClientException $exception) {
-                $logger->writeSapLog($exception);
-            } 
+                $shopeeModels = new ShopeeService('/product/get_model_list', 'shop', $shopeeToken->access_token);
+                $shopeeModelsResponse = Http::get($shopeeModels->getFullPath(), array_merge([
+                    'item_id' => $product['item_id']
+                ], $shopeeModels->getShopCommonParameter()));
 
-            if (isset($validItem)) {
+                $shopeeModelsResponseArr = $logger->validateResponse(json_decode($shopeeModelsResponse->body(), true));
+
+                if ($shopeeModelsResponseArr) {
+                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) { 
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
+
+                            try {
+                                $validItem = $itemSapService->getOdataClient()
+                                    ->select('ItemCode')
+                                    ->from('Items')
+                                    ->where('Valid', 'tYES')
+                                    ->whereNested(function($query) {
+                                        $query->where('U_SH_INTEGRATION', 'N')
+                                            ->orWhere('U_SH_INTEGRATION', null);
+                                    })->whereNested(function($query) use ($sku) {
+                                        $query->where('ItemCode', $sku)
+                                            ->orWhere('U_MPS_OLDSKU', $sku);
+                                    })->first();
+                            } catch (ClientException $exception) {
+                                $logger->writeSapLog($exception);
+                            }
+
+                            $successMsg = "{$prodCount} - Item {$prodName} with {$sku} SKU was successfully enabled";
+                            $errorMsg = "{$prodCount} - Variant SKU ({$sku}) - {$genErrorMsg}";
+
+                            if (isset($validItem)) {
+                                try {
+                                    $integrationStatus = $itemSapService->getOdataClient()->from('Items')
+                                        ->whereKey($validItem['properties']['ItemCode'])
+                                        ->patch([
+                                            'U_SH_INTEGRATION' => 'Y'
+                                        ]);
+                                } catch (ClientException $exception) {
+                                    $logger->writeSapLog($exception);
+                                }
+
+                                if (isset($integrationStatus)) {
+                                    $successCount++;
+                                    
+                                    $logger->writeLog($successMsg);
+                                    $this->info($successMsg);
+                                } else {
+                                    $logger->writeLog($errorMsg);
+                                    $this->error($errorMsg);
+                                }
+                            } else {                
+                                $logger->writeLog($errorMsg);
+                                $this->error($errorMsg);
+                            }
+                        }
+                    }
+                }  
+            } else {
                 try {
-                    $integrationStatus = $itemSapService->getOdataClient()->from('Items')
-                        ->whereKey($validItem['properties']['ItemCode'])
-                        ->patch([
-                            'U_SH_INTEGRATION' => 'Y'
-                        ]);
+                    $validItem = $itemSapService->getOdataClient()
+                        ->select('ItemCode')
+                        ->from('Items')
+                        ->where('Valid', 'tYES')
+                        ->whereNested(function($query) {
+                            $query->where('U_SH_INTEGRATION', 'N')
+                                ->orWhere('U_SH_INTEGRATION', null);
+                        })->whereNested(function($query) use ($parentSku) {
+                            $query->where('ItemCode', $parentSku)
+                                ->orWhere('U_MPS_OLDSKU', $parentSku);
+                        })->first();
                 } catch (ClientException $exception) {
                     $logger->writeSapLog($exception);
                 }
 
-                if (isset($integrationStatus)) {
-                    $successCount++;
-                    $logger->writeLog("{$prodCount} - successs");
+                $successMsg = "{$prodCount} - Item {$prodName} with {$parentSku} SKU was successfully enabled";
+                $errorMsg = "{$prodCount} - Parent SKU ({$parentSku}) - {$genErrorMsg}";
+
+                if (isset($validItem)) {
+                    try {
+                        $integrationStatus = $itemSapService->getOdataClient()->from('Items')
+                            ->whereKey($validItem['properties']['ItemCode'])
+                            ->patch([
+                                'U_SH_INTEGRATION' => 'Y'
+                            ]);
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
+                    }
+
+                    if (isset($integrationStatus)) {
+                        $successCount++;
+                        
+                        $logger->writeLog($successMsg);
+                        $this->info($successMsg);
+                    } else {
+                        $logger->writeLog($errorMsg);
+                        $this->error($errorMsg);
+                    }
+                } else {                
+                    $logger->writeLog($errorMsg);
+                    $this->error($errorMsg);
                 }
-            } else {
-                $logger->writeLog("{$prodCount} - parent: {$parentSku}");
-                $logger->writeLog("{$prodCount} - variant: {$varSku}");
             }
         }
 
-        $logger->writeLog("Updated a total of {$successCount} items with its new integration status.");
+        $responseMsg = "Successfully enabled a total of {$successCount} item(s)";
+        $logger->writeLog($responseMsg);
+        $this->info($responseMsg);
     }
 }

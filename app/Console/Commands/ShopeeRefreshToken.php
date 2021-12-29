@@ -3,11 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\AccessToken;
+use App\Services\LogService;
 use App\Services\ShopeeService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
-class RefreshToken extends Command
+class ShopeeRefreshToken extends Command
 {
     /**
      * The name and signature of the console command.
@@ -41,26 +42,40 @@ class RefreshToken extends Command
     public function handle()
     {
         $shopeeToken = AccessToken::where('platform', 'shopee')->first();
+        $logger = new LogService('general'); 
+
+        $successMsg = 'Successfully refreshed token';
+        $failMsg = 'Failed to refresh token';
+        $shopeeErrorMsg = 'Failed to retrieve data from the Shopee API';
+
+        $logger->writeLog('EXECUTING REFRESH TOKEN SCRIPT . . .');
 
         $shopeeRefreshToken = new ShopeeService('/auth/access_token/get', 'public');
 
         $refreshTokenResponse = Http::post($shopeeRefreshToken->getFullPath() . $shopeeRefreshToken->getAccessTokenQueryString(), [
             'refresh_token' => $shopeeToken->refresh_token,
             'partner_id' => $shopeeRefreshToken->getPartnerId(),
-            'shop_id' => $shopeeRefreshToken->getShopId()
+            'shop_id' => (int) $shopeeRefreshToken->getShopId()
         ]);
 
-        $refreshTokenResponseArr = json_decode($refreshTokenResponse->body(), true);
-
-        $updatedToken = $shopeeToken->update([
+        $refreshTokenResponseArr = $logger->validateResponse(json_decode($refreshTokenResponse->body(), true));
+        
+        if ($refreshTokenResponseArr) {
+            $updatedToken = $shopeeToken->update([
                 'refresh_token' => $refreshTokenResponseArr['refresh_token'],
                 'access_token' => $refreshTokenResponseArr['access_token']
             ]);
 
-        if ($updatedToken) {
-            dd('Successfully refreshed token');
+            if ($updatedToken) {
+                $logger->writeLog($successMsg);
+                $this->info($successMsg);
+            } else {
+                $logger->writeLog($failMsg, true);
+                $this->error($failMsg);
+            }
         } else {
-            dd('Failed to refresh token');
+            $logger->writeLog($shopeeErrorMsg, true);
+            $this->error($shopeeErrorMsg);
         }
     }
 }
