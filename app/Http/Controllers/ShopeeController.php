@@ -1269,6 +1269,8 @@ class ShopeeController extends Controller
                         $successCount++;
                         $logger->writeLog("SAP B1 sales order with {$order['order_sn']} Shopee order ID was generated.");
                     }
+                } else {
+                    $logger->writeLog("Failed to generate SAP B1 sales order with {$order['order_sn']} Shopee order ID. Please make sure that all the items in the order are properly sync.", true);
                 }
             }      
         }
