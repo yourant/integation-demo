@@ -1469,7 +1469,7 @@ class ShopeeController extends Controller
 
         try {
             $ecm = $returnSapService->getOdataClient()
-                ->from('U_ECM')
+                ->from('U_MPS_ECOMMERCE')
                 ->get();
         } catch (ClientException $exception) {
             $logger->writeSapLog($exception);
@@ -1479,8 +1479,6 @@ class ShopeeController extends Controller
             foreach ($ecm as $ecmItem) {
                 if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
                     $shopeeCust = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SELLER_PAYMENT') {
-                    $sellerPaymentItem = $ecmItem['properties']['Name'];
                 } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
                     $taxCode = $ecmItem['properties']['Name'];
                 } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
@@ -1494,232 +1492,137 @@ class ShopeeController extends Controller
         $logger->writeLog("Generating SAP B1 Credit Memo . . .");
 
         foreach ($returnList as $returnItem) {
-            try {
-                $order = $returnSapService->getOdataClient()
-                    ->from('Orders')
-                    ->where('U_Order_ID', (string)$returnItem['order_sn'])
-                    ->where('CancelStatus', 'csNo')
-                    ->first();
-            } catch (ClientException $exception) {
-                $logger->writeSapLog($exception);
-            }
-            
-            if (isset($order) && $returnItem['status'] == 'REFUND_PAID') {
-                $itemList = [];
-
-                foreach ($returnItem['item'] as $item) {
-                    $sku = $item['variation_sku'] ? $item['variation_sku'] : $item['item_sku'];
-
-                    try {
-                        $sapItemResponse = $returnSapService->getOdataClient()
-                            ->from('Items')
-                            ->whereNested(function($query) use ($sku) {
-                                $query->where('ItemCode', $sku)
-                                    ->orWhere('U_MPS_OLDSKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Y')
-                            ->first();
-                    } catch(ClientException $exception) {
-                        $logger->writeSapLog($exception);
-                    }
-
-                    if (isset($sapItemResponse)) {
-                        $sapItem = $sapItemResponse['properties'];
-
-                        $itemList[] = [
-                            'ItemCode' => $sapItem['ItemCode'],
-                            'Quantity' => $item['amount'],
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $item['item_price'] / $taxPercentage
-                        ];
-                    }
+            if ($returnItem['status'] == 'REFUND_PAID') {
+                try {
+                    $order = $returnSapService->getOdataClient()
+                        ->from('Orders')
+                        ->where('U_Order_ID', (string) $returnItem['order_sn'])
+                        ->where('CancelStatus', 'csNo')
+                        ->first();
+                } catch (ClientException $exception) {
+                    $logger->writeSapLog($exception);
                 }
 
-                $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
-                $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
-                    'order_sn' => $returnItem['order_sn']
-                ], $escrowDetail->getShopCommonParameter()));
+                try {
+                    $existCreditMemo = $returnSapService->getOdataClient()
+                        ->from('CreditNotes')
+                        ->where('U_Order_ID', (string) $returnItem['order_sn'])
+                        ->where('U_Ecommerce_Type', 'Shopee')
+                        ->where(function ($query) {
+                            $query->where('DocumentStatus', 'bost_Open');
+                            $query->orWhere('DocumentStatus', 'bost_Close');
+                        })
+                        ->where('Cancelled','tNO')
+                        ->first();
+                } catch (ClientException $exception) {
+                    $logger->writeSapLog($exception);
+                }
 
-                $escrowDetailResponseArr = $logger->validateResponse(json_decode($escrowDetailResponse->body(), true));
+                // dd($order);
+                if (isset($order) && !isset($existCreditMemo)) {     
+                    $itemList = [];
+                    // dd($returnItem['item']);
+                    foreach ($returnItem['item'] as $item) {
+                        $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                        $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                            'item_id_list' => $item['item_id']
+                        ], $shopeeBaseProducts->getShopCommonParameter()));
 
-                if ($escrowDetailResponseArr) {
-                    if (array_key_exists('order_income', $escrowDetailResponseArr['response'])) {
-                        $escrow = $escrowDetailResponseArr['response']['order_income'];
-                        $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
-                        $sellerPayment = $docTotal - $escrow['seller_return_refund'];
-                        $qty = $sellerPayment < 0 ? 1 : -1;
+                        $shopeeBaseProductsResponseArr = $logger->validateResponse(json_decode($shopeeBaseProductsResponse->body(), true));
+    
+                        if ($shopeeBaseProductsResponseArr) {
+                            $baseItem = $shopeeBaseProductsResponseArr['response']['item_list'][0];
 
-                        if ($sellerPayment) {
-                            $itemList[] = [
-                                'ItemCode' => $sellerPaymentItem,
-                                'Quantity' => $qty,
-                                'VatGroup' => $taxCode,
-                                'UnitPrice' => abs($sellerPayment) / $taxPercentage
-                            ];
+                            if ($baseItem['has_model']) {
+
+                            } else {
+                                $sku = $baseItem['item_sku'];
+                            }
                         }
 
+                        // $item['variation_sku'] ? $item['variation_sku'] : $item['item_sku'];
+    
                         try {
-                            $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', [
-                                'CardCode' => $shopeeCust,
-                                'NumAtCard' => $returnItem['return_sn'],
-                                'DocDate' => $returnItem['create_time'],
-                                'DocDueDate' => $returnItem['return_seller_due_date'],
-                                'TaxDate' => $returnItem['create_time'],
-                                'U_Ecommerce_Type' => 'Shopee',
-                                'U_Order_ID' => $returnItem['order_sn'],
-                                'U_Customer_Name' => $order['U_Customer_Name'],
-                                'U_Customer_Phone' => $order['U_Customer_Phone'],
-                                'U_Customer_Email' => $returnItem['user']['email'],
-                                'U_Customer_Shipping_Address' => $order['U_Customer_Shipping_Address'],
-                                'DocTotal' => $returnItem['refund_amount'],
-                                'DocumentLines' => $itemList
-                            ]);
-                        } catch (ClientException $exception) {
+                            $sapItemResponse = $returnSapService->getOdataClient()
+                                ->select('ItemCode')
+                                ->from('Items')
+                                ->whereNested(function($query) use ($sku) {
+                                    $query->where('ItemCode', $sku)
+                                        ->orWhere('U_MPS_OLDSKU', $sku);
+                                })->where('U_SH_INTEGRATION', 'Y')
+                                ->first();
+                        } catch(ClientException $exception) {
                             $logger->writeSapLog($exception);
                         }
-        
-                        if (isset($creditMemo)) {
-                            $successCount++;
-                            $logger->writeLog("SAP B1 Credit Memo with {$returnItem['return_sn']} Shopee return ID was generated.");
+    
+                        if (isset($sapItemResponse)) {
+                            $sapItem = $sapItemResponse['properties'];
+    
+                            $itemList[] = [
+                                'ItemCode' => $sapItem['ItemCode'],
+                                'Quantity' => $item['amount'],
+                                'VatGroup' => $taxCode,
+                                'UnitPrice' => $item['item_price'] / $taxPercentage
+                            ];
                         }
                     }
+    
+                    // $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
+                    // $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
+                    //     'order_sn' => $returnItem['order_sn']
+                    // ], $escrowDetail->getShopCommonParameter()));
+    
+                    // $escrowDetailResponseArr = $logger->validateResponse(json_decode($escrowDetailResponse->body(), true));
+    
+                    // if ($escrowDetailResponseArr) {
+                    //     if (array_key_exists('order_income', $escrowDetailResponseArr['response'])) {
+                    //         $escrow = $escrowDetailResponseArr['response']['order_income'];
+                    //         $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
+                    //         $sellerPayment = $docTotal - $escrow['seller_return_refund'];
+                    //         $qty = $sellerPayment < 0 ? 1 : -1;
+    
+                    //         if ($sellerPayment) {
+                    //             $itemList[] = [
+                    //                 'ItemCode' => $sellerPaymentItem,
+                    //                 'Quantity' => $qty,
+                    //                 'VatGroup' => $taxCode,
+                    //                 'UnitPrice' => abs($sellerPayment) / $taxPercentage
+                    //             ];
+                    //         }
+                        // dd($itemList);  
+                    try {
+                        $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', [
+                            'CardCode' => $shopeeCust,
+                            'NumAtCard' => $returnItem['return_sn'],
+                            'DocDate' => $returnItem['create_time'],
+                            'DocDueDate' => $returnItem['return_seller_due_date'],
+                            'TaxDate' => $returnItem['create_time'],
+                            'U_Ecommerce_Type' => 'Shopee',
+                            'U_Order_ID' => $returnItem['order_sn'],
+                            'U_Customer_Name' => $order['U_Customer_Name'],
+                            'U_Basic_Information' => $order['U_Basic_Information'],
+                            'U_Shipping_Address' => $order['U_Shipping_Address'],
+                            'DocTotal' => $returnItem['refund_amount'],
+                            'DocumentLines' => $itemList
+                        ]);
+                    } catch (ClientException $exception) {
+                        // $response = $exception->getResponse();
+                        // $responseBodyAsString = $response->getBody()->getContents();
+                        // dd($responseBodyAsString);
+                        $logger->writeSapLog($exception);
+                    }
+                    // dd($creditMemo);
+                    if (isset($creditMemo)) {
+                        $successCount++;
+                        $logger->writeLog("SAP B1 Credit Memo with {$returnItem['return_sn']} Shopee return ID was generated.");
+                    }
+                } else {
+                    $logger->writeLog("Failed to generate SAP B1 Credit Memo with {$returnItem['return_sn']} Shopee return ID. Please make sure that the associated sales order exist in SAP B1.", true);
                 }
             }
         }
 
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'Credit Memos', 'generated'));
-
-
-
-
-        //OLDDDDD
-        // $shopeeToken = AccessToken::where('platform', 'shopee')->first();
-        
-        // $returnList = [];
-        // $moreReturnItem = true;
-        // $offset = 0;
-        // $pageSize = 50;
-
-        // while ($moreReturnItem) {
-        //     $shopeeReturnItems = new ShopeeService('/returns/get_return_list', 'shop', $shopeeToken->access_token);
-        //     $shopeeReturnItemsResponse = Http::get($shopeeReturnItems->getFullPath(), array_merge([
-        //         'page_size' => $pageSize,
-        //         'page_no' => $offset
-        //     ], $shopeeReturnItems->getShopCommonParameter()));
-
-        //     $shopeeReturnItemsResponseArr = json_decode($shopeeReturnItemsResponse->body(), true);
-
-        //     foreach ($shopeeReturnItemsResponseArr['response']['return'] as $return) {
-        //         array_push($returnList, $return);
-        //     }
-
-        //     if ($shopeeReturnItemsResponseArr['response']['more']) {
-        //         $offset += $pageSize;
-        //     } else {
-        //         $moreReturnItem = false;
-        //     }
-        // }
-
-        // // for testing
-        // // foreach ($returnList as $value) {
-        // //     if ($value['return_sn'] == '200124144731506') {
-        // //     // if ($value['return_sn'] == '190923173135204') {
-        // //         $returnList = [];
-        // //         array_push($returnList, $value);
-        // //     }
-        // // }
-
-        // $itemList = [];
-        // $returnSapService = new SapService();
-
-        // $ecm = $returnSapService->getOdataClient()->from('U_ECM')->get();
-
-        // foreach ($ecm as $ecmItem) {
-        //     if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
-        //         $shopeeCust = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SELLER_PAYMENT') {
-        //         $sellerPaymentItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
-        //         $taxCode = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
-        //         $taxPercentage = (float) $ecmItem['properties']['Name'];
-        //     }
-        // }
-
-        // // dd($returnList);
-        // foreach ($returnList as $returnItem) {
-        //     $order = $returnSapService->getOdataClient()
-        //         ->from('Orders')
-        //         ->where('U_Order_ID', (string)$returnItem['order_sn'])
-        //         ->where('CancelStatus', 'csNo')
-        //         ->first();
-
-        //     if ($order && $returnItem['status'] == 'REFUND_PAID') {
-        //         foreach ($returnItem['item'] as $item) {
-        //             try {
-        //                 $response = $returnSapService->getOdataClient()
-        //                     ->from('Items')
-        //                     ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
-        //                     ->where('U_SH_INTEGRATION', 'Y')
-        //                     ->first();
-        //             } catch(ClientException $e) {
-        //                 dd($e->getResponse()->getBody()->getContents());
-        //             }
-
-        //             $sapItem = $response['properties'];
-
-        //             $itemList[] = [
-        //                 'ItemCode' => $sapItem['ItemCode'],
-        //                 'Quantity' => $item['amount'],
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $item['item_price'] / $taxPercentage
-        //             ];
-        //         }
-
-        //         $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
-        //         $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
-        //             'order_sn' => $returnItem['order_sn']
-        //         ], $escrowDetail->getShopCommonParameter()));
-        //         $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
-        //         $escrow = $escrowDetailResponseArr['response']['order_income'];
-        //         // dd($escrow);
-        //         $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
-        //         $sellerPayment = $docTotal - $escrow['seller_return_refund'];
-        //         $qty = $sellerPayment < 0 ? 1 : -1;
-
-        //         if ($sellerPayment) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $sellerPaymentItem,
-        //                 'Quantity' => $qty,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => abs($sellerPayment) / $taxPercentage
-        //             ];
-        //         }
-
-        //         $creditMemoList = [
-        //             'CardCode' => $shopeeCust,
-        //             'NumAtCard' => $returnItem['return_sn'],
-        //             'DocDate' => $returnItem['create_time'],
-        //             'DocDueDate' => $returnItem['return_seller_due_date'],
-        //             'TaxDate' => $returnItem['create_time'],
-        //             'U_Ecommerce_Type' => 'Shopee',
-        //             'U_Order_ID' => $returnItem['order_sn'],
-        //             'U_Customer_Name' => $order['U_Customer_Name'],
-        //             'U_Customer_Phone' => $order['U_Customer_Phone'],
-        //             'U_Customer_Email' => $returnItem['user']['email'],
-        //             'U_Customer_Shipping_Address' => $order['U_Customer_Shipping_Address'],
-        //             'DocTotal' => $returnItem['refund_amount'],
-        //             'DocumentLines' => $itemList
-        //         ];
-        //         // dd($creditMemoList);
-        //         $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', $creditMemoList);
-
-        //         if ($creditMemo) {
-        //             return response()->json(null, 200);
-        //         } else {
-        //             return response()->json(null, 500);
-        //         }
-        //     }
-        // }
     }
 
     public function index2()
