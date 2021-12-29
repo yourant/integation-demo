@@ -1363,7 +1363,6 @@ class ShopeeController extends Controller
             // dd($salesOrder);
             // dd(!isset($existInv));
             if (isset($salesOrder) && !isset($existInv)) {
-                // dd($salesOrder);
                 $batchSO = $invoiceSapService->getOdataClient()
                     ->from('Orders')
                     ->find($salesOrder['DocEntry']);
@@ -1389,31 +1388,6 @@ class ShopeeController extends Controller
                         'BatchNumbers' => $batchList
                     ];
                 }
-
-                    // dd($itemList);
-
-                // $itemList = [];
-
-                // foreach ($salesOrder['DocumentLines'] as $itemLine => $item) {
-                //     $batchList = [];
-
-                //     if ($item['BatchNumbers']) {                  
-                //         foreach ($item['BatchNumbers'] as $batch) {
-                //             $batchList[] = [
-                //                 'BatchNumber' => $batch['BatchNumber'],
-                //                 'Quantity' => $batch['Quantity']
-                //             ];
-                //         }
-                //     }
-
-                //     $itemList[] = [
-                //         'BaseType' => 17,
-                //         'BaseEntry' => $salesOrder['DocEntry'],
-                //         'BaseLine' => $itemLine,
-                //         'BatchNumbers' => $batchList
-                //     ];
-                // }
-                
 
                 try {
                     $invoice = $invoiceSapService->getOdataClient()->post('Invoices', [
