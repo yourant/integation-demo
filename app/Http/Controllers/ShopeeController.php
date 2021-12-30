@@ -65,7 +65,7 @@ class ShopeeController extends Controller
                 'shop_id' => (int) $request->shop_id,
             ]);
 
-            $resultArr = [];
+        $resultArr = [];
         
         if ($updatedToken) {
             $resultArr['status'] = 'success';
@@ -87,12 +87,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE ITEM CREATE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
         
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -146,6 +146,7 @@ class ShopeeController extends Controller
         // retrieve detailed banned products
         $detailedBannedProductList = [];
         $moreBannedProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving banned products . . .');
         
@@ -198,7 +199,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;  
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -426,12 +428,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE ITEM SYNC SCRIPT . . .');
 
         $productList = [];
+        $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
         $offset = 0;
-        $pageSize = 50;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -486,7 +488,6 @@ class ShopeeController extends Controller
         $detailedUnlistedProductList = [];
         $moreUnlistedProducts = true;
         $offset = 0;
-        $pageSize = 50;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -660,12 +661,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE UPDATE PRICE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -718,7 +719,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;   
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -883,12 +885,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE UPDATE STOCK SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -941,7 +943,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
