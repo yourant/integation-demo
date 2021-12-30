@@ -278,7 +278,9 @@ class ShopeeController extends Controller
                     }
                 }
             } else {
-                array_push($skuList, $product['item_sku']);
+                if ($parentSku = $product['item_sku']) {
+                    array_push($skuList, $parentSku);
+                }
             }
         }   
         
@@ -409,7 +411,7 @@ class ShopeeController extends Controller
                     if ($shopeeAddProductResponseArr) {
                         $successCount++;
                         $shProduct = $shopeeAddProductResponseArr['response'];
-                        $logger->writeLog("Product {$shProduct['item_id']} was created with {$itemSku} SKU.");
+                        $logger->writeLog("Product {$shProduct['item_name']} was created with {$itemSku} SKU.");
                     }
                 }
             }
@@ -549,12 +551,10 @@ class ShopeeController extends Controller
 
         foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
-
-            $prodCount++;
-            $parentSku = $product['item_sku'];
             $productId = $product['item_id']; 
             $productName = $product['item_name'];
-            // $logger->writeLog("{$prodCount} - {$productName}");
+            $prodResponseMsg = ++$prodCount . ' - ' . $productName;
+
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
                 $logger->writeLog('Retrieving product models . . .');
@@ -601,49 +601,55 @@ class ShopeeController extends Controller
                                 if (isset($itemUpdateResponse)) {
                                     $successCount++;
 
-                                    $logger->writeLog("{$prodCount} - Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
+                                    $logger->writeLog("Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . "({$sku})" . ' - Failed to sync the Shopee variant', true);
                                 }
-                            } else {
-                                $logger->writeLog("{$prodCount} - Variant SKU ({$sku})");
                             }
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
                         }
                     }
                 }  
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode')
-                        ->from('Items')
-                        ->whereNested(function($query) {
-                            $query->where('U_SH_ITEM_CODE', NULL)
-                                ->orWhere('U_SH_ITEM_CODE', '');
-                        })->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_MPS_OLDSKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Y')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
+                if ($parentSku = $product['item_sku']) {
                     try {
-                        $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
-                            ->whereKey($item->ItemCode)
-                            ->patch([
-                                'U_SH_ITEM_CODE' => $productId
-                            ]);  
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode')
+                            ->from('Items')
+                            ->whereNested(function($query) {
+                                $query->where('U_SH_ITEM_CODE', NULL)
+                                    ->orWhere('U_SH_ITEM_CODE', '');
+                            })->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->first();
                     } catch (ClientException $exception) {
                         $logger->writeSapLog($exception);
                     }
-
-                    if (isset($itemUpdateResponse)) {
-                        $successCount++;
-
-                        $logger->writeLog("{$prodCount} - Product {$productName} with {$parentSku} parent SKU was successfully synced to the item master.");
+    
+                    if (isset($item)) {
+                        try {
+                            $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
+                                ->whereKey($item->ItemCode)
+                                ->patch([
+                                    'U_SH_ITEM_CODE' => $productId
+                                ]);  
+                        } catch (ClientException $exception) {
+                            $logger->writeSapLog($exception);
+                        }
+    
+                        if (isset($itemUpdateResponse)) {
+                            $successCount++;
+    
+                            $logger->writeLog("Product {$productName} with {$parentSku} parent SKU was successfully synced to the item master.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . "({$parentSku})" . ' - Failed to sync the Shopee product', true);
+                        }
                     }
                 } else {
-                    $logger->writeLog("{$prodCount} - Parent SKU ({$parentSku})");
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
                 }
             }
         }
@@ -770,12 +776,6 @@ class ShopeeController extends Controller
                 break;
             }  
         }
-        // $detailedUnlistedProductList[0]['item_sku'];
-        // if ($detailedUnlistedProductList[0]['item_sku']) {
-        //     dd('true');
-        // } else {
-        //     dd('false');
-        // }
         
         // combine product base from products with normal and unlist status
         $productList = array_merge($detailedNormalProductList, $detailedUnlistedProductList);
@@ -1156,8 +1156,8 @@ class ShopeeController extends Controller
                 // 'time_from' => 1626735608,
                 // 'time_to' => 1627686008,
                 'time_range_field' => 'update_time',
-                'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                'time_to' => strtotime(date("Y-m-d 23:59:59")),
+                'time_from' => now()->subHours(24)->timestamp,
+                'time_to' => now()->timestamp,
                 // 'time_from' => strtotime(date("2021-12-28 00:00:00")),
                 // 'time_to' => strtotime(date("2021-12-28 23:59:59")),
                 'page_size' => $pageSize,
@@ -1333,8 +1333,8 @@ class ShopeeController extends Controller
                 // 'time_from' => 1626735608,
                 // 'time_to' => 1627686008,
                 'time_range_field' => 'update_time',
-                'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                'time_to' => strtotime(date("Y-m-d 23:59:59")),            
+                'time_from' => now()->subHours(24)->timestamp,
+                'time_to' => now()->timestamp,            
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'SHIPPED',
