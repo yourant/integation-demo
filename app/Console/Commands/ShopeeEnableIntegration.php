@@ -50,13 +50,13 @@ class ShopeeEnableIntegration extends Command
         $logger->writeLog('EXECUTING SHOPEE INTEGRATION ENABLE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
-        
+        $offset = 0;
+       
         $logger->writeLog('Retrieving normal products . . .');
 
         while ($moreNormalProducts) {
@@ -108,7 +108,8 @@ class ShopeeEnableIntegration extends Command
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -170,10 +171,8 @@ class ShopeeEnableIntegration extends Command
 
         foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
-
             $prodCount++;
             $prodName = $product['item_name'];
-            $parentSku = $product['item_sku'];
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -238,49 +237,51 @@ class ShopeeEnableIntegration extends Command
                     }
                 }  
             } else {
-                try {
-                    $validItem = $itemSapService->getOdataClient()
-                        ->select('ItemCode')
-                        ->from('Items')
-                        ->where('Valid', 'tYES')
-                        ->whereNested(function($query) {
-                            $query->where('U_SH_INTEGRATION', 'N')
-                                ->orWhere('U_SH_INTEGRATION', null);
-                        })->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_MPS_OLDSKU', $parentSku);
-                        })->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                $successMsg = "{$prodCount} - Item {$prodName} with {$parentSku} SKU was successfully enabled";
-                $errorMsg = "{$prodCount} - Parent SKU ({$parentSku}) - {$genErrorMsg}";
-
-                if (isset($validItem)) {
+                if ($parentSku = $product['item_sku']) {
                     try {
-                        $integrationStatus = $itemSapService->getOdataClient()->from('Items')
-                            ->whereKey($validItem['properties']['ItemCode'])
-                            ->patch([
-                                'U_SH_INTEGRATION' => 'Y'
-                            ]);
+                        $validItem = $itemSapService->getOdataClient()
+                            ->select('ItemCode')
+                            ->from('Items')
+                            ->where('Valid', 'tYES')
+                            ->whereNested(function($query) {
+                                $query->where('U_SH_INTEGRATION', 'N')
+                                    ->orWhere('U_SH_INTEGRATION', null);
+                            })->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->first();
                     } catch (ClientException $exception) {
                         $logger->writeSapLog($exception);
                     }
-
-                    if (isset($integrationStatus)) {
-                        $successCount++;
-                        
-                        $logger->writeLog($successMsg);
-                        $this->info($successMsg);
+    
+                    $successMsg = "{$prodCount} - Item {$prodName} with {$parentSku} SKU was successfully enabled";
+                    $errorMsg = "{$prodCount} - Parent SKU ({$parentSku}) - {$genErrorMsg}";
+    
+                    if (isset($validItem)) {
+                        try {
+                            $integrationStatus = $itemSapService->getOdataClient()->from('Items')
+                                ->whereKey($validItem['properties']['ItemCode'])
+                                ->patch([
+                                    'U_SH_INTEGRATION' => 'Y'
+                                ]);
+                        } catch (ClientException $exception) {
+                            $logger->writeSapLog($exception);
+                        }
+    
+                        if (isset($integrationStatus)) {
+                            $successCount++;
+                            
+                            $logger->writeLog($successMsg);
+                            $this->info($successMsg);
+                        } else {
+                            $logger->writeLog($errorMsg);
+                            $this->error($errorMsg);
+                        }
                     } else {
                         $logger->writeLog($errorMsg);
                         $this->error($errorMsg);
                     }
-                } else {                
-                    $logger->writeLog($errorMsg);
-                    $this->error($errorMsg);
-                }
+                } 
             }
         }
 

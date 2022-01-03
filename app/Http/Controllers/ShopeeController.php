@@ -65,7 +65,7 @@ class ShopeeController extends Controller
                 'shop_id' => (int) $request->shop_id,
             ]);
 
-            $resultArr = [];
+        $resultArr = [];
         
         if ($updatedToken) {
             $resultArr['status'] = 'success';
@@ -87,12 +87,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE ITEM CREATE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
         
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -146,6 +146,7 @@ class ShopeeController extends Controller
         // retrieve detailed banned products
         $detailedBannedProductList = [];
         $moreBannedProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving banned products . . .');
         
@@ -198,7 +199,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;  
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -276,7 +278,9 @@ class ShopeeController extends Controller
                     }
                 }
             } else {
-                array_push($skuList, $product['item_sku']);
+                if ($parentSku = $product['item_sku']) {
+                    array_push($skuList, $parentSku);
+                }
             }
         }   
         
@@ -379,7 +383,7 @@ class ShopeeController extends Controller
                     $shopeeAddProductResponse = Http::post($shopeeAddProduct->getFullPath() . $shopeeAddProduct->getShopQueryString(), [
                         'item_name' => $itemProp['ItemName'],
                         'description' => $description,
-                        'original_price' => (float) $itemProp['ItemPrices'][9]['Price'],
+                        'original_price' => (float) $itemProp['ItemPrices'][8]['Price'],
                         'normal_stock' => (float) $itemProp['QuantityOnStock'],
                         'weight' => (float) $weight,
                         'item_sku' => $itemSku,
@@ -407,7 +411,7 @@ class ShopeeController extends Controller
                     if ($shopeeAddProductResponseArr) {
                         $successCount++;
                         $shProduct = $shopeeAddProductResponseArr['response'];
-                        $logger->writeLog("Product {$shProduct['item_id']} was created with {$itemSku} SKU.");
+                        $logger->writeLog("Product {$shProduct['item_name']} was created with {$itemSku} SKU.");
                     }
                 }
             }
@@ -426,12 +430,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE ITEM SYNC SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -484,7 +488,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -546,11 +551,9 @@ class ShopeeController extends Controller
 
         foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
-
-            $prodCount++;
-            $parentSku = $product['item_sku'];
             $productId = $product['item_id']; 
             $productName = $product['item_name'];
+            $prodResponseMsg = ++$prodCount . ' - ' . $productName;
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -598,49 +601,55 @@ class ShopeeController extends Controller
                                 if (isset($itemUpdateResponse)) {
                                     $successCount++;
 
-                                    $logger->writeLog("{$prodCount} - Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
+                                    $logger->writeLog("Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . "({$sku})" . ' - Failed to sync the Shopee variant', true);
                                 }
-                            } else {
-                                $logger->writeLog("{$prodCount} - Variant SKU ({$sku})");
                             }
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
                         }
                     }
                 }  
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode')
-                        ->from('Items')
-                        ->whereNested(function($query) {
-                            $query->where('U_SH_ITEM_CODE', NULL)
-                                ->orWhere('U_SH_ITEM_CODE', '');
-                        })->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_MPS_OLDSKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Y')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
+                if ($parentSku = $product['item_sku']) {
                     try {
-                        $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
-                            ->whereKey($item->ItemCode)
-                            ->patch([
-                                'U_SH_ITEM_CODE' => $productId
-                            ]);  
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode')
+                            ->from('Items')
+                            ->whereNested(function($query) {
+                                $query->where('U_SH_ITEM_CODE', NULL)
+                                    ->orWhere('U_SH_ITEM_CODE', '');
+                            })->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->first();
                     } catch (ClientException $exception) {
                         $logger->writeSapLog($exception);
                     }
-
-                    if (isset($itemUpdateResponse)) {
-                        $successCount++;
-
-                        $logger->writeLog("{$prodCount} - Product {$productName} with {$parentSku} parent SKU was successfully synced to the item master.");
+    
+                    if (isset($item)) {
+                        try {
+                            $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
+                                ->whereKey($item->ItemCode)
+                                ->patch([
+                                    'U_SH_ITEM_CODE' => $productId
+                                ]);  
+                        } catch (ClientException $exception) {
+                            $logger->writeSapLog($exception);
+                        }
+    
+                        if (isset($itemUpdateResponse)) {
+                            $successCount++;
+    
+                            $logger->writeLog("Product {$productName} with {$parentSku} parent SKU was successfully synced to the item master.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . "({$parentSku})" . ' - Failed to sync the Shopee product', true);
+                        }
                     }
                 } else {
-                    $logger->writeLog("{$prodCount} - Parent SKU ({$parentSku})");
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
                 }
             }
         }
@@ -658,12 +667,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE UPDATE PRICE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -716,7 +725,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;   
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -766,7 +776,7 @@ class ShopeeController extends Controller
                 break;
             }  
         }
-
+        
         // combine product base from products with normal and unlist status
         $productList = array_merge($detailedNormalProductList, $detailedUnlistedProductList);
 
@@ -776,11 +786,10 @@ class ShopeeController extends Controller
 
         $logger->writeLog("Updating Shopee product price . . .");
 
-        foreach ($productList as $product) {
+        foreach ($productList as $prodCounter => $product) {
             $itemSapService = new SapService();
-
-            $parentSku = $product['item_sku'];
-            $productId = $product['item_id'];            
+            $prodResponseMsg = ++$prodCounter . ' - ' . $product['item_name'];
+            $productId = $product['item_id'];
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -794,77 +803,89 @@ class ShopeeController extends Controller
                 $shopeeModelsResponseArr = $logger->validateResponse(json_decode($shopeeModelsResponse->body(), true));
 
                 if ($shopeeModelsResponseArr) {
-                    foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
-                        $modelId = $model['model_id'];
-                        $sku = $model['model_sku'];
+                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) {
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
+                            $modelId = $model['model_id'];
 
-                        try {
-                            $item = $itemSapService->getOdataClient()
-                            ->select('ItemCode', 'ItemPrices')
-                            ->from('Items')
-                            ->whereNested(function($query) use ($sku) {
-                                $query->where('ItemCode', $sku)
-                                    ->orWhere('U_MPS_OLDSKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Y')
-                            ->first();
-                        } catch (ClientException $exception) {
-                            $logger->writeSapLog($exception);
-                        }
-
-                        if (isset($item)) {
-                            $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
-                            $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-                                'item_id' => (int) $productId,
-                                'price_list' => [
-                                    [
-                                        'model_id' => (int) $modelId,
-                                        'original_price' => (float) $item['ItemPrices'][9]['Price']
-                                    ]
-                                ]
-                            ]);
-
-                            $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
-
-                            if ($shopeePriceUpdateResponseArr) {
-                                $successCount++;
-                                $logger->writeLog("The product's price with {$sku} variant SKU was updated.");
+                            try {
+                                $item = $itemSapService->getOdataClient()
+                                ->select('ItemCode', 'ItemPrices')
+                                ->from('Items')
+                                ->whereNested(function($query) use ($sku) {
+                                    $query->where('ItemCode', $sku)
+                                        ->orWhere('U_MPS_OLDSKU', $sku);
+                                })->where('U_SH_INTEGRATION', 'Y')
+                                ->first();
+                            } catch (ClientException $exception) {
+                                $logger->writeSapLog($exception);
                             }
-                        }  
+    
+                            if (isset($item)) {
+                                $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
+                                $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
+                                    'item_id' => (int) $productId,
+                                    'price_list' => [
+                                        [
+                                            'model_id' => (int) $modelId,
+                                            'original_price' => (float) $item['ItemPrices'][8]['Price']
+                                        ]
+                                    ]
+                                ]);
+    
+                                $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
+    
+                                if ($shopeePriceUpdateResponseArr) {
+                                    $successCount++;
+                                    $logger->writeLog("The product's price with {$sku} variant SKU was updated.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee price', true);
+                                }
+                            }
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
+                        }
                     }
                 } 
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'ItemPrices')
-                        ->from('Items')
-                        ->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_MPS_OLDSKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Y')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
-                    $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
-                    $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-                        'item_id' => (int) $productId,
-                        'price_list' => [
-                            [
-                                'model_id' => (int) 0,
-                                'original_price' => (float) $item['ItemPrices'][9]['Price']
-                            ]
-                        ]
-                    ]);
-
-                    $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
-
-                    if ($shopeePriceUpdateResponseArr) {
-                        $successCount++;
-                        $logger->writeLog("The product's price with {$parentSku} parent SKU was updated.");
+                if ($parentSku = $product['item_sku']) {
+                    try {
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode', 'ItemPrices')
+                            ->from('Items')
+                            ->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->first();
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
                     }
-                }             
+    
+                    if (isset($item)) {
+                        $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
+                        $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
+                            'item_id' => (int) $productId,
+                            'price_list' => [
+                                [
+                                    'model_id' => (int) 0,
+                                    'original_price' => (float) $item['ItemPrices'][8]['Price']
+                                ]
+                            ]
+                        ]);
+    
+                        $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
+    
+                        if ($shopeePriceUpdateResponseArr) {
+                            $successCount++;
+                            $logger->writeLog("The product's price with {$parentSku} parent SKU was updated.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee price', true);
+                        }
+                    }
+                } else {
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
+                }       
             }
         }
 
@@ -881,12 +902,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE UPDATE STOCK SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -939,7 +960,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -999,11 +1021,10 @@ class ShopeeController extends Controller
 
         $logger->writeLog("Updating Shopee product stock . . .");
 
-        foreach ($productList as $product) {
+        foreach ($productList as $prodCounter => $product) {
             $itemSapService = new SapService();
-
-            $parentSku = $product['item_sku'];
-            $productId = $product['item_id'];           
+            $prodResponseMsg = ++$prodCounter . ' - ' . $product['item_name'];
+            $productId = $product['item_id'];
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -1017,80 +1038,92 @@ class ShopeeController extends Controller
                 $shopeeModelsResponseArr = $logger->validateResponse(json_decode($shopeeModelsResponse->body(), true));
 
                 if ($shopeeModelsResponseArr) {
-                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) { 
-                        $modelId = $model['model_id'];
-                        $sku = $model['model_sku'];
+                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) {       
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
+                            $modelId = $model['model_id'];                        
 
-                        try {
-                            $item = $itemSapService->getOdataClient()
-                            ->select('ItemCode', 'QuantityOnStock')
-                            ->from('Items')
-                            ->whereNested(function($query) use ($sku) {
-                                $query->where('ItemCode', $sku)
-                                    ->orWhere('U_MPS_OLDSKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Y')
-                            ->where('InventoryItem', 'tYES')
-                            ->where('U_UPDATE_INVENTORY', 'Y')
-                            ->first();
-                        } catch (ClientException $exception) {
-                            $logger->writeSapLog($exception);
-                        }
-
-                        if (isset($item)) {  
-                            $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
-                            $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-                                'item_id' => (int) $productId,
-                                'stock_list' => [
-                                    [
-                                        'model_id' => (int) $modelId,
-                                        'normal_stock' => (int) $item['QuantityOnStock']
-                                    ]
-                                ]
-                            ]);
-
-                            $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
-                            
-                            if ($shopeeStockUpdateResponseArr) {
-                                $successCount++;
-                                $logger->writeLog("The product's stock with {$sku} variant SKU was updated.");
+                            try {
+                                $item = $itemSapService->getOdataClient()
+                                    ->select('ItemCode', 'QuantityOnStock')
+                                    ->from('Items')
+                                    ->whereNested(function($query) use ($sku) {
+                                        $query->where('ItemCode', $sku)
+                                            ->orWhere('U_MPS_OLDSKU', $sku);
+                                    })->where('U_SH_INTEGRATION', 'Y')
+                                    ->where('InventoryItem', 'tYES')
+                                    ->where('U_UPDATE_INVENTORY', 'Y')
+                                    ->first();
+                            } catch (ClientException $exception) {
+                                $logger->writeSapLog($exception);
                             }
+
+                            if (isset($item)) {
+                                $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
+                                $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
+                                    'item_id' => (int) $productId,
+                                    'stock_list' => [
+                                        [
+                                            'model_id' => (int) $modelId,
+                                            'normal_stock' => (int) $item['QuantityOnStock']
+                                        ]
+                                    ]
+                                ]);
+
+                                $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
+                                
+                                if ($shopeeStockUpdateResponseArr) {
+                                    $successCount++;
+                                    $logger->writeLog("The product's stock with {$sku} variant SKU was updated.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee stock', true);
+                                }
+                            }
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
                         }
                     }
                 }
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'QuantityOnStock')
-                        ->from('Items')
-                        ->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_MPS_OLDSKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Y')
-                        ->where('InventoryItem', 'tYES')
-                        ->where('U_UPDATE_INVENTORY', 'Y')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
-                    $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
-                    $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
-                        'item_id' => (int) $productId,
-                        'stock_list' => [
-                            [
-                                'model_id' => (int) 0,
-                                'normal_stock' => (int) $item['QuantityOnStock']
-                            ]
-                        ]
-                    ]);
-
-                    $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
-
-                    if ($shopeeStockUpdateResponseArr) {
-                        $successCount++;
-                        $logger->writeLog("The product's stock with {$parentSku} parent SKU was updated.");
+                if ($parentSku = $product['item_sku']) {
+                    try {
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode', 'QuantityOnStock')
+                            ->from('Items')
+                            ->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->where('InventoryItem', 'tYES')
+                            ->where('U_UPDATE_INVENTORY', 'Y')
+                            ->first();
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
                     }
+    
+                    if (isset($item)) {
+                        $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
+                        $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
+                            'item_id' => (int) $productId,
+                            'stock_list' => [
+                                [
+                                    'model_id' => (int) 0,
+                                    'normal_stock' => (int) $item['QuantityOnStock']
+                                ]
+                            ]
+                        ]);
+    
+                        $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
+    
+                        if ($shopeeStockUpdateResponseArr) {
+                            $successCount++;
+                            $logger->writeLog("The product's stock with {$parentSku} parent SKU was updated.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee stock', true);
+                        }
+                    }
+                } else {
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
                 }
             }
         }
@@ -1123,10 +1156,10 @@ class ShopeeController extends Controller
                 // 'time_from' => 1626735608,
                 // 'time_to' => 1627686008,
                 'time_range_field' => 'update_time',
-                'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                'time_to' => strtotime(date("Y-m-d 23:59:59")),
-                // 'time_from' => strtotime(date("2021-12-27 00:00:00")),
-                // 'time_to' => strtotime(date("2021-12-27 23:59:59")),
+                'time_from' => now()->subHours(24)->timestamp,
+                'time_to' => now()->timestamp,
+                // 'time_from' => strtotime(date("2021-12-28 00:00:00")),
+                // 'time_to' => strtotime(date("2021-12-28 23:59:59")),
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'READY_TO_SHIP',
@@ -1300,8 +1333,8 @@ class ShopeeController extends Controller
                 // 'time_from' => 1626735608,
                 // 'time_to' => 1627686008,
                 'time_range_field' => 'update_time',
-                'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                'time_to' => strtotime(date("Y-m-d 23:59:59")),            
+                'time_from' => now()->subHours(24)->timestamp,
+                'time_to' => now()->timestamp,            
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'SHIPPED',
