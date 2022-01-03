@@ -53,7 +53,7 @@ class Lazada2UIController extends Controller
                     ]);
 
             if($updatedToken) {
-                Log::channel('lazada2.refresh_token')->info('New tokens generated.');
+                Log::channel('lazada2.refresh_token')->info('New tokens generated. Please reload the page.');
 
                 return response()->json([
                     'title' => 'Success: ',
