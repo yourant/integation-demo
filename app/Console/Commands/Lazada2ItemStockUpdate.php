@@ -56,6 +56,8 @@ class Lazada2ItemStockUpdate extends Command
                                                     ->where('U_LAZ2_INTEGRATION','Y')
                                                     ->where('U_LAZ2_ITEM_CODE','!=',null)
                                                     ->where('U_LAZ2_SELLER_SKU','!=',null)
+                                                    ->where('U_UPDATE_INVENTORY','Y')
+                                                    ->where('InventoryItem','tYES')
                                                     ->skip($count)
                                                     ->get();
                 if($getItems->isNotEmpty()){
@@ -65,9 +67,7 @@ class Lazada2ItemStockUpdate extends Command
                         $items[] = [
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
-                            'stock' => $item['QuantityOnStock'],
-                            'invItem' => $item['InventoryItem'],
-                            'updateInv' => $item['U_UPDATE_INVENTORY']
+                            'stock' => $item['QuantityOnStock']
                         ];
                         
                     }
@@ -92,21 +92,17 @@ class Lazada2ItemStockUpdate extends Command
 
                 foreach($b as $key){
 
-                    if($key['invItem'] == 'tYES' && $key['updateInv'] == 'Y'){
-
-                        $sellerSku = $key['sellerSku'];
-                        $productId = $key['productId'];
-                        $stock = $key['stock'];
-                        
-                        //Create SKU Payload
-                        $skuPayload[] = "<Sku>
-                                            <ItemId>".$productId."</ItemId>
-                                            <SellerSku>".$sellerSku."</SellerSku>
-                                            <Quantity>".$stock."</Quantity>
-                                        </Sku>";
-                        
-
-                    }
+                    $sellerSku = $key['sellerSku'];
+                    $productId = $key['productId'];
+                    $stock = $key['stock'];
+                    
+                    //Create SKU Payload
+                    $skuPayload[] = "<Sku>
+                                        <ItemId>".$productId."</ItemId>
+                                        <SellerSku>".$sellerSku."</SellerSku>
+                                        <Quantity>".$stock."</Quantity>
+                                    </Sku>";
+                    
                 }
 
                 if(!empty($skuPayload)){
