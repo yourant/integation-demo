@@ -153,27 +153,27 @@ return [
         'lazada' => [
             'refresh_token' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada/refresh_token_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada/refresh_token_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'item_master' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada/item_master_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada/item_master_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'sales_order' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada/sales_order_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada/sales_order_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'ar_invoice' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada/ar_invoice_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada/ar_invoice_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'credit_memo' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada/credit_memo_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada/credit_memo_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ]
         ],
@@ -181,27 +181,27 @@ return [
         'lazada2' => [
             'refresh_token' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada2/refresh_token_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada2/refresh_token_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'item_master' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada2/item_master_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada2/item_master_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'sales_order' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada2/sales_order_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada2/sales_order_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'ar_invoice' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada2/ar_invoice_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada2/ar_invoice_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ],
             'credit_memo' => [
                 'driver' => 'single',
-                'path' => storage_path('logs/lazada2/credit_memo_'.date('m_Y').'.log'),
+                'path' => storage_path('logs/lazada2/credit_memo_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ]
         ]
