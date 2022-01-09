@@ -7,6 +7,7 @@ use App\Http\Controllers\LazadaController;
 use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaUIController;
 use App\Http\Controllers\Lazada2UIController;
+use App\Http\Controllers\Tchub\ItemController;
 use App\Http\Controllers\Tchub\DashboardController;
 use App\Http\Controllers\Tchub\SalesOrderController;
 
@@ -75,7 +76,9 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
 
 Route::prefix('tchub')->middleware(['auth', 'ec.tchub'])->group(function () {
     Route::get('/', DashboardController::class)->name('tchub.dashboard');
-    Route::get('/sales-order', [SalesOrderController::class, 'generateSalesOrder'])->name('tchub.sales.order');
+    Route::get('/item-sync', [ItemController::class, 'itemSync'])->name('tchub.item.sync');
+    Route::get('/update-stock', [ItemController::class, 'updateStock'])->name('tchub.update.stock');
+    Route::post('/sales-order', [SalesOrderController::class, 'generateSalesOrder'])->name('tchub.sales.order');
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');

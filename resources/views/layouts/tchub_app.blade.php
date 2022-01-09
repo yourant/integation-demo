@@ -7,7 +7,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>E-Commerce Integration - TCHUB</title>
+    <title>{{ config('app.name') }} - {{ __('TCHUB') }}</title>
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
@@ -22,8 +22,8 @@
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
 
             <div class="container">
-                <a class="navbar-brand" href="#">
-                    {{-- <img src="{{ asset('images/logo.png') }}" height="30" alt=""> --}}
+                <a class="navbar-brand" href="{{ route('tchub.dashboard') }}">
+                    <img src="{{ asset('images/logo.png') }}" height="30" alt=""> <!-- remove logo on demo branch -->
                 </a>
                 <!-- Right Side Of Navbar -->
                 <ul class="navbar-nav ml-auto">
