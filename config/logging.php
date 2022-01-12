@@ -209,7 +209,7 @@ return [
 
         'tchub' => [
             'driver' => 'single',
-            'path' => storage_path('logs/tchub/'.date('m_Y').'.log'),
+            'path' => storage_path('logs/tchub/'.date('Y/m/d').'.log'),
             'tap' => [App\Logging\TchubLogFormatter::class],
             'level' => 'debug'
         ]

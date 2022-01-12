@@ -7,9 +7,9 @@ use App\Http\Controllers\LazadaController;
 use App\Http\Controllers\ShopeeController;
 use App\Http\Controllers\LazadaUIController;
 use App\Http\Controllers\Lazada2UIController;
-use App\Http\Controllers\Tchub\ItemController;
 use App\Http\Controllers\Tchub\DashboardController;
-use App\Http\Controllers\Tchub\SalesOrderController;
+use App\Http\Controllers\Tchub\ItemMasterController;
+use App\Http\Controllers\Tchub\SalesProcessController;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,9 +76,18 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
 
 Route::prefix('tchub')->middleware(['auth', 'ec.tchub'])->group(function () {
     Route::get('/', DashboardController::class)->name('tchub.dashboard');
-    Route::get('/item-sync', [ItemController::class, 'itemSync'])->name('tchub.item.sync');
-    Route::get('/update-stock', [ItemController::class, 'updateStock'])->name('tchub.update.stock');
-    Route::post('/sales-order', [SalesOrderController::class, 'generateSalesOrder'])->name('tchub.sales.order');
+    Route::get('/create-product', [ItemMasterController::class, 'createProduct'])->name('tchub.create.product');
+    Route::get('/update-item-status', [ItemMasterController::class, 'updateItemStatus'])->name('tchub.update.item.status');
+    Route::get('/update-prices', [ItemMasterController::class, 'updatePrices'])->name('tchub.update.prices');
+    Route::get('/update-stocks', [ItemMasterController::class, 'updateStocks'])->name('tchub.update.stocks');
+
+    Route::get('/generate-sales-order', [SalesProcessController::class, 'generateSalesOrder'])->name('tchub.generate.sales.order');
+    Route::get('/pending-orders', [SalesProcessController::class, 'view'])->name('tchub.pending.orders.index');
+    Route::post('/pending-orders/{entity_id}', [SalesProcessController::class, 'store'])->name('tchub.pending.order.store');
+    Route::get('/delivery-order', [SalesProcessController::class, 'deliveryOrder'])->name('tchub.delivery.order');
+    Route::get('/ar-invoice', [SalesProcessController::class, 'arInvoice'])->name('tchub.ar.invoice');
+    Route::get('/canceled-order', [SalesProcessController::class, 'canceledOrder'])->name('tchub.canceled.order');
+
 });
 
 // Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home')->middleware('auth');

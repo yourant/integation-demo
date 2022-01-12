@@ -193,6 +193,23 @@ return [
 
     'lazada2_app_secret' => env('LAZADA2_APP_SECRET'),
     
+
+    /*
+    |--------------------------------------------------------------------------
+    | TCHUB Info
+    |--------------------------------------------------------------------------
+    |
+    | This key is used for accessing TCHUB API
+    |
+    */
+  
+    'tchub_base_url' => env('TCHUB_BASE_URL'),
+
+    'tchub_base_path' => env('TCHUB_BASE_PATH'),
+
+    'tchub_api_version' => env('TCHUB_API_VERSION'),
+
+    'tchub_access_token' => env('TCHUB_ACCESS_TOKEN'),
   
     /*
     |--------------------------------------------------------------------------
@@ -245,6 +262,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\TelescopeServiceProvider::class,
 
     ],
 

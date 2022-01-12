@@ -25,6 +25,7 @@
                 <a class="navbar-brand" href="{{ route('tchub.dashboard') }}">
                     <img src="{{ asset('images/logo.png') }}" height="30" alt=""> <!-- remove logo on demo branch -->
                 </a>
+            
                 <!-- Right Side Of Navbar -->
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item dropdown">
