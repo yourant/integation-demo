@@ -84,11 +84,17 @@ class LazadaItemPriceUpdate extends Command
             
             $batch = array_chunk($items,20);
             
-            $skuPayload = [];
-            
-            $skuPayloadCount = 0;
+            $errorList = [];
+
+            $errorCount = 0;
+
+            $successCount = 0;
 
             foreach($batch as $b){
+
+                $skuPayload = [];
+
+                $itemList = [];
 
                 foreach($b as $key){
                         
@@ -97,13 +103,27 @@ class LazadaItemPriceUpdate extends Command
                     $origPrice = $key['origPrice'];
                     $specialPrice = $key['specialPrice'];
 
-                    //Create SKU Payload
-                    $skuPayload[] = "<Sku>
-                                        <ItemId>".$productId."</ItemId>
-                                        <SellerSku>".$sellerSku."</SellerSku>
-                                        <Price>".$origPrice."</Price>
-                                        <SalePrice>".$specialPrice."</SalePrice>
-                                    </Sku>";
+                    if($specialPrice == 0){
+                        //Create SKU Payload
+                        $skuPayload[] = "<Sku>
+                                            <ItemId>".$productId."</ItemId>
+                                            <SellerSku>".$sellerSku."</SellerSku>
+                                            <Price>".$origPrice."</Price>
+                                        </Sku>";
+                    }else{
+                        //Create SKU Payload
+                        $skuPayload[] = "<Sku>
+                                            <ItemId>".$productId."</ItemId>
+                                            <SellerSku>".$sellerSku."</SellerSku>
+                                            <Price>".$origPrice."</Price>
+                                            <SalePrice>".$specialPrice."</SalePrice>
+                                        </Sku>";
+                    }
+
+                    $itemList[] = [
+                        'sellerSku' => $sellerSku,
+                        'productId' => $productId
+                    ];
                 
                 }
 
@@ -119,20 +139,49 @@ class LazadaItemPriceUpdate extends Command
                     $updatePrice = $lazadaAPI->updatePriceQuantity($finalPayload);
     
                     if($updatePrice['code'] == 0){
-                        $skuPayloadCount += count($skuPayload);
-                        unset($skuPayload);
+                        $successCount += count($skuPayload);
+                    }else{
+
+                        foreach($itemList as $item){
+                        
+                            $sellerSkuExist = array_search($item['sellerSku'], array_column($updatePrice['detail'],'seller_sku'));
+                            $productIdExist = array_search($item['productId'], array_column($updatePrice['detail'],'seller_sku'));
+    
+                            if($sellerSkuExist !== false || $productIdExist !== false){
+                                $errorCount++;
+                            }else{
+                                $successCount++;
+                            }
+    
+                        }
+
+                        foreach($updatePrice['detail'] as $detail){
+                            $errorList[] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                        }
                     }
     
                 }
 
             }
             
-            if($skuPayloadCount > 0){
-                Log::channel('lazada.item_master')->info('Price updated on '.$skuPayloadCount.' Lazada SKU/s.');
+            if($successCount > 0){
+                
+                Log::channel('lazada.item_master')->info('Update Price - Price updated on '.$successCount.' Lazada SKU/s.');
+            
+            }
+            if($errorCount > 0){
+                
+                Log::channel('lazada.item_master')->error("Update Price - ".$errorCount." SKUs have issues while updating the price: "."\n".implode("\n",$errorList));
+            
+            }
+            if($successCount == 0 && $errorCount == 0){
+                Log::channel('lazada.item_master')->warning('Update Price - No Lazada items available to be updated.');
 
-            }else{
-                Log::channel('lazada.item_master')->warning('No Lazada items available.');
-
+                return response()->json([
+                    'title' => 'Information: ',
+                    'status' => 'alert-info',
+                    'message' => 'Update Price - No Lazada items available to be updated.'
+                ]);
             }
 
         } catch (\Exception $e) {
