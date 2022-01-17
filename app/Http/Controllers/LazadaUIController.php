@@ -471,8 +471,6 @@ class LazadaUIController extends Controller
         $lazadaAPI = new LazadaAPIController();
         
         $batch = array_chunk($items,20);
-        
-        $skuPayload = [];
 
         $errorList = [];
 
@@ -481,6 +479,8 @@ class LazadaUIController extends Controller
         $successCount = 0;
 
         foreach($batch as $b){
+
+            $skuPayload = [];
 
             $itemList = [];
 
@@ -529,7 +529,6 @@ class LazadaUIController extends Controller
 
                 if($updatePrice['code'] == 0){
                     $successCount += count($skuPayload);
-                    unset($skuPayload);
                 }else{
 
                     foreach($itemList as $item){
