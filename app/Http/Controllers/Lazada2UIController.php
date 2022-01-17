@@ -58,7 +58,7 @@ class Lazada2UIController extends Controller
                 return response()->json([
                     'title' => 'Success: ',
                     'status' => 'alert-success',
-                    'message' => 'New tokens generated.'
+                    'message' => 'New tokens generated. Please reload the page.'
                 ]);
 
             } else {
