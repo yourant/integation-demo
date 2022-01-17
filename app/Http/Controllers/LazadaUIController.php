@@ -598,120 +598,158 @@ class LazadaUIController extends Controller
 
     public function updateStock()
     {
-        try
-        {
-            $odataClient = new SapService();
-            
-            $count = 0;
 
-            $moreItems = true;
-
-            $items = [];
-
-            while($moreItems){
-                
-                $getItems = $odataClient->getOdataClient()->from('Items')
-                                                    ->where('U_LAZ_INTEGRATION','Y')
-                                                    ->where('U_LAZ_ITEM_CODE','!=',null)
-                                                    ->where('U_LAZ_SELLER_SKU','!=',null)
-                                                    ->where('U_UPDATE_INVENTORY','Y')
-                                                    ->where('InventoryItem','tYES')
-                                                    ->skip($count)
-                                                    ->get();
-
-                if($getItems->isNotEmpty()){
-
-                    foreach($getItems as $item){
-
-                        $items[] = [
-                            'sellerSku' => $item['U_LAZ_SELLER_SKU'],
-                            'productId' => $item['U_LAZ_ITEM_CODE'],
-                            'stock' => $item['QuantityOnStock']
-                        ];
-                        
-                    }
-
-                    $count += count($getItems);
-
-                }else{
-                    $moreItems = false;
-                }
-
-            }
-
-            $lazadaAPI = new LazadaAPIController();
-            
-            $batch = array_chunk($items,20);
-            
-            $skuPayload = [];
-            
-            $skuPayloadCount = 0;
-
-            foreach($batch as $b){
-
-                foreach($b as $key){
-
-                    $sellerSku = $key['sellerSku'];
-                    $productId = $key['productId'];
-                    $stock = $key['stock'];
-                    
-                    //Create SKU Payload
-                    $skuPayload[] = "<Sku>
-                                        <ItemId>".$productId."</ItemId>
-                                        <SellerSku>".$sellerSku."</SellerSku>
-                                        <Quantity>".$stock."</Quantity>
-                                    </Sku>";
-                    
-                }
-
-                if(!empty($skuPayload)){
-                    $finalPayload = "<Request>
-                                        <Product>
-                                            <Skus>
-                                                ".implode('',$skuPayload)."
-                                            </Skus>
-                                        </Product>
-                                    </Request>";
-                    //Run 
-                    $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
-                    
-                    if($updateStock['code'] == 0){
-                        $skuPayloadCount += count($skuPayload);
-                        unset($skuPayload);
-                    }
+        $odataClient = new SapService();
         
+        $count = 0;
+
+        $moreItems = true;
+
+        $items = [];
+
+        while($moreItems){
+            
+            $getItems = $odataClient->getOdataClient()->from('Items')
+                                                ->where('U_LAZ_INTEGRATION','Y')
+                                                ->where('U_LAZ_ITEM_CODE','!=',null)
+                                                ->where('U_LAZ_SELLER_SKU','!=',null)
+                                                ->where('U_UPDATE_INVENTORY','Y')
+                                                ->where('InventoryItem','tYES')
+                                                ->skip($count)
+                                                ->get();
+
+            if($getItems->isNotEmpty()){
+
+                foreach($getItems as $item){
+
+                    $items[] = [
+                        'sellerSku' => $item['U_LAZ_SELLER_SKU'],
+                        'productId' => $item['U_LAZ_ITEM_CODE'],
+                        'stock' => $item['QuantityOnStock']
+                    ];
+                    
                 }
 
-            }
-
-            if($skuPayloadCount > 0){
-                Log::channel('lazada.item_master')->info('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
-
-                return response()->json([
-                    'title' => 'Success: ',
-                    'status' => 'alert-success',
-                    'message' => 'Stock updated on '.$skuPayloadCount.' Lazada SKU/s.'
-                ]);
+                $count += count($getItems);
 
             }else{
-                Log::channel('lazada.item_master')->warning('No Lazada items available.');
-
-                return response()->json([
-                    'title' => 'Information: ',
-                    'status' => 'alert-info',
-                    'message' => 'No Lazada items available.'
-                ]);
+                $moreItems = false;
             }
 
-        } catch (\Exception $e) {
-            Log::channel('lazada.item_master')->emergency($e->getMessage());
+        }
+
+        $lazadaAPI = new LazadaAPIController();
+        
+        $batch = array_chunk($items,20);
+        
+        $errorList = [];
+
+        $errorCount = 0;
+
+        $successCount = 0;
+
+        foreach($batch as $b){
+
+            $skuPayload = [];
+
+            $itemList = [];
+
+            foreach($b as $key){
+
+                $sellerSku = $key['sellerSku'];
+                $productId = $key['productId'];
+                $stock = $key['stock'];
+                
+                //Create SKU Payload
+                $skuPayload[] = "<Sku>
+                                    <ItemId>".$productId."</ItemId>
+                                    <SellerSku>".$sellerSku."</SellerSku>
+                                    <Quantity>".$stock."</Quantity>
+                                </Sku>";
+
+                $itemList[] = [
+                    'sellerSku' => $sellerSku,
+                    'productId' => $productId
+                ];
+                
+            }
+
+            if(!empty($skuPayload)){
+                $finalPayload = "<Request>
+                                    <Product>
+                                        <Skus>
+                                            ".implode('',$skuPayload)."
+                                        </Skus>
+                                    </Product>
+                                </Request>";
+                //Run 
+                $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
+                
+                if($updateStock['code'] == 0){
+                    $successCount += count($skuPayload);
+                }else{
+                    foreach($itemList as $item){
+                        
+                        $sellerSkuExist = array_search($item['sellerSku'], array_column($updateStock['detail'],'seller_sku'));
+                        $productIdExist = array_search($item['productId'], array_column($updateStock['detail'],'seller_sku'));
+
+                        if($sellerSkuExist !== false || $productIdExist !== false){
+                            $errorCount++;
+                        }else{
+                            $successCount++;
+                        }
+
+                    }
+
+                    foreach($updateStock['detail'] as $detail){
+                        $errorList[] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                    }
+
+                }
+    
+            }
+
+        }
+
+        if($successCount > 0){
+            Log::channel('lazada.item_master')->info('Update Stock - Stock updated on '.$successCount.' Lazada SKU/s.');
+        }
+        if(count($errorList) > 0){
+            Log::channel('lazada.item_master')->error("Update Stock - Some SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
+        }
+
+        $success = array(
+            'success_title' => 'Success: ',
+            'success_message' => 'Stock updated on <b>'.$successCount.'</b> Lazada SKU/s.'
+        );
+
+        $danger = array(
+            'danger_title' => 'Error: ',
+            'danger_message' => 'Problems encountered while updating the stock of <b>'.$errorCount.'</b> SKU/s. Please check the logs for further details.'
+        );
+
+        if($successCount > 0 && $errorCount > 0){
+            
+            return response()->json(array_merge($success,$danger));
+        
+        }else if($successCount > 0 && $errorCount == 0){
+
+            return response()->json($success);
+
+        }else if($successCount == 0 && $errorCount > 0){
+
+            return response()->json($danger);
+        }else{
+
+            Log::channel('lazada.item_master')->warning('Update Stock - No Lazada items available to be updated.');
 
             return response()->json([
-                'title' => 'Error: ',
-                'status' => 'alert-danger',
-                'message' => $e->getMessage()
+                'title' => 'Information: ',
+                'status' => 'alert-info',
+                'message' => 'Update Stock - No Lazada items available to be updated.'
             ]);
         }
+        
     }
 
     public function generateSalesOrder()
