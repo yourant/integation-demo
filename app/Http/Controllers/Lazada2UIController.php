@@ -553,8 +553,9 @@ class Lazada2UIController extends Controller
         if($successCount > 0){
             Log::channel('lazada2.item_master')->info('Update Price - Price updated on '.$successCount.' Lazada SKU/s.');
         }
-        if(count($errorList) > 0){
-            Log::channel('lazada2.item_master')->error("Update Price - Some SKUs have issues while updating the price: "."\n".implode("\n",$errorList));
+        
+        if($errorCount > 0){
+            Log::channel('lazada2.item_master')->error("Update Price - ".$errorCount." SKUs have issues while updating the price: "."\n".implode("\n",$errorList));
         }
 
         $success = array(
@@ -708,8 +709,9 @@ class Lazada2UIController extends Controller
         if($successCount > 0){
             Log::channel('lazada2.item_master')->info('Update Stock - Stock updated on '.$successCount.' Lazada SKU/s.');
         }
-        if(count($errorList) > 0){
-            Log::channel('lazada2.item_master')->error("Update Stock - Some SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
+
+        if($errorCount > 0){
+            Log::channel('lazada2.item_master')->error("Update Stock - ".$errorCount." SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
         }
 
         $success = array(

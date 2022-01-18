@@ -175,13 +175,9 @@ class Lazada2ItemPriceUpdate extends Command
             
             }
             if($successCount == 0 && $errorCount == 0){
+                
                 Log::channel('lazada2.item_master')->warning('Update Price - No Lazada items available to be updated.');
-
-                return response()->json([
-                    'title' => 'Information: ',
-                    'status' => 'alert-info',
-                    'message' => 'Update Price - No Lazada items available to be updated.'
-                ]);
+            
             }
 
         } catch (\Exception $e) {
