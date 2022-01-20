@@ -35,6 +35,13 @@ class UserSeeder extends Seeder
                 'platform' => 'shopee',
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
+            ],
+            [
+                'username' => 'tchub-admin',
+                'password' => Hash::make('tchub@88'),
+                'platform' => 'tchub',
+                'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
+                'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
             ]
         ]);
     }

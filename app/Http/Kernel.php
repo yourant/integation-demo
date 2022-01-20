@@ -60,6 +60,7 @@ class Kernel extends HttpKernel
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'ec.lazada' => \App\Http\Middleware\LazadaAccessMiddleware::class,
         'ec.shopee' => \App\Http\Middleware\ShopeeAccessMiddleware::class,
+        'ec.tchub' => \App\Http\Middleware\TchubAccessMiddleware::class,
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,

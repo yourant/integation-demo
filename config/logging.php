@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\TchubLogFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use App\Logging\CustomizeFormatter;
@@ -204,6 +205,13 @@ return [
                 'path' => storage_path('logs/lazada2/credit_memo_'.date('Y_m').'.log'),
                 'level' => 'debug'
             ]
+        ],
+
+        'tchub' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/tchub/'.date('Y/m/d').'.log'),
+            'tap' => [App\Logging\TchubLogFormatter::class],
+            'level' => 'debug'
         ]
     ],
 

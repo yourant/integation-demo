@@ -43,6 +43,10 @@ class LoginController extends Controller
             return redirect()->route('shopee.dashboard');
         } elseif ($user->platform == 'lazada') {
             return redirect()->route('lazada.dashboard');
+        } elseif ($user->platform === 'tchub') {
+            return redirect()->route('tchub.dashboard');
+        } else {
+            abort(403);
         }
     }
 

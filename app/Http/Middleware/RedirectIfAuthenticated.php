@@ -28,6 +28,8 @@ class RedirectIfAuthenticated
                     return redirect('/shopee');
                 } elseif ($platform == 'lazada') {
                     return redirect('/lazada');
+                } elseif ($platform === 'tchub') {
+                    return redirect()->route('tchub.dashboard');
                 }
             }
         }
