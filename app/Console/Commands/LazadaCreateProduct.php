@@ -73,7 +73,8 @@ class LazadaCreateProduct extends Command
                             'itemName' => $item['ItemName'],
                             'sellerSku' => $item['ItemCode'],
                             'quantity' => $item['QuantityOnStock'],
-                            'price' => $item['ItemPrices']['3']['Price'],
+                            'price' => $item['U_ORIGINAL_PRICE'],
+                            'status' => $item['Valid']
                         ];
                     
                     }
@@ -86,6 +87,7 @@ class LazadaCreateProduct extends Command
             }
 
             $itemCount = 0;
+            $updateCount = 0;
 
             foreach($items as $item){
 
@@ -116,7 +118,7 @@ class LazadaCreateProduct extends Command
                 $lazadaAPI = new LazadaAPIController();
                 
                 $response = $lazadaAPI->createProduct($createProductPayload);
-                
+
                 if(!empty($response['data'])){
                     $itemId = $response['data']['item_id'];
                     $sellerSku = $response['data']['sku_list']['0']['seller_sku'];
@@ -128,12 +130,54 @@ class LazadaCreateProduct extends Command
                                 ]);
                     
                     ($update ? $itemCount++ : '');
+
+                }else{
+
+                    if($item['status'] == 'tYES'){
+                        $payload = "<Request>
+                                            <Product>
+                                                <Skus>
+                                                    <Sku>
+                                                        <SellerSku>".$item['sellerSku']."</SellerSku>
+                                                        <Status>active</Status>
+                                                    </Sku>
+                                                </Skus>
+                                            </Product>
+                                        </Request>";
+                        $activate = $lazadaAPI->activateProduct($payload);
+
+                        if($activate['code'] == '0'){
+                            $updateCount++;
+                        }
+
+                    }else if($item['status'] == 'tNO'){
+                        $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
+                        $itemId = $getDetail['data']['item_id'];
+                        $payload = "<Request>
+                                        <Product>
+                                            <ItemId>".$itemId."</ItemId>
+                                            <Skus>
+                                                <SellerSku>".$item['sellerSku']."</SellerSku>
+                                            </Skus>
+                                        </Product>
+                                    </Request>";
+                        $deactivate = $lazadaAPI->deactivateProduct($payload);
+                       
+                        if($deactivate['code'] == '0'){
+                            $updateCount++;
+                        }
+                        
+                    }
+                    
                 }
 
             }
 
             if($itemCount > 0){
                 Log::channel('lazada.item_master')->info($itemCount.' new product/s added');
+            }
+            if($updateCount > 0){
+                Log::channel('lazada2.item_master')->info($updateCount.' SKU/s status updated');
             }else{
                 Log::channel('lazada.item_master')->info('No new Lazada products to be added.');
             }

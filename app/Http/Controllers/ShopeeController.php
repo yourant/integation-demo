@@ -65,27 +65,34 @@ class ShopeeController extends Controller
                 'shop_id' => (int) $request->shop_id,
             ]);
 
+        $resultArr = [];
+        
         if ($updatedToken) {
-            dd('Successfully authorize shop');
+            $resultArr['status'] = 'success';
+            $resultArr['msg'] = 'Successfully authorize shop';
         } else {
-            dd('Failed to authorized shop');
+            $resultArr['status'] = 'error';
+            $resultArr['msg'] = 'Failed to authorized shop';
         }
+
+        return redirect()->route('shopee.dashboard')
+            ->with(['status' => $resultArr['status'], 'msg' => $resultArr['msg']]);
     }
 
     public function createProduct()
     {
         $shopeeToken = AccessToken::where('platform', 'shopee')->first(); 
         $logger = new LogService('item_create');
-        
+
         $logger->writeLog('EXECUTING SHOPEE ITEM CREATE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
         
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -139,6 +146,7 @@ class ShopeeController extends Controller
         // retrieve detailed banned products
         $detailedBannedProductList = [];
         $moreBannedProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving banned products . . .');
         
@@ -191,7 +199,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;  
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -263,11 +272,15 @@ class ShopeeController extends Controller
 
                 if ($shopeeModelsResponseArr) {
                     foreach ($shopeeModelsResponseArr['response']['model'] as $model) {
-                        array_push($skuList, $model['model_sku']);
+                        if (isset($model['model_sku'])) {
+                            array_push($skuList, $model['model_sku']);
+                        }
                     }
                 }
             } else {
-                array_push($skuList, $product['item_sku']);
+                if ($parentSku = $product['item_sku']) {
+                    array_push($skuList, $parentSku);
+                }
             }
         }   
         
@@ -324,9 +337,9 @@ class ShopeeController extends Controller
 
                 try {
                     $sapItems = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'ItemName', 'QuantityOnStock', 'ItemPrices', 'U_OLD_SKU')
+                        ->select('ItemCode', 'ItemName', 'QuantityOnStock', 'ItemPrices', 'U_MPS_OLDSKU')
                         ->from('Items')
-                        ->where('U_SH_INTEGRATION','Yes')
+                        ->where('U_SH_INTEGRATION','Y')
                         ->whereNested(function($query) {
                             $query->where('U_SH_ITEM_CODE', NULL)
                                 ->orWhere('U_SH_ITEM_CODE', '');
@@ -363,14 +376,14 @@ class ShopeeController extends Controller
     
             foreach ($sapItemArr as $sapItem) {
                 $itemProp = $sapItem['properties'];
-                $itemSku = $itemProp['U_OLD_SKU'] ?? $itemProp['ItemCode'];
+                $itemSku = $itemProp['U_MPS_OLDSKU'] ?? $itemProp['ItemCode'];
 
                 if (!in_array($itemSku, $skuList)) {
                     $shopeeAddProduct = new ShopeeService('/product/add_item', 'shop', $shopeeToken->access_token);
                     $shopeeAddProductResponse = Http::post($shopeeAddProduct->getFullPath() . $shopeeAddProduct->getShopQueryString(), [
                         'item_name' => $itemProp['ItemName'],
                         'description' => $description,
-                        'original_price' => (float) $itemProp['ItemPrices'][9]['Price'],
+                        'original_price' => (float) $itemProp['ItemPrices'][8]['Price'],
                         'normal_stock' => (float) $itemProp['QuantityOnStock'],
                         'weight' => (float) $weight,
                         'item_sku' => $itemSku,
@@ -398,7 +411,7 @@ class ShopeeController extends Controller
                     if ($shopeeAddProductResponseArr) {
                         $successCount++;
                         $shProduct = $shopeeAddProductResponseArr['response'];
-                        $logger->writeLog("Product {$shProduct['item_id']} was created with {$itemSku} SKU.");
+                        $logger->writeLog("Product {$shProduct['item_name']} was created with {$itemSku} SKU.");
                     }
                 }
             }
@@ -417,12 +430,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE ITEM SYNC SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -475,7 +488,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -535,11 +549,11 @@ class ShopeeController extends Controller
         
         $logger->writeLog("Updating Shopee Item Code UDF . . .");
 
-        foreach ($productList as $product) {
+        foreach ($productList as $prodCount => $product) {
             $itemSapService = new SapService();
-
-            $parentSku = $product['item_sku'];
-            $productId = $product['item_id'];            
+            $productId = $product['item_id']; 
+            $productName = $product['item_name'];
+            $prodResponseMsg = ++$prodCount . ' - ' . $productName;
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -554,79 +568,93 @@ class ShopeeController extends Controller
 
                 if ($shopeeModelsResponseArr) {
                     foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
-                        $sku = $model['model_sku'];
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
 
-                        try {
-                            $item = $itemSapService->getOdataClient()
-                                ->select('ItemCode')
-                                ->from('Items')
-                                ->whereNested(function($query) {
-                                    $query->where('U_SH_ITEM_CODE', NULL)
-                                        ->orWhere('U_SH_ITEM_CODE', '');
-                                })->whereNested(function($query) use ($sku) {
-                                    $query->where('ItemCode', $sku)
-                                        ->orWhere('U_OLD_SKU', $sku);
-                                })->where('U_SH_INTEGRATION', 'Yes')
-                                ->first();
-                        } catch (ClientException $exception) {
-                            $logger->writeSapLog($exception);
-                        }
-
-                        if (isset($item)) {
                             try {
-                                $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
-                                    ->whereKey($item->ItemCode)
-                                    ->patch([
-                                        'U_SH_ITEM_CODE' => $productId
-                                    ]);    
+                                $item = $itemSapService->getOdataClient()
+                                    ->select('ItemCode')
+                                    ->from('Items')
+                                    ->whereNested(function($query) {
+                                        $query->where('U_SH_ITEM_CODE', NULL)
+                                            ->orWhere('U_SH_ITEM_CODE', '');
+                                    })->whereNested(function($query) use ($sku) {
+                                        $query->where('ItemCode', $sku)
+                                            ->orWhere('U_MPS_OLDSKU', $sku);
+                                    })->where('U_SH_INTEGRATION', 'Y')
+                                    ->first();
                             } catch (ClientException $exception) {
                                 $logger->writeSapLog($exception);
                             }
 
-                            if (isset($itemUpdateResponse)) {
-                                $successCount++;
-                                $logger->writeLog("Product with {$sku} variant SKU was synced to the item master.");
+                            if (isset($item)) {
+                                try {
+                                    $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
+                                        ->whereKey($item->ItemCode)
+                                        ->patch([
+                                            'U_SH_ITEM_CODE' => $productId
+                                        ]);    
+                                } catch (ClientException $exception) {
+                                    $logger->writeSapLog($exception);
+                                }
+
+                                if (isset($itemUpdateResponse)) {
+                                    $successCount++;
+
+                                    $logger->writeLog("Product {$productName} with {$sku} variant SKU was successfully synced to the item master.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . "({$sku})" . ' - Failed to sync the Shopee variant', true);
+                                }
                             }
-                        }  
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
+                        }
                     }
                 }  
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode')
-                        ->from('Items')
-                        ->whereNested(function($query) {
-                            $query->where('U_SH_ITEM_CODE', NULL)
-                                ->orWhere('U_SH_ITEM_CODE', '');
-                        })->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_OLD_SKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Yes')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
+                if ($parentSku = $product['item_sku']) {
                     try {
-                        $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
-                            ->whereKey($item->ItemCode)
-                            ->patch([
-                                'U_SH_ITEM_CODE' => $productId
-                            ]);  
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode')
+                            ->from('Items')
+                            ->whereNested(function($query) {
+                                $query->where('U_SH_ITEM_CODE', NULL)
+                                    ->orWhere('U_SH_ITEM_CODE', '');
+                            })->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->first();
                     } catch (ClientException $exception) {
                         $logger->writeSapLog($exception);
                     }
-
-                    if (isset($itemUpdateResponse)) {
-                        $successCount++;
-                        $logger->writeLog("Product with {$parentSku} parent SKU was synced to the item master.");
+    
+                    if (isset($item)) {
+                        try {
+                            $itemUpdateResponse = $itemSapService->getOdataClient()->from('Items')
+                                ->whereKey($item->ItemCode)
+                                ->patch([
+                                    'U_SH_ITEM_CODE' => $productId
+                                ]);  
+                        } catch (ClientException $exception) {
+                            $logger->writeSapLog($exception);
+                        }
+    
+                        if (isset($itemUpdateResponse)) {
+                            $successCount++;
+    
+                            $logger->writeLog("Product {$productName} with {$parentSku} parent SKU was successfully synced to the item master.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . "({$parentSku})" . ' - Failed to sync the Shopee product', true);
+                        }
                     }
+                } else {
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
                 }
             }
         }
 
-        $logger->writeLog("Synced a total of {$successCount} Shopee SKUs.");
+        $logger->writeLog("Successfully Synced a total of {$successCount} Shopee SKUs.");
 
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'Shopee SKUs', 'synced'));
     }
@@ -639,12 +667,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE UPDATE PRICE SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -697,7 +725,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;   
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -747,7 +776,7 @@ class ShopeeController extends Controller
                 break;
             }  
         }
-
+        
         // combine product base from products with normal and unlist status
         $productList = array_merge($detailedNormalProductList, $detailedUnlistedProductList);
 
@@ -757,11 +786,10 @@ class ShopeeController extends Controller
 
         $logger->writeLog("Updating Shopee product price . . .");
 
-        foreach ($productList as $product) {
+        foreach ($productList as $prodCounter => $product) {
             $itemSapService = new SapService();
-
-            $parentSku = $product['item_sku'];
-            $productId = $product['item_id'];            
+            $prodResponseMsg = ++$prodCounter . ' - ' . $product['item_name'];
+            $productId = $product['item_id'];
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -775,77 +803,89 @@ class ShopeeController extends Controller
                 $shopeeModelsResponseArr = $logger->validateResponse(json_decode($shopeeModelsResponse->body(), true));
 
                 if ($shopeeModelsResponseArr) {
-                    foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
-                        $modelId = $model['model_id'];
-                        $sku = $model['model_sku'];
+                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) {
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
+                            $modelId = $model['model_id'];
 
-                        try {
-                            $item = $itemSapService->getOdataClient()
-                            ->select('ItemCode', 'ItemPrices')
-                            ->from('Items')
-                            ->whereNested(function($query) use ($sku) {
-                                $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
-                            ->first();
-                        } catch (ClientException $exception) {
-                            $logger->writeSapLog($exception);
-                        }
-
-                        if (isset($item)) {
-                            $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
-                            $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-                                'item_id' => (int) $productId,
-                                'price_list' => [
-                                    [
-                                        'model_id' => (int) $modelId,
-                                        'original_price' => (float) $item['ItemPrices'][9]['Price']
-                                    ]
-                                ]
-                            ]);
-
-                            $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
-
-                            if ($shopeePriceUpdateResponseArr) {
-                                $successCount++;
-                                $logger->writeLog("The product's price with {$sku} variant SKU was updated.");
+                            try {
+                                $item = $itemSapService->getOdataClient()
+                                ->select('ItemCode', 'ItemPrices')
+                                ->from('Items')
+                                ->whereNested(function($query) use ($sku) {
+                                    $query->where('ItemCode', $sku)
+                                        ->orWhere('U_MPS_OLDSKU', $sku);
+                                })->where('U_SH_INTEGRATION', 'Y')
+                                ->first();
+                            } catch (ClientException $exception) {
+                                $logger->writeSapLog($exception);
                             }
-                        }  
+    
+                            if (isset($item)) {
+                                $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
+                                $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
+                                    'item_id' => (int) $productId,
+                                    'price_list' => [
+                                        [
+                                            'model_id' => (int) $modelId,
+                                            'original_price' => (float) $item['ItemPrices'][8]['Price']
+                                        ]
+                                    ]
+                                ]);
+    
+                                $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
+    
+                                if ($shopeePriceUpdateResponseArr) {
+                                    $successCount++;
+                                    $logger->writeLog("The product's price with {$sku} variant SKU was updated.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee price', true);
+                                }
+                            }
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
+                        }
                     }
                 } 
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'ItemPrices')
-                        ->from('Items')
-                        ->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_OLD_SKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Yes')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
-                    $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
-                    $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
-                        'item_id' => (int) $productId,
-                        'price_list' => [
-                            [
-                                'model_id' => (int) 0,
-                                'original_price' => (float) $item['ItemPrices'][9]['Price']
-                            ]
-                        ]
-                    ]);
-
-                    $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
-
-                    if ($shopeePriceUpdateResponseArr) {
-                        $successCount++;
-                        $logger->writeLog("The product's price with {$parentSku} parent SKU was updated.");
+                if ($parentSku = $product['item_sku']) {
+                    try {
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode', 'ItemPrices')
+                            ->from('Items')
+                            ->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->first();
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
                     }
-                }             
+    
+                    if (isset($item)) {
+                        $shopeePriceUpdate = new ShopeeService('/product/update_price', 'shop', $shopeeToken->access_token);
+                        $shopeePriceUpdateResponse = Http::post($shopeePriceUpdate->getFullPath() . $shopeePriceUpdate->getShopQueryString(), [
+                            'item_id' => (int) $productId,
+                            'price_list' => [
+                                [
+                                    'model_id' => (int) 0,
+                                    'original_price' => (float) $item['ItemPrices'][8]['Price']
+                                ]
+                            ]
+                        ]);
+    
+                        $shopeePriceUpdateResponseArr = $logger->validateResponse(json_decode($shopeePriceUpdateResponse->body(), true));
+    
+                        if ($shopeePriceUpdateResponseArr) {
+                            $successCount++;
+                            $logger->writeLog("The product's price with {$parentSku} parent SKU was updated.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee price', true);
+                        }
+                    }
+                } else {
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
+                }       
             }
         }
 
@@ -862,12 +902,12 @@ class ShopeeController extends Controller
         $logger->writeLog('EXECUTING SHOPEE UPDATE STOCK SCRIPT . . .');
 
         $productList = [];
-        $offset = 0;
         $pageSize = 50;
 
         // retrieve detailed normal products
         $detailedNormalProductList = [];
         $moreNormalProducts = true;
+        $offset = 0;
 
         $logger->writeLog('Retrieving normal products . . .');
 
@@ -920,7 +960,8 @@ class ShopeeController extends Controller
 
         // retrieve detailed unlisted products
         $detailedUnlistedProductList = [];
-        $moreUnlistedProducts = true;    
+        $moreUnlistedProducts = true;
+        $offset = 0;
         
         $logger->writeLog('Retrieving unlisted products . . .');
         
@@ -980,11 +1021,10 @@ class ShopeeController extends Controller
 
         $logger->writeLog("Updating Shopee product stock . . .");
 
-        foreach ($productList as $product) {
+        foreach ($productList as $prodCounter => $product) {
             $itemSapService = new SapService();
-
-            $parentSku = $product['item_sku'];
-            $productId = $product['item_id'];           
+            $prodResponseMsg = ++$prodCounter . ' - ' . $product['item_name'];
+            $productId = $product['item_id'];
 
             // retrieve the model if it's applicable to the current product
             if ($product['has_model']) {
@@ -998,25 +1038,27 @@ class ShopeeController extends Controller
                 $shopeeModelsResponseArr = $logger->validateResponse(json_decode($shopeeModelsResponse->body(), true));
 
                 if ($shopeeModelsResponseArr) {
-                    foreach ($shopeeModelsResponseArr['response']['model'] as $key => $model) { 
-                        $modelId = $model['model_id'];
-                        $sku = $model['model_sku'];
+                    foreach ($shopeeModelsResponseArr['response']['model'] as $model) {       
+                        if (isset($model['model_sku'])) {
+                            $sku = $model['model_sku'];
+                            $modelId = $model['model_id'];                        
 
-                        try {
-                            $item = $itemSapService->getOdataClient()
-                            ->select('ItemCode', 'QuantityOnStock', 'InventoryItem')
-                            ->from('Items')
-                            ->whereNested(function($query) use ($sku) {
-                                $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
-                            ->first();
-                        } catch (ClientException $exception) {
-                            $logger->writeSapLog($exception);
-                        }
+                            try {
+                                $item = $itemSapService->getOdataClient()
+                                    ->select('ItemCode', 'QuantityOnStock')
+                                    ->from('Items')
+                                    ->whereNested(function($query) use ($sku) {
+                                        $query->where('ItemCode', $sku)
+                                            ->orWhere('U_MPS_OLDSKU', $sku);
+                                    })->where('U_SH_INTEGRATION', 'Y')
+                                    ->where('InventoryItem', 'tYES')
+                                    ->where('U_UPDATE_INVENTORY', 'Y')
+                                    ->first();
+                            } catch (ClientException $exception) {
+                                $logger->writeSapLog($exception);
+                            }
 
-                        if (isset($item)) {
-                            if ($item['InventoryItem'] == 'tYES') {
+                            if (isset($item)) {
                                 $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
                                 $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
                                     'item_id' => (int) $productId,
@@ -1033,27 +1075,33 @@ class ShopeeController extends Controller
                                 if ($shopeeStockUpdateResponseArr) {
                                     $successCount++;
                                     $logger->writeLog("The product's stock with {$sku} variant SKU was updated.");
+                                } else {
+                                    $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee stock', true);
                                 }
                             }
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Missing variant SKU', true);
                         }
                     }
                 }
             } else {
-                try {
-                    $item = $itemSapService->getOdataClient()
-                        ->select('ItemCode', 'QuantityOnStock', 'InventoryItem')
-                        ->from('Items')
-                        ->whereNested(function($query) use ($parentSku) {
-                            $query->where('ItemCode', $parentSku)
-                                ->orWhere('U_OLD_SKU', $parentSku);
-                        })->where('U_SH_INTEGRATION', 'Yes')
-                        ->first();
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($item)) {
-                    if ($item['InventoryItem'] == 'tYES') {
+                if ($parentSku = $product['item_sku']) {
+                    try {
+                        $item = $itemSapService->getOdataClient()
+                            ->select('ItemCode', 'QuantityOnStock')
+                            ->from('Items')
+                            ->whereNested(function($query) use ($parentSku) {
+                                $query->where('ItemCode', $parentSku)
+                                    ->orWhere('U_MPS_OLDSKU', $parentSku);
+                            })->where('U_SH_INTEGRATION', 'Y')
+                            ->where('InventoryItem', 'tYES')
+                            ->where('U_UPDATE_INVENTORY', 'Y')
+                            ->first();
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
+                    }
+    
+                    if (isset($item)) {
                         $shopeeStockUpdate = new ShopeeService('/product/update_stock', 'shop', $shopeeToken->access_token);
                         $shopeeStockUpdateResponse = Http::post($shopeeStockUpdate->getFullPath() . $shopeeStockUpdate->getShopQueryString(), [
                             'item_id' => (int) $productId,
@@ -1064,14 +1112,18 @@ class ShopeeController extends Controller
                                 ]
                             ]
                         ]);
-
+    
                         $shopeeStockUpdateResponseArr = $logger->validateResponse(json_decode($shopeeStockUpdateResponse->body(), true));
-
+    
                         if ($shopeeStockUpdateResponseArr) {
                             $successCount++;
                             $logger->writeLog("The product's stock with {$parentSku} parent SKU was updated.");
+                        } else {
+                            $logger->writeLog($prodResponseMsg . ' - Failed to update the Shopee stock', true);
                         }
                     }
+                } else {
+                    $logger->writeLog($prodResponseMsg . ' - Missing parent SKU', true);
                 }
             }
         }
@@ -1100,17 +1152,18 @@ class ShopeeController extends Controller
 
             $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
             $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
-                // 'time_range_field' => 'update_time',
-                // 'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                // 'time_to' => strtotime(date("Y-m-d 23:59:59")),
-                // testing
-                'time_range_field' => 'create_time',
-                'time_from' => 1626735608,
-                'time_to' => 1627686008,
+                // 'time_range_field' => 'create_time',
+                // 'time_from' => 1626735608,
+                // 'time_to' => 1627686008,
+                'time_range_field' => 'update_time',
+                'time_from' => now()->subHours(24)->timestamp,
+                'time_to' => now()->timestamp,
+                // 'time_from' => strtotime(date("2021-12-28 00:00:00")),
+                // 'time_to' => strtotime(date("2021-12-28 23:59:59")),
                 'page_size' => $pageSize,
                 'cursor' => $offset,
-                'order_status' => 'SHIPPED',
-                // 'order_status' => 'READY_TO_SHIP',
+                'order_status' => 'READY_TO_SHIP',
+                // 'order_status' => 'SHIPPED',
                 'response_optional_fields' => 'order_status'
             ], $shopeeReadyOrders->getShopCommonParameter()));
 
@@ -1155,7 +1208,7 @@ class ShopeeController extends Controller
 
         try {
             $ecm = $salesOrderSapService->getOdataClient()
-                ->from('U_ECM')
+                ->from('U_MPS_ECOMMERCE')
                 ->get();
         } catch (ClientException $exception) {
             $logger->writeSapLog($exception);
@@ -1169,15 +1222,9 @@ class ShopeeController extends Controller
                     $taxCode = $ecmItem['properties']['Name'];
                 } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
                     $taxPercentage = (float) $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SHIPPING_FEE') {
-                    $shippingItem = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SHOP_VOUCHER') {
-                    $shopVoucherItem = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SELLER_VOUCHER') {
-                    $sellerVoucherItem = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SHOPEE_COIN') {
-                    $shopeeCoinItem = $ecmItem['properties']['Name'];
-                } 
+                } elseif ($ecmItem['properties']['Code'] == 'WAREHOUSE_CODE') {
+                    $warehouse = $ecmItem['properties']['Name'];
+                }
             }
         }
 
@@ -1197,8 +1244,9 @@ class ShopeeController extends Controller
                 $logger->writeSapLog($exception);
             }
             
-            if (isset($existedSO)) {
+            if (!isset($existedSO)) {
                 $itemList = [];
+                $itemTotal = 0;
 
                 foreach ($order['item_list'] as $item) {         
                     $sku = $item['model_sku'] ? $item['model_sku'] : $item['item_sku'];
@@ -1208,8 +1256,8 @@ class ShopeeController extends Controller
                             ->from('Items')
                             ->whereNested(function($query) use ($sku) {
                                 $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
+                                    ->orWhere('U_MPS_OLDSKU', $sku);
+                            })->where('U_SH_INTEGRATION', 'Y')
                             ->first();
                     } catch (ClientException $exception) {
                         $logger->writeSapLog($exception);
@@ -1217,213 +1265,50 @@ class ShopeeController extends Controller
 
                     if (isset($sapItemResponse)) {
                         $sapItem = $sapItemResponse['properties'];
+                        $itemTotal += $item['model_discounted_price'] * $item['model_quantity_purchased'];
+                        $basicInfo = "Phone: " . $order['recipient_address']['phone'];
 
                         $itemList[] = [
                             'ItemCode' => $sapItem['ItemCode'],
                             'Quantity' => $item['model_quantity_purchased'],
                             'VatGroup' => $taxCode,
-                            'UnitPrice' => $item['model_discounted_price'] / $taxPercentage
+                            'UnitPrice' => $item['model_discounted_price'] / $taxPercentage,
+                            'WarehouseCode' => $warehouse
                         ];
                     }
                 }
 
-                try {
-                    $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', [
-                        'CardCode' => $shopeeCust,
-                        'NumAtCard' => $order['order_sn'],
-                        'DocDate' => date('Y-m-d', $order['create_time']),
-                        'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
-                        'TaxDate' => date('Y-m-d', $order['create_time']),
-                        'U_Ecommerce_Type' => 'Shopee',
-                        'U_Order_ID' => $order['order_sn'],
-                        'U_Customer_Name' => $order['recipient_address']['name'],
-                        'U_Customer_Phone' => $order['recipient_address']['phone'],
-                        'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
-                        'DocTotal' => $order['total_amount'],
-                        'DocumentLines' => $itemList
-                    ]);
-                } catch (ClientException $exception) {
-                    $logger->writeSapLog($exception);
-                }
-
-                if (isset($salesOrder)) {
-                    $successCount++;
-                    $logger->writeLog("SAP B1 sales order with {$order['order_sn']} Shopee order ID was generated.");
+                if (count($order['item_list']) == count($itemList)) {
+                    try {
+                        $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', [
+                            'CardCode' => $shopeeCust,
+                            'NumAtCard' => $order['order_sn'],
+                            'DocDate' => date('Y-m-d', $order['create_time']),
+                            'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
+                            'TaxDate' => date('Y-m-d', $order['create_time']),
+                            'U_Ecommerce_Type' => 'Shopee',
+                            'U_Order_ID' => $order['order_sn'],
+                            'U_Customer_Name' => $order['recipient_address']['name'],
+                            'U_Basic_Information' => $basicInfo,
+                            'U_Shipping_Address' => $order['recipient_address']['full_address'],
+                            'DocTotal' => $itemTotal,
+                            'DocumentLines' => $itemList
+                        ]);
+                    } catch (ClientException $exception) {
+                        $logger->writeSapLog($exception);
+                    }
+    
+                    if (isset($salesOrder)) {
+                        $successCount++;
+                        $logger->writeLog("SAP B1 sales order with {$order['order_sn']} Shopee order ID was generated.");
+                    }
+                } else {
+                    $logger->writeLog("Failed to generate SAP B1 sales order with {$order['order_sn']} Shopee order ID. Please make sure that all the items in the order are properly sync.", true);
                 }
             }      
         }
 
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'sales orders', 'generated'));
-
-        // OLDDDDDDDDD
-        // $shopeeToken = AccessToken::where('platform', 'shopee')->first();
-        
-        // $orderList = [];
-        // $moreReadyOrders = true;
-        // $offset = 0;
-        // $pageSize = 50;
-        
-        // while ($moreReadyOrders) {
-        //     $shopeeReadyOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
-        //     $shopeeReadyOrdersResponse = Http::get($shopeeReadyOrders->getFullPath(), array_merge([
-        //         'time_range_field' => 'update_time',
-        //         'time_from' => strtotime(date("Y-m-d 00:00:00")),
-        //         'time_to' => strtotime(date("Y-m-d 23:59:59")),
-        //         'page_size' => $pageSize,
-        //         'cursor' => $offset,
-        //         'order_status' => 'READY_TO_SHIP',
-        //         'response_optional_fields' => 'order_status'
-        //     ], $shopeeReadyOrders->getShopCommonParameter()));
-
-        //     $shopeeReadyOrdersResponseArr = json_decode($shopeeReadyOrdersResponse->body(), true);
-
-        //     foreach ($shopeeReadyOrdersResponseArr['response']['order_list'] as $order) {
-        //         array_push($orderList, $order['order_sn']);
-        //     }
-
-        //     if ($shopeeReadyOrdersResponseArr['response']['more']) {
-        //         $offset += $pageSize;
-        //     } else {
-        //         $moreReadyOrders = false;
-        //     }   
-        // }
-        // // dd($orderList);
-        // $orderStr = implode(",", $orderList);
-        // // for testing
-        // // $orderStr = '18033000113B04H';
-        
-        // $shopeeOrderDetail = new ShopeeService('/order/get_order_detail', 'shop', $shopeeToken->access_token);
-        // $shopeeOrderDetailResponse = Http::get($shopeeOrderDetail->getFullPath(), array_merge([
-        //     'order_sn_list' => $orderStr,
-        //     'response_optional_fields' => 'total_amount,item_list,buyer_user_id,buyer_username,recipient_address,estimated_shipping_fee,actual_shipping_fee,actual_shipping_fee_confirmed'
-        // ], $shopeeOrderDetail->getShopCommonParameter()));
-
-        // $shopeeOrderDetailResponseArr = json_decode($shopeeOrderDetailResponse->body(), true);
-        // $orderListDetails = $shopeeOrderDetailResponseArr['response']['order_list'];
-
-        // $salesOrderSapService = new SapService();
-
-        // $salesOrderList = [];
-        // $ecm = $salesOrderSapService->getOdataClient()->from('U_ECM')->get();
-
-        // foreach ($ecm as $ecmItem) {
-        //     if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
-        //         $shopeeCust = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
-        //         $taxCode = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
-        //         $taxPercentage = (float) $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SHIPPING_FEE') {
-        //         $shippingItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SHOP_VOUCHER') {
-        //         $shopVoucherItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SELLER_VOUCHER') {
-        //         $sellerVoucherItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SHOPEE_COIN') {
-        //         $shopeeCoinItem = $ecmItem['properties']['Name'];
-        //     } 
-        // }
-        
-        // foreach ($orderListDetails as $order) {
-        //     $existedSO = $salesOrderSapService->getOdataClient()
-        //         ->select('DocNum')
-        //         ->from('Orders')
-        //         ->where('U_Order_ID', (string)$order['order_sn'])
-        //         ->where('CancelStatus', 'csNo')
-        //         ->first();
-
-        //     if (!$existedSO) {
-        //         $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
-        //         $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
-        //             'order_sn' => $order['order_sn']
-        //         ], $escrowDetail->getShopCommonParameter()));
-        //         $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
-        //         $escrow = $escrowDetailResponseArr['response'];
-
-        //         $itemList = [];
-
-        //         foreach ($order['item_list'] as $item) {                   
-        //             try {
-        //                 $response = $salesOrderSapService->getOdataClient()
-        //                     ->from('Items')
-        //                     ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
-        //                     ->where('U_SH_INTEGRATION', 'Yes')
-        //                     ->first();
-        //             } catch(ClientException $e) {
-        //                 dd($e->getResponse()->getBody()->getContents());
-        //             }
-
-        //             $sapItem = $response['properties'];
-
-        //             $itemList[] = [
-        //                 'ItemCode' => $sapItem['ItemCode'],
-        //                 'Quantity' => $item['model_quantity_purchased'],
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $item['model_discounted_price'] / $taxPercentage
-        //             ];
-        //         }
-
-        //         if ($escrow['order_income']['buyer_paid_shipping_fee']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $shippingItem,
-        //                 'Quantity' => 1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['buyer_paid_shipping_fee'] / $taxPercentage
-        //             ];           
-        //         }
-
-        //         if ($escrow['order_income']['voucher_from_shopee']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $shopVoucherItem,
-        //                 'Quantity' => -1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['voucher_from_shopee'] / $taxPercentage
-        //             ];           
-        //         }
-
-        //         if ($escrow['order_income']['voucher_from_seller']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $sellerVoucherItem,
-        //                 'Quantity' => -1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['voucher_from_seller'] / $taxPercentage
-        //             ];           
-        //         }
-                
-        //         if ($escrow['order_income']['coins']) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $shopeeCoinItem,
-        //                 'Quantity' => -1,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $escrow['order_income']['coins'] / $taxPercentage
-        //             ];           
-        //         }
-
-        //         $salesOrderList = [
-        //             'CardCode' => $shopeeCust,
-        //             'NumAtCard' => $order['order_sn'],
-        //             'DocDate' => date('Y-m-d', $order['create_time']),
-        //             'DocDueDate' => date('Y-m-d', $order['ship_by_date']),
-        //             'TaxDate' => date('Y-m-d', $order['create_time']),
-        //             'U_Ecommerce_Type' => 'Shopee',
-        //             'U_Order_ID' => $order['order_sn'],
-        //             'U_Customer_Name' => $order['recipient_address']['name'],
-        //             'U_Customer_Phone' => $order['recipient_address']['phone'],
-        //             'U_Customer_Shipping_Address' => $order['recipient_address']['full_address'],
-        //             'DocTotal' => $order['total_amount'],
-        //             'DocumentLines' => $itemList
-        //         ];
-
-        //         $salesOrder = $salesOrderSapService->getOdataClient()->post('Orders', $salesOrderList);
-
-        //         if ($salesOrder) {
-        //             return response()->json(null, 200);
-        //         } else {
-        //             return response()->json(null, 500);
-        //         }
-        //     }        
-        // }
-
     }
 
     public function generateInvoice()
@@ -1443,13 +1328,13 @@ class ShopeeController extends Controller
         while ($moreShippedOrders) {
             $shopeeShippedOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
             $shopeeShippedOrdersResponse = Http::get($shopeeShippedOrders->getFullPath(), array_merge([
-                // 'time_range_field' => 'update_time',
-                // 'time_from' => strtotime(date("Y-m-d 00:00:00")),
-                // 'time_to' => strtotime(date("Y-m-d 23:59:59")),
                 // testing
-                'time_range_field' => 'create_time',
-                'time_from' => 1626735608,
-                'time_to' => 1627686008,
+                // 'time_range_field' => 'create_time',
+                // 'time_from' => 1626735608,
+                // 'time_to' => 1627686008,
+                'time_range_field' => 'update_time',
+                'time_from' => now()->subHours(24)->timestamp,
+                'time_to' => now()->timestamp,            
                 'page_size' => $pageSize,
                 'cursor' => $offset,
                 'order_status' => 'SHIPPED',
@@ -1497,173 +1382,76 @@ class ShopeeController extends Controller
                 $existInv = $invoiceSapService->getOdataClient()
                     ->from('Invoices')
                     ->where('U_Order_ID', (string)$order)
+                    ->where('U_Ecommerce_Type', 'Shopee')
+                    ->where(function($query){
+                        $query->where('DocumentStatus', 'bost_Open');
+                        $query->orWhere('DocumentStatus', 'bost_Close');
+                    })
+                    ->where('Cancelled', 'tNO')
                     ->first();
             } catch (ClientException $exception) {
                 $logger->writeSapLog($exception);
             }
-            
-            if (isset($salesOrder) && isset($existInv)) {
-                if ($salesOrder && !$existInv) {
-                    $itemList = [];
+            // dd($existInv);
+            // dd($salesOrder);
+            // dd(!isset($existInv));
+            if (isset($salesOrder) && !isset($existInv)) {
+                $batchSO = $invoiceSapService->getOdataClient()
+                    ->from('Orders')
+                    ->find($salesOrder['DocEntry']);
 
-                    foreach ($salesOrder['DocumentLines'] as $itemLine => $item) {
-                        $batchList = [];
+                $itemList = [];
 
-                        if ($item['BatchNumbers']) {                  
-                            foreach ($item['BatchNumbers'] as $batch) {
-                                $batchList[] = [
-                                    'BatchNumber' => $batch['BatchNumber'],
-                                    'Quantity' => $batch['Quantity']
-                                ];
-                            }
+                foreach ($batchSO['DocumentLines'] as $itemLine => $item) {
+                    $batchList = [];
+                    // dd($batchSO);
+                    if ($item['BatchNumbers']) {                  
+                        foreach ($item['BatchNumbers'] as $batch) {
+                            $batchList[] = [
+                                'BatchNumber' => $batch['BatchNumber'],
+                                'Quantity' => $batch['Quantity']
+                            ];
                         }
-
-                        $itemList[] = [
-                            'BaseType' => 17,
-                            'BaseEntry' => $salesOrder['DocEntry'],
-                            'BaseLine' => $itemLine,
-                            'BatchNumbers' => $batchList
-                        ];
                     }
 
-                    try {
-                        $invoice = $invoiceSapService->getOdataClient()->post('Invoices', [
-                            'CardCode' => $salesOrder['CardCode'],
-                            'NumAtCard' => $salesOrder['NumAtCard'],
-                            'DocDate' => $salesOrder['DocDate'],
-                            'DocDueDate' => $salesOrder['DocDueDate'],
-                            'TaxDate' => $salesOrder['TaxDate'],
-                            'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
-                            'U_Order_ID' => $salesOrder['U_Order_ID'],
-                            'U_Customer_Name' => $salesOrder['U_Customer_Name'],
-                            'U_Customer_Phone' => $salesOrder['U_Customer_Phone'],
-                            'U_Customer_Shipping_Address' => $salesOrder['U_Customer_Shipping_Address'],
-                            'DocTotal' => $salesOrder['DocTotal'],
-                            'DocumentLines' => $itemList
-                        ]);
-                    } catch (ClientException $exception) {
-                        $logger->writeSapLog($exception);
-                    }
-    
-                    if (isset($invoice)) {
-                        $successCount++;
-                        $logger->writeLog("SAP B1 A/R invoice with {$salesOrder['U_Order_ID']} Shopee order ID was generated.");
-                    }
+                    $itemList[] = [
+                        'BaseType' => 17,
+                        'BaseEntry' => $batchSO['DocEntry'],
+                        'BaseLine' => $itemLine,
+                        'BatchNumbers' => $batchList
+                    ];
+                }
+
+                try {
+                    $invoice = $invoiceSapService->getOdataClient()->post('Invoices', [
+                        'CardCode' => $salesOrder['CardCode'],
+                        'NumAtCard' => $salesOrder['NumAtCard'],
+                        'DocDate' => $salesOrder['DocDate'],
+                        'DocDueDate' => $salesOrder['DocDueDate'],
+                        'TaxDate' => $salesOrder['TaxDate'],
+                        'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
+                        'U_Order_ID' => $salesOrder['U_Order_ID'],
+                        'U_Customer_Name' => $salesOrder['U_Customer_Name'],
+                        'U_Basic_Information' => $salesOrder['U_Basic_Information'],
+                        'U_Shipping_Address' => $salesOrder['U_Shipping_Address'],
+                        'DocTotal' => $salesOrder['DocTotal'],
+                        'DocumentLines' => $itemList
+                    ]);
+                } catch (ClientException $exception) {
+                    // $response = $exception->getResponse();
+                    // $responseBodyAsString = $response->getBody()->getContents();
+                    // dd($responseBodyAsString);
+                    $logger->writeSapLog($exception);
+                }
+
+                if (isset($invoice)) {
+                    $successCount++;
+                    $logger->writeLog("SAP B1 A/R invoice with {$salesOrder['U_Order_ID']} Shopee order ID was generated.");
                 }
             }    
         }
             
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'A/R invoices', 'generated'));
-        
-
-
-
-
-        //OLDDDDD
-        // $shopeeToken = AccessToken::where('platform', 'shopee')->first();
-        
-        // $orderList = [];
-        // $moreShippedOrders = true;
-        // $offset = 0;
-        // $pageSize = 50;
-        
-        // while ($moreShippedOrders) {
-        //     $shopeeShippedOrders = new ShopeeService('/order/get_order_list', 'shop', $shopeeToken->access_token);
-        //     $shopeeShippedOrdersResponse = Http::get($shopeeShippedOrders->getFullPath(), array_merge([
-        //         'time_range_field' => 'update_time',
-        //         'time_from' => strtotime(date("Y-m-d 00:00:00")),
-        //         'time_to' => strtotime(date("Y-m-d 23:59:59")),
-        //         // 'time_from' => 1627833600,
-        //         // 'time_to' => 1627919999,
-        //         'page_size' => $pageSize,
-        //         'cursor' => $offset,
-        //         'order_status' => 'SHIPPED',
-        //         'response_optional_fields' => 'order_status'
-        //     ], $shopeeShippedOrders->getShopCommonParameter()));
-
-        //     $shopeeShippedOrdersResponseArr = json_decode($shopeeShippedOrdersResponse->body(), true);
-
-        //     foreach ($shopeeShippedOrdersResponseArr['response']['order_list'] as $order) {
-        //         array_push($orderList, $order['order_sn']);
-        //     }
-
-        //     if ($shopeeShippedOrdersResponseArr['response']['more']) {
-        //         $offset += $pageSize;
-        //     } else {
-        //         $moreShippedOrders = false;
-        //     }   
-        // }
-
-        // // for testing
-        // // $orderList = ['210803K1WFX89R'];
-
-        // $invoiceSapService = new SapService();
-        // $invoiceList = [];
-
-        // foreach ($orderList as $order) {
-
-        //     $salesOrder = $invoiceSapService->getOdataClient()
-        //         ->from('Orders')
-        //         ->where('U_Order_ID', (string)$order)
-        //         ->where('DocumentStatus', 'bost_Open')
-        //         ->where('CancelStatus', 'csNo')
-        //         ->first();
-
-        //     $existInv = $invoiceSapService->getOdataClient()
-        //         ->from('Invoices')
-        //         ->where('U_Order_ID', (string)$order)
-        //         ->first();
-
-        //     if ($salesOrder && !$existInv) {
-        //         $itemList = [];
-
-        //         foreach ($salesOrder['DocumentLines'] as $itemLine => $item) {
-        //             $batchList = [];
-
-        //             if ($item['BatchNumbers']) {                  
-        //                 foreach ($item['BatchNumbers'] as $batch) {
-        //                     $batchList[] = [
-        //                         'BatchNumber' => $batch['BatchNumber'],
-        //                         'Quantity' => $batch['Quantity']
-        //                     ];
-        //                 }
-        //             }
-
-        //             $itemList[] = [
-        //                 'BaseType' => 17,
-        //                 'BaseEntry' => $salesOrder['DocEntry'],
-        //                 'BaseLine' => $itemLine,
-        //                 'BatchNumbers' => $batchList
-        //             ];
-        //         }
-
-        //         $invoiceList = [
-        //             'CardCode' => $salesOrder['CardCode'],
-        //             'NumAtCard' => $salesOrder['NumAtCard'],
-        //             'DocDate' => $salesOrder['DocDate'],
-        //             'DocDueDate' => $salesOrder['DocDueDate'],
-        //             'TaxDate' => $salesOrder['TaxDate'],
-        //             'U_Ecommerce_Type' => $salesOrder['U_Ecommerce_Type'],
-        //             'U_Order_ID' => $salesOrder['U_Order_ID'],
-        //             'U_Customer_Name' => $salesOrder['U_Customer_Name'],
-        //             'U_Customer_Phone' => $salesOrder['U_Customer_Phone'],
-        //             'U_Customer_Shipping_Address' => $salesOrder['U_Customer_Shipping_Address'],
-        //             'DocTotal' => $salesOrder['DocTotal'],
-        //             'DocumentLines' => $itemList
-        //         ];
-
-        //         $invoice = $invoiceSapService->getOdataClient()->post('Invoices', $invoiceList);
-
-        //         if ($invoice) {
-        //             return response()->json(null, 200);
-        //         } else {
-        //             return response()->json(null, 500);
-        //         }
-        //     }
-        // }
-
-
-
     }
 
     public function generateCreditmemo()
@@ -1714,7 +1502,7 @@ class ShopeeController extends Controller
 
         try {
             $ecm = $returnSapService->getOdataClient()
-                ->from('U_ECM')
+                ->from('U_MPS_ECOMMERCE')
                 ->get();
         } catch (ClientException $exception) {
             $logger->writeSapLog($exception);
@@ -1724,8 +1512,6 @@ class ShopeeController extends Controller
             foreach ($ecm as $ecmItem) {
                 if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
                     $shopeeCust = $ecmItem['properties']['Name'];
-                } elseif ($ecmItem['properties']['Code'] == 'SELLER_PAYMENT') {
-                    $sellerPaymentItem = $ecmItem['properties']['Name'];
                 } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
                     $taxCode = $ecmItem['properties']['Name'];
                 } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
@@ -1739,232 +1525,137 @@ class ShopeeController extends Controller
         $logger->writeLog("Generating SAP B1 Credit Memo . . .");
 
         foreach ($returnList as $returnItem) {
-            try {
-                $order = $returnSapService->getOdataClient()
-                    ->from('Orders')
-                    ->where('U_Order_ID', (string)$returnItem['order_sn'])
-                    ->where('CancelStatus', 'csNo')
-                    ->first();
-            } catch (ClientException $exception) {
-                $logger->writeSapLog($exception);
-            }
-            
-            if (isset($order) && $returnItem['status'] == 'REFUND_PAID') {
-                $itemList = [];
-
-                foreach ($returnItem['item'] as $item) {
-                    $sku = $item['variation_sku'] ? $item['variation_sku'] : $item['item_sku'];
-
-                    try {
-                        $sapItemResponse = $returnSapService->getOdataClient()
-                            ->from('Items')
-                            ->whereNested(function($query) use ($sku) {
-                                $query->where('ItemCode', $sku)
-                                    ->orWhere('U_OLD_SKU', $sku);
-                            })->where('U_SH_INTEGRATION', 'Yes')
-                            ->first();
-                    } catch(ClientException $exception) {
-                        $logger->writeSapLog($exception);
-                    }
-
-                    if (isset($sapItemResponse)) {
-                        $sapItem = $sapItemResponse['properties'];
-
-                        $itemList[] = [
-                            'ItemCode' => $sapItem['ItemCode'],
-                            'Quantity' => $item['amount'],
-                            'VatGroup' => $taxCode,
-                            'UnitPrice' => $item['item_price'] / $taxPercentage
-                        ];
-                    }
+            if ($returnItem['status'] == 'REFUND_PAID') {
+                try {
+                    $order = $returnSapService->getOdataClient()
+                        ->from('Orders')
+                        ->where('U_Order_ID', (string) $returnItem['order_sn'])
+                        ->where('CancelStatus', 'csNo')
+                        ->first();
+                } catch (ClientException $exception) {
+                    $logger->writeSapLog($exception);
                 }
 
-                $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
-                $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
-                    'order_sn' => $returnItem['order_sn']
-                ], $escrowDetail->getShopCommonParameter()));
+                try {
+                    $existCreditMemo = $returnSapService->getOdataClient()
+                        ->from('CreditNotes')
+                        ->where('U_Order_ID', (string) $returnItem['order_sn'])
+                        ->where('U_Ecommerce_Type', 'Shopee')
+                        ->where(function ($query) {
+                            $query->where('DocumentStatus', 'bost_Open');
+                            $query->orWhere('DocumentStatus', 'bost_Close');
+                        })
+                        ->where('Cancelled','tNO')
+                        ->first();
+                } catch (ClientException $exception) {
+                    $logger->writeSapLog($exception);
+                }
 
-                $escrowDetailResponseArr = $logger->validateResponse(json_decode($escrowDetailResponse->body(), true));
+                // dd($order);
+                if (isset($order) && !isset($existCreditMemo)) {     
+                    $itemList = [];
+                    // dd($returnItem['item']);
+                    foreach ($returnItem['item'] as $item) {
+                        $shopeeBaseProducts = new ShopeeService('/product/get_item_base_info', 'shop', $shopeeToken->access_token);
+                        $shopeeBaseProductsResponse = Http::get($shopeeBaseProducts->getFullPath(), array_merge([
+                            'item_id_list' => $item['item_id']
+                        ], $shopeeBaseProducts->getShopCommonParameter()));
 
-                if ($escrowDetailResponseArr) {
-                    if (array_key_exists('order_income', $escrowDetailResponseArr['response'])) {
-                        $escrow = $escrowDetailResponseArr['response']['order_income'];
-                        $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
-                        $sellerPayment = $docTotal - $escrow['seller_return_refund'];
-                        $qty = $sellerPayment < 0 ? 1 : -1;
+                        $shopeeBaseProductsResponseArr = $logger->validateResponse(json_decode($shopeeBaseProductsResponse->body(), true));
+    
+                        if ($shopeeBaseProductsResponseArr) {
+                            $baseItem = $shopeeBaseProductsResponseArr['response']['item_list'][0];
 
-                        if ($sellerPayment) {
-                            $itemList[] = [
-                                'ItemCode' => $sellerPaymentItem,
-                                'Quantity' => $qty,
-                                'VatGroup' => $taxCode,
-                                'UnitPrice' => abs($sellerPayment) / $taxPercentage
-                            ];
+                            if ($baseItem['has_model']) {
+
+                            } else {
+                                $sku = $baseItem['item_sku'];
+                            }
                         }
 
+                        // $item['variation_sku'] ? $item['variation_sku'] : $item['item_sku'];
+    
                         try {
-                            $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', [
-                                'CardCode' => $shopeeCust,
-                                'NumAtCard' => $returnItem['return_sn'],
-                                'DocDate' => $returnItem['create_time'],
-                                'DocDueDate' => $returnItem['return_seller_due_date'],
-                                'TaxDate' => $returnItem['create_time'],
-                                'U_Ecommerce_Type' => 'Shopee',
-                                'U_Order_ID' => $returnItem['order_sn'],
-                                'U_Customer_Name' => $order['U_Customer_Name'],
-                                'U_Customer_Phone' => $order['U_Customer_Phone'],
-                                'U_Customer_Email' => $returnItem['user']['email'],
-                                'U_Customer_Shipping_Address' => $order['U_Customer_Shipping_Address'],
-                                'DocTotal' => $returnItem['refund_amount'],
-                                'DocumentLines' => $itemList
-                            ]);
-                        } catch (ClientException $exception) {
+                            $sapItemResponse = $returnSapService->getOdataClient()
+                                ->select('ItemCode')
+                                ->from('Items')
+                                ->whereNested(function($query) use ($sku) {
+                                    $query->where('ItemCode', $sku)
+                                        ->orWhere('U_MPS_OLDSKU', $sku);
+                                })->where('U_SH_INTEGRATION', 'Y')
+                                ->first();
+                        } catch(ClientException $exception) {
                             $logger->writeSapLog($exception);
                         }
-        
-                        if (isset($creditMemo)) {
-                            $successCount++;
-                            $logger->writeLog("SAP B1 Credit Memo with {$returnItem['return_sn']} Shopee return ID was generated.");
+    
+                        if (isset($sapItemResponse)) {
+                            $sapItem = $sapItemResponse['properties'];
+    
+                            $itemList[] = [
+                                'ItemCode' => $sapItem['ItemCode'],
+                                'Quantity' => $item['amount'],
+                                'VatGroup' => $taxCode,
+                                'UnitPrice' => $item['item_price'] / $taxPercentage
+                            ];
                         }
                     }
+    
+                    // $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
+                    // $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
+                    //     'order_sn' => $returnItem['order_sn']
+                    // ], $escrowDetail->getShopCommonParameter()));
+    
+                    // $escrowDetailResponseArr = $logger->validateResponse(json_decode($escrowDetailResponse->body(), true));
+    
+                    // if ($escrowDetailResponseArr) {
+                    //     if (array_key_exists('order_income', $escrowDetailResponseArr['response'])) {
+                    //         $escrow = $escrowDetailResponseArr['response']['order_income'];
+                    //         $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
+                    //         $sellerPayment = $docTotal - $escrow['seller_return_refund'];
+                    //         $qty = $sellerPayment < 0 ? 1 : -1;
+    
+                    //         if ($sellerPayment) {
+                    //             $itemList[] = [
+                    //                 'ItemCode' => $sellerPaymentItem,
+                    //                 'Quantity' => $qty,
+                    //                 'VatGroup' => $taxCode,
+                    //                 'UnitPrice' => abs($sellerPayment) / $taxPercentage
+                    //             ];
+                    //         }
+                        // dd($itemList);  
+                    try {
+                        $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', [
+                            'CardCode' => $shopeeCust,
+                            'NumAtCard' => $returnItem['return_sn'],
+                            'DocDate' => $returnItem['create_time'],
+                            'DocDueDate' => $returnItem['return_seller_due_date'],
+                            'TaxDate' => $returnItem['create_time'],
+                            'U_Ecommerce_Type' => 'Shopee',
+                            'U_Order_ID' => $returnItem['order_sn'],
+                            'U_Customer_Name' => $order['U_Customer_Name'],
+                            'U_Basic_Information' => $order['U_Basic_Information'],
+                            'U_Shipping_Address' => $order['U_Shipping_Address'],
+                            'DocTotal' => $returnItem['refund_amount'],
+                            'DocumentLines' => $itemList
+                        ]);
+                    } catch (ClientException $exception) {
+                        // $response = $exception->getResponse();
+                        // $responseBodyAsString = $response->getBody()->getContents();
+                        // dd($responseBodyAsString);
+                        $logger->writeSapLog($exception);
+                    }
+                    // dd($creditMemo);
+                    if (isset($creditMemo)) {
+                        $successCount++;
+                        $logger->writeLog("SAP B1 Credit Memo with {$returnItem['return_sn']} Shopee return ID was generated.");
+                    }
+                } else {
+                    $logger->writeLog("Failed to generate SAP B1 Credit Memo with {$returnItem['return_sn']} Shopee return ID. Please make sure that the associated sales order exist in SAP B1.", true);
                 }
             }
         }
 
         return response()->json($this->getJsonResponse($successCount, $logger->getErrorCount(), 'Credit Memos', 'generated'));
-
-
-
-
-        //OLDDDDD
-        // $shopeeToken = AccessToken::where('platform', 'shopee')->first();
-        
-        // $returnList = [];
-        // $moreReturnItem = true;
-        // $offset = 0;
-        // $pageSize = 50;
-
-        // while ($moreReturnItem) {
-        //     $shopeeReturnItems = new ShopeeService('/returns/get_return_list', 'shop', $shopeeToken->access_token);
-        //     $shopeeReturnItemsResponse = Http::get($shopeeReturnItems->getFullPath(), array_merge([
-        //         'page_size' => $pageSize,
-        //         'page_no' => $offset
-        //     ], $shopeeReturnItems->getShopCommonParameter()));
-
-        //     $shopeeReturnItemsResponseArr = json_decode($shopeeReturnItemsResponse->body(), true);
-
-        //     foreach ($shopeeReturnItemsResponseArr['response']['return'] as $return) {
-        //         array_push($returnList, $return);
-        //     }
-
-        //     if ($shopeeReturnItemsResponseArr['response']['more']) {
-        //         $offset += $pageSize;
-        //     } else {
-        //         $moreReturnItem = false;
-        //     }
-        // }
-
-        // // for testing
-        // // foreach ($returnList as $value) {
-        // //     if ($value['return_sn'] == '200124144731506') {
-        // //     // if ($value['return_sn'] == '190923173135204') {
-        // //         $returnList = [];
-        // //         array_push($returnList, $value);
-        // //     }
-        // // }
-
-        // $itemList = [];
-        // $returnSapService = new SapService();
-
-        // $ecm = $returnSapService->getOdataClient()->from('U_ECM')->get();
-
-        // foreach ($ecm as $ecmItem) {
-        //     if ($ecmItem['properties']['Code'] == 'SHOPEE_CUSTOMER') {
-        //         $shopeeCust = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'SELLER_PAYMENT') {
-        //         $sellerPaymentItem = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'TAX_CODE') {
-        //         $taxCode = $ecmItem['properties']['Name'];
-        //     } elseif ($ecmItem['properties']['Code'] == 'PERCENTAGE') {
-        //         $taxPercentage = (float) $ecmItem['properties']['Name'];
-        //     }
-        // }
-
-        // // dd($returnList);
-        // foreach ($returnList as $returnItem) {
-        //     $order = $returnSapService->getOdataClient()
-        //         ->from('Orders')
-        //         ->where('U_Order_ID', (string)$returnItem['order_sn'])
-        //         ->where('CancelStatus', 'csNo')
-        //         ->first();
-
-        //     if ($order && $returnItem['status'] == 'REFUND_PAID') {
-        //         foreach ($returnItem['item'] as $item) {
-        //             try {
-        //                 $response = $returnSapService->getOdataClient()
-        //                     ->from('Items')
-        //                     ->where('U_SH_ITEM_CODE', (string)$item['item_id'])
-        //                     ->where('U_SH_INTEGRATION', 'Yes')
-        //                     ->first();
-        //             } catch(ClientException $e) {
-        //                 dd($e->getResponse()->getBody()->getContents());
-        //             }
-
-        //             $sapItem = $response['properties'];
-
-        //             $itemList[] = [
-        //                 'ItemCode' => $sapItem['ItemCode'],
-        //                 'Quantity' => $item['amount'],
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => $item['item_price'] / $taxPercentage
-        //             ];
-        //         }
-
-        //         $escrowDetail = new ShopeeService('/payment/get_escrow_detail', 'shop', $shopeeToken->access_token);
-        //         $escrowDetailResponse = Http::get($escrowDetail->getFullPath(), array_merge([
-        //             'order_sn' => $returnItem['order_sn']
-        //         ], $escrowDetail->getShopCommonParameter()));
-        //         $escrowDetailResponseArr = json_decode($escrowDetailResponse->body(), true);
-        //         $escrow = $escrowDetailResponseArr['response']['order_income'];
-        //         // dd($escrow);
-        //         $docTotal = $escrow['original_cost_of_goods_sold'] - $escrow['original_shopee_discount'];
-        //         $sellerPayment = $docTotal - $escrow['seller_return_refund'];
-        //         $qty = $sellerPayment < 0 ? 1 : -1;
-
-        //         if ($sellerPayment) {
-        //             $itemList[] = [
-        //                 'ItemCode' => $sellerPaymentItem,
-        //                 'Quantity' => $qty,
-        //                 'VatGroup' => $taxCode,
-        //                 'UnitPrice' => abs($sellerPayment) / $taxPercentage
-        //             ];
-        //         }
-
-        //         $creditMemoList = [
-        //             'CardCode' => $shopeeCust,
-        //             'NumAtCard' => $returnItem['return_sn'],
-        //             'DocDate' => $returnItem['create_time'],
-        //             'DocDueDate' => $returnItem['return_seller_due_date'],
-        //             'TaxDate' => $returnItem['create_time'],
-        //             'U_Ecommerce_Type' => 'Shopee',
-        //             'U_Order_ID' => $returnItem['order_sn'],
-        //             'U_Customer_Name' => $order['U_Customer_Name'],
-        //             'U_Customer_Phone' => $order['U_Customer_Phone'],
-        //             'U_Customer_Email' => $returnItem['user']['email'],
-        //             'U_Customer_Shipping_Address' => $order['U_Customer_Shipping_Address'],
-        //             'DocTotal' => $returnItem['refund_amount'],
-        //             'DocumentLines' => $itemList
-        //         ];
-        //         // dd($creditMemoList);
-        //         $creditMemo = $returnSapService->getOdataClient()->post('CreditNotes', $creditMemoList);
-
-        //         if ($creditMemo) {
-        //             return response()->json(null, 200);
-        //         } else {
-        //             return response()->json(null, 500);
-        //         }
-        //     }
-        // }
     }
 
     public function index2()

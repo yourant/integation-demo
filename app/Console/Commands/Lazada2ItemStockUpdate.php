@@ -56,6 +56,8 @@ class Lazada2ItemStockUpdate extends Command
                                                     ->where('U_LAZ2_INTEGRATION','Y')
                                                     ->where('U_LAZ2_ITEM_CODE','!=',null)
                                                     ->where('U_LAZ2_SELLER_SKU','!=',null)
+                                                    ->where('U_UPDATE_INVENTORY','Y')
+                                                    ->where('InventoryItem','tYES')
                                                     ->skip($count)
                                                     ->get();
                 if($getItems->isNotEmpty()){
@@ -65,8 +67,7 @@ class Lazada2ItemStockUpdate extends Command
                         $items[] = [
                             'sellerSku' => $item['U_LAZ2_SELLER_SKU'],
                             'productId' => $item['U_LAZ2_ITEM_CODE'],
-                            'stock' => $item['QuantityOnStock'],
-                            'invItem' => $item['InventoryItem']
+                            'stock' => $item['QuantityOnStock']
                         ];
                         
                     }
@@ -83,29 +84,36 @@ class Lazada2ItemStockUpdate extends Command
             
             $batch = array_chunk($items,20);
             
-            $skuPayload = [];
-            
-            $skuPayloadCount = 0;
+            $errorList = [];
+
+            $errorCount = 0;
+
+            $successCount = 0;
 
             foreach($batch as $b){
 
+                $skuPayload = [];
+
+                $itemList = [];
+
                 foreach($b as $key){
 
-                    if($key['invItem'] == 'tYES'){
-
-                        $sellerSku = $key['sellerSku'];
-                        $productId = $key['productId'];
-                        $stock = $key['stock'];
-                        
-                        //Create SKU Payload
-                        $skuPayload[] = "<Sku>
-                                            <ItemId>".$productId."</ItemId>
-                                            <SellerSku>".$sellerSku."</SellerSku>
-                                            <Quantity>".$stock."</Quantity>
-                                        </Sku>";
-                        
-
-                    }
+                    $sellerSku = $key['sellerSku'];
+                    $productId = $key['productId'];
+                    $stock = $key['stock'];
+                    
+                    //Create SKU Payload
+                    $skuPayload[] = "<Sku>
+                                        <ItemId>".$productId."</ItemId>
+                                        <SellerSku>".$sellerSku."</SellerSku>
+                                        <Quantity>".$stock."</Quantity>
+                                    </Sku>";
+                    
+                    $itemList[] = [
+                        'sellerSku' => $sellerSku,
+                        'productId' => $productId
+                    ];
+                    
                 }
 
                 if(!empty($skuPayload)){
@@ -120,20 +128,45 @@ class Lazada2ItemStockUpdate extends Command
                     $updateStock = $lazadaAPI->updatePriceQuantity($finalPayload);
                     
                     if($updateStock['code'] == 0){
-                        $skuPayloadCount += count($skuPayload);
-                        unset($skuPayload);
+                        $successCount += count($skuPayload);
+                    }else{
+                        foreach($itemList as $item){
+                            
+                            $sellerSkuExist = array_search($item['sellerSku'], array_column($updateStock['detail'],'seller_sku'));
+                            $productIdExist = array_search($item['productId'], array_column($updateStock['detail'],'seller_sku'));
+    
+                            if($sellerSkuExist !== false || $productIdExist !== false){
+                                $errorCount++;
+                            }else{
+                                $successCount++;
+                            }
+    
+                        }
+    
+                        foreach($updateStock['detail'] as $detail){
+                            $errorList[] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                        }
+    
                     }
         
                 }
 
             }
 
-            if($skuPayloadCount > 0){
-                Log::channel('lazada2.item_master')->info('Stock updated on '.$skuPayloadCount.' Lazada SKU/s.');
-
-            }else{
-                Log::channel('lazada2.item_master')->warning('No Lazada items available.');
-
+            if($successCount > 0){
+                
+                Log::channel('lazada2.item_master')->info('Update Stock - Stock updated on '.$successCount.' Lazada SKU/s.');
+            
+            }
+            if($errorCount > 0){
+               
+                Log::channel('lazada2.item_master')->error("Update Stock - ".$errorCount." SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
+            
+            }
+            if($successCount == 0 && $errorCount == 0){
+                
+                Log::channel('lazada2.item_master')->warning('Update Stock - No Lazada items available to be updated.');
+            
             }
 
         } catch (\Exception $e) {

@@ -18,7 +18,7 @@ class LazadaAPIController extends Controller
         $lazadaService = new LazadaService();
         $this->client = new LazopClient($lazadaService->getAppUrl(),$lazadaService->getAppKey(),$lazadaService->getAppSecret());
         $this->accessToken = $lazadaService->getAccessToken();
-        $this->dateStart = date('Y-m-d', strtotime('-2 days')).'T23:59:59+08:00'; // Output: Date start will be yesterday until today.
+        $this->dateStart = date('Y-m-d', strtotime('-16 days')).'T23:59:59+08:00'; // Output: Date start will be 15 days until today.
     }
 
     public function getProducts($skus){
@@ -84,6 +84,20 @@ class LazadaAPIController extends Controller
     public function updatePriceQuantity($payload){
         $request = new LazopRequest('/product/price_quantity/update');
         $request->addApiParam('payload',$payload);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
+    public function activateProduct($payload){
+        $request = new LazopRequest('/product/update');
+        $request->addApiParam('payload',$payload);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);
+    }
+
+    public function deactivateProduct($payload){
+        $request = new LazopRequest('/product/deactivate');
+        $request->addApiParam('apiRequestBody',$payload);
 
         return json_decode($this->client->execute($request, $this->accessToken),true);
     }

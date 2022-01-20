@@ -17,7 +17,15 @@
         </div>
 
         <div class="col-md-12">
-
+            @if (session('status'))
+                <div id="authAlert" class="alert alert-dismissible fade show @if(session('status') == 'success') alert-success @else alert-danger @endif" role="alert">
+                    <span id="alert-msg">{{ session('msg') }}</span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+            
             <div id="alert" class="alert alert-dismissible fade show" role="alert">
                 <strong></strong>
                 <span id="alert-msg"></span>
@@ -186,7 +194,7 @@
                 $(this).hide();
             });
 
-            $('.alert').hide();
+            $('#alert').hide();
             var isLoading = false; 
             var processMsg = 'Processing . . .';
             var alertStatus = '';
