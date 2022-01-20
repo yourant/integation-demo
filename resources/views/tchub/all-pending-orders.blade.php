@@ -2,6 +2,23 @@
 
 @section('content')
     <div class="row">
+        <div aria-live="polite" aria-atomic="true" style="position: relative; min-height: 200px;">
+            <div class="toast" style="position: fixed; top: 10; right: 0; z-index:500;">
+              <div class="toast-header bg-success text-white">
+                <img src="{{ asset('images/logo.png') }}" width="50px" height="40px;" class="rounded mr-2" alt="logo">
+                <strong class="mr-auto">
+                    <div class="spinner-border text-dark spinner-border-sm" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    {{ __('Loading...') }}
+                </strong>
+              </div>
+              <div class="toast-body">
+                 {{ __('Please wait while processing your request.') }}
+              </div>
+            </div>
+        </div>
+
         <div class="col-md-12">
             @include('layouts.flash')
             <a href="{{ route('tchub.dashboard') }}" class="btn btn-link mb-2">&lt; {{ __('Back') }}</a>
@@ -46,3 +63,18 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        $(function () {
+            $('.toast').toast({
+                autohide: false
+            })
+
+            $('.btn').on('click', () => {
+                $('.toast').toast('show')
+                $('.btn').addClass('disabled')
+            })
+        })
+    </script>
+@endpush

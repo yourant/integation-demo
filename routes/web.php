@@ -76,17 +76,17 @@ Route::prefix('lazada2')->middleware(['auth', 'ec.lazada'])->group(function () {
 
 Route::prefix('tchub')->middleware(['auth', 'ec.tchub'])->group(function () {
     Route::get('/', DashboardController::class)->name('tchub.dashboard');
-    Route::get('/create-product', [ItemMasterController::class, 'createProduct'])->name('tchub.create.product');
-    Route::get('/update-item-status', [ItemMasterController::class, 'updateItemStatus'])->name('tchub.update.item.status');
-    Route::get('/update-prices', [ItemMasterController::class, 'updatePrices'])->name('tchub.update.prices');
-    Route::get('/update-stocks', [ItemMasterController::class, 'updateStocks'])->name('tchub.update.stocks');
+    Route::post('/create-product', [ItemMasterController::class, 'createProduct'])->name('tchub.create.product');
+    Route::post('/update-item-status', [ItemMasterController::class, 'updateItemStatus'])->name('tchub.update.item.status');
+    Route::post('/update-prices', [ItemMasterController::class, 'updatePrices'])->name('tchub.update.prices');
+    Route::post('/update-stocks', [ItemMasterController::class, 'updateStocks'])->name('tchub.update.stocks');
 
-    Route::get('/generate-sales-order', [SalesProcessController::class, 'generateSalesOrder'])->name('tchub.generate.sales.order');
+    Route::post('/generate-sales-order', [SalesProcessController::class, 'generateSalesOrder'])->name('tchub.generate.sales.order');
     Route::get('/pending-orders', [SalesProcessController::class, 'view'])->name('tchub.pending.orders.index');
     Route::post('/pending-orders/{entity_id}', [SalesProcessController::class, 'store'])->name('tchub.pending.order.store');
-    Route::get('/delivery-order', [SalesProcessController::class, 'deliveryOrder'])->name('tchub.delivery.order');
-    Route::get('/ar-invoice', [SalesProcessController::class, 'arInvoice'])->name('tchub.ar.invoice');
-    Route::get('/canceled-order', [SalesProcessController::class, 'canceledOrder'])->name('tchub.canceled.order');
+    Route::post('/delivery-order', [SalesProcessController::class, 'deliveryOrder'])->name('tchub.delivery.order');
+    Route::post('/ar-invoice', [SalesProcessController::class, 'arInvoice'])->name('tchub.ar.invoice');
+    Route::post('/canceled-order', [SalesProcessController::class, 'canceledOrder'])->name('tchub.canceled.order');
 
 });
 

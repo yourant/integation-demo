@@ -7,7 +7,7 @@ use App\Services\SapService;
 
 trait SapItemsTrait
 {
-    public function sapItems()
+    public function sapItems($field)
     {
         $now = Carbon::now();
         $weekStartDate = $now->startOfWeek()->format('Y-m-d');
@@ -22,6 +22,7 @@ trait SapItemsTrait
                             ->select('ItemCode','ItemName','QuantityOnStock','ItemPrices','Valid','U_MPS_OLDSKU','U_TCHUB_INTEGRATION','U_UPDATE_INVENTORY', 'UpdateDate')
                             ->from('Items')
                             ->where('U_TCHUB_INTEGRATION','Y')
+                            ->where($field, '>', $weekStartDate)
                             ->order('UpdateDate', 'desc')
                             ->skip($count)
                             ->get();

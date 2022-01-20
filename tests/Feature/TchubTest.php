@@ -18,7 +18,7 @@ class TchubTest extends TestCase
 
     public function test_check_tchub_config_setting_in_the_laravel_config()
     {
-        $this->assertEquals(config('app.tchub_base_url'), 'https://test.tchub.sg/index.php');
+        $this->assertEquals(config('app.tchub_base_url'), 'https://tchub.sg/index.php');
         $this->assertEquals(config('app.tchub_base_path'), 'rest');
         $this->assertEquals(config('app.tchub_api_version'), 'V1');
         $this->assertNotEmpty(config('app.tchub_access_token'));

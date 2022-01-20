@@ -20,14 +20,14 @@ class ItemMasterController extends Controller
     
     public function updateItemStatus()
     {
-        Log::channel('tchub')->info('TCHUB Item Master', ['data' => 'Updating item status...']);
+        Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => 'Updating item status...']);
 
         $successCount = 0;
         
         try {
-            Log::channel('tchub')->info('TCHUB Item Master', ['data' => 'Fetching items from SAP']);
-            $sapItems = $this->sapItems();
-            Log::channel('tchub')->info('TCHUB Item Master', ['data' => 'Fetched ' . count($sapItems) . ' Item/s']);
+            Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => 'Fetching items from SAP']);
+            $sapItems = $this->sapItems('UpdateDate');
+            Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => 'Fetched ' . count($sapItems) . ' Item/s']);
             foreach ($sapItems as $item) {
                 $itemCode = $item->U_MPS_OLDSKU ?? $item->ItemCode;
                 
@@ -43,9 +43,9 @@ class ItemMasterController extends Controller
                     if ($response->status() === 200)
                     {
                         $successCount++;
-                        Log::channel('tchub')->info('TCHUB Item Master', ['data' => "Item {$item->U_MPS_OLDSKU} have been updated."]);
+                        Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => "Item {$item->U_MPS_OLDSKU} have been updated."]);
                     } else {
-                        Log::channel('tchub')->info('TCHUB Item Master', ['data' => "There was an error updating {$item->U_MPS_OLDSKU}. {$response->json()['message']}"]);
+                        Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => "There was an error updating {$item->U_MPS_OLDSKU}. {$response->json()['message']}"]);
                     }
                 } else {
                     $param = [
@@ -58,31 +58,36 @@ class ItemMasterController extends Controller
                     if ($response->status() === 200)
                     {
                         $successCount++;
-                        Log::channel('tchub')->info('TCHUB Item Master', ['data' => "Item {$item->U_MPS_OLDSKU} have been updated."]);
+                        Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => "Item {$itemCode} have been updated."]);
                     } else {
-                        Log::channel('tchub')->info('TCHUB Item Master', ['data' => "There was an error updating {$item->U_MPS_OLDSKU}. {$response->json()['message']}"]);
+                        Log::channel('tchub')->info('TCHUB Update Item Status', ['data' => "There was an error updating {$itemCode}. {$response->json()['message']}"]);
                     }
                 }
             }
         } catch (ClientException $exception) {
-            Log::channel('tchub')->error('Item Master', ['data' => $exception]);
+            Log::channel('tchub')->error('Error: Update Item Status', ['data' => $exception]);
         }
         
         return redirect()->route('tchub.dashboard')
-            ->with('success', 'Item status have been updated.');
+            ->with('success', "{$successCount} Item/s have been updated.");
     }
 
     public function updatePrices()
     {
-        try {
-            $items = $this->sapItems();
+        Log::channel('tchub')->info('TCHUB Update Price', ['data' => 'Updating item price...']);
 
-            foreach ($items as $item) {
+        $successCount = 0;
+
+        try {
+            Log::channel('tchub')->info('TCHUB Update Price', ['data' => 'Fetching items from SAP B1...']);
+            $sapItems = $this->sapItems('UpdateDate');
+            Log::channel('tchub')->info('TCHUB Update Price', ['data' => 'Fetched ' . count($sapItems) . ' Item/s']);
+            foreach ($sapItems as $item) {
                 $itemCode = $item->U_MPS_OLDSKU ?? $item->ItemCode;
                 if ($item->U_UPDATE_INVENTORY === 'Y') {
                     $param = [
                         "product" => [
-                            "sku" => $item->U_MPS_OLDSKU ?? $item->ItemCode,
+                            "sku" => $itemCode,
                             "price" => $item->ItemPrices[9]['Price'],
                             "status" => 1,
                             "tier_prices" => [
@@ -106,25 +111,37 @@ class ItemMasterController extends Controller
                     ];
                     
                     $tchubService = new TchubService("/products/{$itemCode}");
-                    $results = Http::withToken($tchubService->getAccessToken())->put($tchubService->getFullPath(), $param);
+                    $response = Http::withToken($tchubService->getAccessToken())->put($tchubService->getFullPath(), $param);
+                    if ($response->status() === 200)
+                    {
+                        $successCount++;
+                        Log::channel('tchub')->info('TCHUB Update Price', ['data' => "Item {$itemCode} have been updated."]);
+                    } else {
+                        Log::channel('tchub')->info('TCHUB Update Price', ['data' => "There was an error updating {$itemCode}. {$response->json()['message']}"]);
+                    }
                 }
             }
-        } catch (\Throwable $th) {
-            //throw $th;
+        } catch (ClientException $exception) {
+            Log::channel('tchub')->error('Error: Update Price', ['data' => $exception]);
         }
 
         return redirect()->route('tchub.dashboard')
-            ->with('success', 'Item prices have been updated.');
+            ->with('success', "{$successCount} Item/s have been updated.");
     }
 
     public function updateStocks()
     {
-        try {
-            $items = $this->sapItems();
+        Log::channel('tchub')->info('TCHUB Update Stock', ['data' => 'Updating item stock...']);
+
+        $successCount = 0;
         
-            foreach ($items as $item) {
+        try {
+            Log::channel('tchub')->info('TCHUB Update Stock', ['data' => 'Fetching items from SAP B1...']);
+            $sapItems = $this->sapItems('UpdateDate');
+            Log::channel('tchub')->info('TCHUB Update Stock', ['data' => 'Fetched ' . count($sapItems) . ' Item/s']);
+            foreach ($sapItems as $item) {
                 $itemCode = $item->U_MPS_OLDSKU ?? $item->ItemCode;
-                if ($item->U_UPDATE_INVENTORY === 'Y') {
+                if ($item->U_UPDATE_INVENTORY === 'Y' && $item->U_UPDATE_INVENTORY === null) {
                     $param = [
                         "product" => [
                             "extension_attributes" => [
@@ -137,27 +154,40 @@ class ItemMasterController extends Controller
                     ];
                     
                     $tchubService = new TchubService("/products/{$itemCode}");
-                    $results = Http::withToken($tchubService->getAccessToken())->put($tchubService->getFullPath(), $param);
+                    $response = Http::withToken($tchubService->getAccessToken())->put($tchubService->getFullPath(), $param);
+                    if ($response->status() === 200)
+                    {
+                        $successCount++;
+                        Log::channel('tchub')->info('TCHUB Update Stock', ['data' => "Item {$itemCode} have been updated."]);
+                    } else {
+                        Log::channel('tchub')->info('TCHUB Update Stock', ['data' => "There was an error updating {$itemCode}. {$response->json()['message']}"]);
+                    }
                 }
             }
-        } catch (\Throwable $th) {
-            //throw $th;
+        } catch (ClientException $exception) {
+            Log::channel('tchub')->error('Error: Update Stock', ['data' => $exception]);
         }
 
         return redirect()->route('tchub.dashboard')
-            ->with('success', 'Stocks have been updated.');
+            ->with('success', "{$successCount} Item/s have been updated.");
     }
 
     public function createProduct()
     {
+        Log::channel('tchub')->info('TCHUB Create Product', ['data' => 'Creating Product...']);
+
+        $successCount = 0;
+
         try {
-            $items = $this->sapItems();
-        
-            $rowCount = 0;
-            foreach ($items as $item) {
+            Log::channel('tchub')->info('TCHUB Create Product', ['data' => 'Fetching items from SAP B1...']);
+            $sapItems = $this->sapItems('CreateDate');
+            Log::channel('tchub')->info('TCHUB Create Product', ['data' => 'Fetched ' . count($sapItems) . ' Item/s']);
+            
+            foreach ($sapItems as $item) {
+                $itemCode = $item->U_MPS_OLDSKU ?? $item->ItemCode;
                 $param = [
                     "product"=> [
-                        "sku"=> $item->U_MPS_OLDSKU ?? $item->ItemCode,
+                        "sku"=> $itemCode,
                         "name"=> $item->ItemName,
                         "attribute_set_id"=> 4,
                         "price"=> $item->ItemPrices[9]['Price'],
@@ -232,96 +262,20 @@ class ItemMasterController extends Controller
                 ];
 
                 $tchubService = new TchubService('/products', 'default');
-                $results = Http::withToken($tchubService->getAccessToken())->post($tchubService->getFullPath(), $param);
-                
+                $response = Http::withToken($tchubService->getAccessToken())->post($tchubService->getFullPath(), $param);
+                if ($response->status() === 200)
+                {
+                    $successCount++;
+                    Log::channel('tchub')->info('TCHUB Create Product', ['data' => "Item {$itemCode} have been updated."]);
+                } else {
+                    Log::channel('tchub')->info('TCHUB Create Product', ['data' => "There was an error creating {$itemCode}. {$response->json()['message']}"]);
+                }
             }
-        } catch (Exception $exception) {
-            //throw $th;
+        } catch (ClientException $exception) {
+            Log::channel('tchub')->error('Error: Create Product', ['data' => $exception]);
         }
 
         return redirect()->route('tchub.dashboard')
-            ->with('success', 'Product have been created.');
+            ->with('success', "{$successCount} Item/s have been created.");
     }
-
-    // public function updateStock()
-    // {
-    //     $items = $this->getAllItems();
-        
-    //     foreach ($items as $item) {
-    //         if ($item['update_inventory'] == 'Y') {
-    //             $param = [
-    //                 "product" => [
-    //                     "extension_attributes" => [
-    //                         "stock_item" => [
-    //                             "qty" => $item['quantity'],
-    //                             "is_in_stock" => true
-    //                         ]
-    //                     ]
-    //                 ]
-    //             ];
-    
-    //             $results = Http::withToken(env('MAGENTO_ACCESS_TOKEN'))->put("https://test.tchub.sg/index.php/rest/V1/products/{$item['old_sku']}", $param);
-                
-    //         }
-    //     }
-
-    //     return response()->json([
-    //         'message' => "Items stock have been updated"
-    //     ], 200);
-    // }
-
-    // public function updateInactiveItems()
-    // {
-    //     $items = $this->getAllItems();
-
-    //     foreach ($items as $item) {
-    //         if ($item['Valid'] == 'tNO') {
-    //             $param = [
-    //                 "product" => [
-    //                     "status"=> 2,
-    //                 ]
-    //             ];
-    //             $results = Http::withToken(env('MAGENTO_ACCESS_TOKEN'))->put("https://test.tchub.sg/index.php/rest/V1/products/{$item['old_sku']}", $param);
-    //         }
-    //     }
-
-    //     return response()->json([
-    //         'message' => "Items have been updated"
-    //     ], 200);
-    // }
-
-    // private function getAllItems()
-    // {
-    //     $count = 0;
-    //     $moreItems = true;
-    //     $items = [];
-
-    //     while($moreItems){
-    //         $sapItems = (new SapService())->getOdataClient()->from('Items')
-    //                         ->where('U_TCHUB_INTEGRATION','Y')
-    //                         ->skip($count)
-    //                         ->get();
-
-    //         if($sapItems->isNotEmpty())
-    //         {
-    //             foreach($sapItems as $item) {
-    //                 $items[] = [
-    //                     'update_inventory' => $item['U_UPDATE_INVENTORY'],
-    //                     'old_sku' => $item['U_MPS_OLDSKU'],
-    //                     'itemCode' => $item['ItemCode'],
-    //                     'itemName' => $item['ItemName'],
-    //                     'quantity' => $item['QuantityOnStock'],
-    //                     'prices' => $item['ItemPrices'],
-    //                     'valid' => $item['Valid']
-    //                 ];
-    //             }
-
-    //             $count += count($sapItems);
-    //         } else {
-    //             $moreItems = false;
-    //         }
-    //     }
-        
-    //     return $items;
-    // }
 }

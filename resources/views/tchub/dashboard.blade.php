@@ -35,7 +35,10 @@
                             <p class="card-text">{{ __('Update item status active/inactive') }}</p>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.update.item.status') }}" onclick="this.disabled" class="btn btn-dark btn-block btn-lg" id="item-sync-btn">{{ __('Update Item Status') }}</a>
+                            <form action="{{ route('tchub.update.item.status') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Update Item Status') }}">
+                            </form>
                         </div>
                     </div>
                     <div class="card">
@@ -45,7 +48,10 @@
                         <p class="card-text">{{ __('Update price to tchub.sg') }}</p>
                     </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.update.prices') }}" class="btn btn-dark btn-block btn-lg">{{ __('Update Price') }}</a>
+                            <form action="{{ route('tchub.update.prices') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Update Price') }}">
+                            </form>
                         </div>
                     </div>
                     <div class="card">
@@ -55,7 +61,10 @@
                         <p class="card-text">{{ __('Update stock to tchub.sg') }}</p>
                     </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.update.stocks') }}" class="btn btn-dark btn-block btn-lg" id="update-stock-btn">{{ __('Update Stock') }}</a>
+                            <form action="{{ route('tchub.update.stocks') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Update Stock') }}">
+                            </form>
                         </div>
                     </div>
                     <div class="card">
@@ -65,7 +74,10 @@
                             <p class="card-text">{{ __('Create product from SAP to tchub.sg') }}</p>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.create.product') }}" class="btn btn-dark btn-block btn-lg" id="item-sync-btn">{{ __('Create Product') }}</a>
+                            <form action="{{ route('tchub.create.product') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Create Product') }}">
+                            </form>
                         </div>
                     </div>
                 </div>  
@@ -88,7 +100,10 @@
                             <p class="text-center p-0 m-0"><a href="{{ route('tchub.pending.orders.index') }}" class="btn btn-link">View all</a>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.generate.sales.order') }}" class="btn btn-dark btn-block btn-lg" id="generate-sales-order-btn">{{ __('Generate Sales Order') }}</a>
+                            <form action="{{ route('tchub.generate.sales.order') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Generate Sales Order') }}">
+                            </form>
                         </div>
                     </div>
                     <div class="card">
@@ -98,7 +113,10 @@
                             <p class="card-text">{{ __('Update order status to processing') }}</p>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.delivery.order') }}" class="btn btn-dark btn-block btn-lg">{{ __('Update Status') }}</a>
+                            <form action="{{ route('tchub.delivery.order') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Update Status') }}">
+                            </form>
                         </div>
                     </div>
                     <div class="card">
@@ -108,7 +126,10 @@
                             <p class="card-text">{{ __('Update order status to completed') }}</p>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.ar.invoice') }}" class="btn btn-dark btn-block btn-lg">{{ __('Update Status') }}</a>
+                            <form action="{{ route('tchub.ar.invoice') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Update Status') }}">
+                            </form>
                         </div>
                     </div>
                     <div class="card">
@@ -118,8 +139,10 @@
                             <p class="card-text">{{ __('Cancel pending order') }}</p>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ route('tchub.canceled.order') }}" class="btn btn-dark btn-block btn-lg">{{ __('Cancel Order') }}</a>
-
+                            <form action="{{ route('tchub.canceled.order') }}" method="post">
+                                @csrf
+                                <input type="submit" class="btn btn-dark btn-block btn-lg" onclick="this.value='Processing...'" value="{{ __('Cancel Order') }}">
+                            </form>
                         </div>
                     </div>
                 </div>  
@@ -132,12 +155,6 @@
 @push('scripts')
     <script>
         $(function () {
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
             $('.toast').toast({
                 autohide: false
             })
@@ -149,47 +166,6 @@
             
             $('[data-toggle="tooltip"]').tooltip()
 
-            //item sync
-            // $('#item-sync-btn').on('click', () => {
-            //     $.ajax({
-            //         url: "{{ route('tchub.update.item.status') }}",
-            //         type: 'POST',
-            //         success: (data) => {
-            //             console.log(data.message)
-            //         },
-            //         error: (error) => {
-            //             console.log(error.responseText)
-            //         },
-            //     })
-            // })
-
-            //update stock
-            // $('#update-stock-btn').on('click', () => {
-            //     $.ajax({
-            //         url: "#",
-            //         type: 'POST',
-            //         success: (data) => {
-            //             console.log(data.message)
-            //         },
-            //         error: (error) => {
-            //             console.log(error.responseText)
-            //         },
-            //     })
-            // })
-
-            //sales order   
-            // $('#generate-sales-order-btn').on('click', () => {
-            //     $.ajax({
-            //         url: "#",
-            //         type: 'POST',
-            //         success: (data) => {
-            //             console.log(data.message)
-            //         },
-            //         error: (error) => {
-            //             console.log(error.responseText)
-            //         },
-            //     })
-            // })
         })
     </script>
 @endpush
