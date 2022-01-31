@@ -263,10 +263,27 @@
                         $("#item-master-btn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating...`);
                     },
                     success: function(data) {
-                        $('#alert').addClass(data.status);
-                        $('#alert strong').text(data.title);
-                        $('#alert-msg').text(data.message);
-                        $('#alert').show();
+                        if(data.success_title != undefined && data.danger_title == undefined){
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
+                            $('#alert-success').show();
+                        }else if(data.danger_title != undefined && data.success_title == undefined){
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
+                            $('#alert-danger').show();
+                        }else if(data.success_title != undefined && data.danger_title != undefined){
+                            $('#alert-success strong').text(data.success_title);
+                            $('#alert-success #alert-msg').html(data.success_message);
+                            $('#alert-success').show();
+                            $('#alert-danger strong').text(data.danger_title);
+                            $('#alert-danger #alert-msg').html(data.danger_message);
+                            $('#alert-danger').show();
+                        }else if(data.title != undefined){
+                            $('#alert').addClass(data.status);
+                            $('#alert strong').text(data.title);
+                            $('#alert-msg').text(data.message);
+                            $('#alert').show();
+                        }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         var err = JSON.parse(xhr.responseText);
