@@ -107,6 +107,12 @@ class LazadaUIController extends Controller
 
             $items = [];
 
+            $errorList = [];
+
+            $addedList = [];
+
+            $updatedList = [];
+
             while($moreItems){
                 $getItems = $odataClient->getOdataClient()->from('Items')
                                                     ->where('U_LAZ_INTEGRATION','Y')
@@ -134,9 +140,6 @@ class LazadaUIController extends Controller
                     $moreItems = false;
                 }
             }
-
-            $itemCount = 0;
-            $updateCount = 0;
 
             foreach($items as $item){
 
@@ -178,59 +181,142 @@ class LazadaUIController extends Controller
                                     'U_LAZ_SELLER_SKU' => $sellerSku
                                 ]);
                     
-                    ($update ? $itemCount++ : '');
+                    ($update ? $addedList[] = $item['sellerSku'] : '');
                 
                 }else{
 
-                    if($item['status'] == 'tYES'){
-                        $payload = "<Request>
+                    if($response['code'] != "500" && !empty($response['detail'])){
+                        //Price error
+                        $errorList[] = $item['sellerSku'].' - '.$response['detail']['0']['message'];
+
+                    }else if($response['code'] != "500" && empty($response['detail'])){
+                        //Price error
+                        $errorList[] = $item['sellerSku'].' - '.$response['message'];
+                    }
+                    else if($response['code'] == "500"){
+
+                        if($item['status'] == 'tYES'){
+                            $payload = "<Request>
+                                                <Product>
+                                                    <Skus>
+                                                        <Sku>
+                                                            <SellerSku>".$item['sellerSku']."</SellerSku>
+                                                            <Status>active</Status>
+                                                        </Sku>
+                                                    </Skus>
+                                                </Product>
+                                            </Request>";
+                            $activate = $lazadaAPI->activateProduct($payload);
+    
+                            if($activate['code'] == '0'){
+
+                                $updatedList[] = $item['sellerSku'];
+                            
+                            }
+                            else if($activate['code'] != "500" && !empty($activate['detail'])){
+                                //Price error
+                                $errorList[] = $item['sellerSku'].' - '.$activate['detail']['0']['message'];
+        
+                            }
+                            else if($activate['code'] != "500" && empty($activate['detail'])){
+                                //Price error
+                                $errorList[] = $item['sellerSku'].' - '.$activate['message'];
+                            }
+    
+                        }else if($item['status'] == 'tNO'){
+                            $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
+                            $itemId = $getDetail['data']['item_id'];
+                            $payload = "<Request>
                                             <Product>
+                                                <ItemId>".$itemId."</ItemId>
                                                 <Skus>
-                                                    <Sku>
-                                                        <SellerSku>".$item['sellerSku']."</SellerSku>
-                                                        <Status>active</Status>
-                                                    </Sku>
+                                                    <SellerSku>".$item['sellerSku']."</SellerSku>
                                                 </Skus>
                                             </Product>
                                         </Request>";
-                        $activate = $lazadaAPI->activateProduct($payload);
+                            $deactivate = $lazadaAPI->deactivateProduct($payload);
+    
+                            if($deactivate['code'] == '0'){
 
-                        if($activate['code'] == '0'){
-                            $updateCount++;
+                                $updatedList[] = $item['sellerSku'];
+                            
+                            }
+                            else if($deactivate['code'] != "500" && !empty($deactivate['detail'])){
+                                //Price error
+                                $errorList[] = $item['sellerSku'].' - '.$deactivate['detail']['0']['message'];
+        
+                            }
+                            else if($deactivate['code'] != "500" && empty($deactivate['detail'])){
+                                //Price error
+                                $errorList[] = $item['sellerSku'].' - '.$deactivate['message'];
+                            }
+                            
                         }
 
-                    }else if($item['status'] == 'tNO'){
-                        $getDetail = $lazadaAPI->getProductItem($item['sellerSku']);
-                        $itemId = $getDetail['data']['item_id'];
-                        $payload = "<Request>
-                                        <Product>
-                                            <ItemId>".$itemId."</ItemId>
-                                            <Skus>
-                                                <SellerSku>".$item['sellerSku']."</SellerSku>
-                                            </Skus>
-                                        </Product>
-                                    </Request>";
-                        $deactivate = $lazadaAPI->deactivateProduct($payload);
-
-                        if($deactivate['code'] == '0'){
-                            $updateCount++;
-                        }
-                        
                     }
                     
                 }
 
             }
 
-            $message = null;
+            $successMessage = null;
             
-            if($itemCount > 0 && $updateCount == 0){
-                $message = $itemCount.' new product/s added.';
-            }else if($itemCount == 0 && $updateCount > 0){
-                $message = $updateCount.' SKU/s status updated.';
-            }else if($itemCount > 0 && $updateCount > 0){
-                $message = $itemCount.' new product/s added and '.$updateCount.' SKU/s status updated.';
+            $errorMessage = null;
+
+            if(count($addedList) > 0 && count($updatedList) == 0){
+                
+                Log::channel('lazada.item_master')->info('Create Product - '.count($addedList).' new product/s added: '.implode(",",$addedList));
+                
+                $successMessage = count($addedList).' new product/s added: '.implode(",",$addedList);
+            
+            }else if(count($addedList) == 0 && count($updatedList) > 0){
+                
+                Log::channel('lazada.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '.implode(",",$updatedList));
+                
+                $successMessage = count($updatedList).' SKU/s status updated: '.implode(",",$updatedList);
+            
+            }else if(count($addedList) > 0 && count($updatedList) > 0){
+                
+                Log::channel('lazada.item_master')->info('Create Product - '.count($addedList).' new product/s added: '.implode(",",$addedList));
+
+                Log::channel('lazada.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '.implode(",",$updatedList));
+                
+                $successMessage = count($addedList).' new product/s added: '.implode(",",$addedList)."\n".count($updatedList).' SKU/s status updated: '.implode(",",$updatedList);
+            
+            }
+
+            if(count($errorList) > 0){
+
+                Log::channel('lazada.item_master')->error('Create Product - '.count($errorList). ' SKU/s have problems: '."\n".implode("\n",$errorList));
+
+                $errorMessage = count($errorList). ' SKU/s have problems. Please check the logs for further details.';
+            }
+
+            $success = array(
+                'success_title' => 'Success: ',
+                'success_message' => $successMessage
+            );
+
+            $danger = array(
+                'danger_title' => 'Error: ',
+                'danger_message' => $errorMessage
+            );
+            
+            
+            if($successMessage != null && $errorMessage != null){
+
+                return response()->json(array_merge($success,$danger));
+            
+            }else if($successMessage != null && $errorMessage == null){
+                
+                return response()->json($success);
+
+            }else if($successMessage == null && $errorMessage != null){
+
+               return response()->json($danger);
+
             }else{
+
                 Log::channel('lazada.item_master')->info('No new Lazada products to be added.');
 
                 return response()->json([
@@ -239,17 +325,6 @@ class LazadaUIController extends Controller
                     'message' => 'No new Lazada products to be added.'
                 ]);
             }
-
-            if($message != null){
-                Log::channel('lazada.item_master')->info($message);
-
-                return response()->json([
-                    'title' => 'Success: ',
-                    'status' => 'alert-success',
-                    'message' => $message
-                ]);
-            }
-    
 
         } catch (\Exception $e) {
             Log::channel('lazada.item_master')->emergency($e->getMessage());
