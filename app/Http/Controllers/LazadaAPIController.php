@@ -26,8 +26,14 @@ class LazadaAPIController extends Controller
         $request->addApiParam('filter','all');
         $request->addApiParam('sku_seller_list',$skus);
 
-        return json_decode($this->client->execute($request, $this->accessToken),true);
-        
+        return json_decode($this->client->execute($request, $this->accessToken),true);   
+    }
+
+    public function getProductItem($sku){
+        $request = new LazopRequest('/product/item/get','GET');
+        $request->addApiParam('seller_sku',$sku);
+
+        return json_decode($this->client->execute($request, $this->accessToken),true);   
     }
 
     public function createProduct($payload){
