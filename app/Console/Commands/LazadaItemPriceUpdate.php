@@ -146,7 +146,9 @@ class LazadaItemPriceUpdate extends Command
 
                         foreach($updatePrice['detail'] as $detail){
 
-                            $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                            if(!array_key_exists($detail['seller_sku'],$removeDuplicates)){
+                                $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                            }
                         
                         }
 

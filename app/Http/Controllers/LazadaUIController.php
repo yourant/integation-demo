@@ -610,7 +610,9 @@ class LazadaUIController extends Controller
 
                     foreach($updatePrice['detail'] as $detail){
 
-                        $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                        if(!array_key_exists($detail['seller_sku'],$removeDuplicates)){
+                            $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                        }
                     
                     }
 
@@ -789,7 +791,9 @@ class LazadaUIController extends Controller
 
                     foreach($updateStock['detail'] as $detail){
 
-                        $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                        if(!array_key_exists($detail['seller_sku'],$removeDuplicates)){
+                            $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
+                        }
                     
                     }
 
