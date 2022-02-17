@@ -85,7 +85,9 @@ class LazadaItemStockUpdate extends Command
             
             $batch = array_chunk($items,20);
             
-            $errorList = [];
+            $initialErrorList = [];
+
+            $finalErrorList = [];
 
             $successCount = 0;
 
@@ -132,36 +134,29 @@ class LazadaItemStockUpdate extends Command
                     
                     }else{
 
-                        $removeDuplicates = [];
+                        $skuCheck = [];
 
                         foreach($updateStock['detail'] as $detail){
 
-                            if(!array_key_exists($detail['seller_sku'],$removeDuplicates)){
-                                $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
-                            }
+                            $skuCheck[] = $detail['seller_sku'];
+                            $initialErrorList[] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
                         
                         }
 
                         foreach($successList as $key => $value){
-                            $sellerSkuExist = array_key_exists($value['sellerSku'], $removeDuplicates);
-                            $productIdExist = array_key_exists($value['productId'], $removeDuplicates);
+                            $sellerSku = $value['sellerSku'];
+                            $productId = $value['productId'];
     
-                            if($sellerSkuExist == true){
+                            if(preg_grep("/$sellerSku/i",$skuCheck)){
                                 
                                 unset($successList[$key]);
                             
-                            }else if($productIdExist == true){
+                            }else if(preg_grep("/$productId/i",$skuCheck)){
                                 
                                 unset($successList[$key]);
 
                             }
     
-                        }
-
-                        foreach($removeDuplicates as $key => $value){
-
-                            $errorList[] = $value;
-                        
                         }
 
                         if(count($successList) > 0){
@@ -176,17 +171,19 @@ class LazadaItemStockUpdate extends Command
 
             }
             
+            $finalErrorList = array_unique($initialErrorList);
+
             if($successCount > 0){
                 
                 Log::channel('lazada.item_master')->info('Update Stock - Stock updated on '.$successCount.' Lazada SKU/s.');
             
             }
-            if(count($errorList) > 0){
+            if(count($finalErrorList) > 0){
                
-                Log::channel('lazada.item_master')->error("Update Stock - ".count($errorList)." SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
+                Log::channel('lazada.item_master')->error("Update Stock - ".count($finalErrorList)." SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
             
             }
-            if($successCount == 0 && count($errorList) == 0){
+            if($successCount == 0 && count($finalErrorList) == 0){
                 
                 Log::channel('lazada.item_master')->warning('Update Stock - No Lazada items available to be updated.');
             

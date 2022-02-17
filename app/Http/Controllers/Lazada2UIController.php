@@ -547,7 +547,9 @@ class Lazada2UIController extends Controller
         
         $batch = array_chunk($items,20);
         
-        $errorList = [];
+        $initialErrorList = [];
+
+        $finalErrorList = [];
 
         $successCount = 0;
 
@@ -606,36 +608,29 @@ class Lazada2UIController extends Controller
                 
                 }else{
 
-                    $removeDuplicates = [];
+                    $skuCheck = [];
 
                     foreach($updatePrice['detail'] as $detail){
-
-                        if(!array_key_exists($detail['seller_sku'],$removeDuplicates)){
-                            $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
-                        }
+                            
+                        $skuCheck[] = $detail['seller_sku'];
+                        $initialErrorList[] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
                     
                     }
 
                     foreach($successList as $key => $value){
-                        $sellerSkuExist = array_key_exists($value['sellerSku'], $removeDuplicates);
-                        $productIdExist = array_key_exists($value['productId'], $removeDuplicates);
+                        $sellerSku = $value['sellerSku'];
+                        $productId = $value['productId'];
 
-                        if($sellerSkuExist == true){
+                        if(preg_grep("/$sellerSku/i",$skuCheck)){
                             
                             unset($successList[$key]);
                         
-                        }else if($productIdExist == true){
+                        }else if(preg_grep("/$productId/i",$skuCheck)){
                             
                             unset($successList[$key]);
 
                         }
 
-                    }
-
-                    foreach($removeDuplicates as $key => $value){
-
-                        $errorList[] = $value;
-                    
                     }
 
                     if(count($successList) > 0){
@@ -648,13 +643,15 @@ class Lazada2UIController extends Controller
             }
 
         }
+
+        $finalErrorList = array_unique($initialErrorList);
         
         if($successCount > 0){
             Log::channel('lazada2.item_master')->info('Update Price - Price updated on '.$successCount.' Lazada SKU/s.');
         }
         
-        if(count($errorList) > 0){
-            Log::channel('lazada2.item_master')->error("Update Price - ".count($errorList)." SKUs have issues while updating the price: "."\n".implode("\n",$errorList));
+        if(count($finalErrorList) > 0){
+            Log::channel('lazada2.item_master')->error("Update Price - ".count($finalErrorList)." SKUs have issues while updating the price: "."\n".implode("\n",$finalErrorList));
         }
 
         $success = array(
@@ -664,18 +661,18 @@ class Lazada2UIController extends Controller
 
         $danger = array(
             'danger_title' => 'Error: ',
-            'danger_message' => 'Problems encountered while updating the price of <b>'.count($errorList).'</b> SKU/s. Please check the logs for further details.'
+            'danger_message' => 'Problems encountered while updating the price of <b>'.count($finalErrorList).'</b> SKU/s. Please check the logs for further details.'
         );
 
-        if($successCount > 0 && count($errorList) > 0){
+        if($successCount > 0 && count($finalErrorList) > 0){
             
             return response()->json(array_merge($success,$danger));
         
-        }else if($successCount > 0 && count($errorList) == 0){
+        }else if($successCount > 0 && count($finalErrorList) == 0){
 
             return response()->json($success);
 
-        }else if($successCount == 0 && count($errorList) > 0){
+        }else if($successCount == 0 && count($finalErrorList) > 0){
 
             return response()->json($danger);
         }else{
@@ -736,7 +733,9 @@ class Lazada2UIController extends Controller
         
         $batch = array_chunk($items,20);
         
-        $errorList = [];
+        $initialErrorList = [];
+
+        $finalErrorList = [];
 
         $successCount = 0;
 
@@ -783,36 +782,29 @@ class Lazada2UIController extends Controller
 
                 }else{
 
-                    $removeDuplicates = [];
+                    $skuCheck = [];
 
                     foreach($updateStock['detail'] as $detail){
-
-                        if(!array_key_exists($detail['seller_sku'],$removeDuplicates)){
-                            $removeDuplicates[$detail['seller_sku']] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
-                        }
+                            
+                        $skuCheck[] = $detail['seller_sku'];
+                        $initialErrorList[] = "Seller SKU / Product ID: ".$detail['seller_sku']." - ".$detail['message'];
                     
                     }
 
                     foreach($successList as $key => $value){
-                        $sellerSkuExist = array_key_exists($value['sellerSku'], $removeDuplicates);
-                        $productIdExist = array_key_exists($value['productId'], $removeDuplicates);
+                        $sellerSku = $value['sellerSku'];
+                        $productId = $value['productId'];
 
-                        if($sellerSkuExist == true){
+                        if(preg_grep("/$sellerSku/i",$skuCheck)){
                             
                             unset($successList[$key]);
                         
-                        }else if($productIdExist == true){
+                        }else if(preg_grep("/$productId/i",$skuCheck)){
                             
                             unset($successList[$key]);
 
                         }
 
-                    }
-
-                    foreach($removeDuplicates as $key => $value){
-
-                        $errorList[] = $value;
-                    
                     }
 
                     if(count($successList) > 0){
@@ -827,12 +819,14 @@ class Lazada2UIController extends Controller
 
         }
 
+        $finalErrorList = array_unique($initialErrorList);
+
         if($successCount > 0){
             Log::channel('lazada2.item_master')->info('Update Stock - Stock updated on '.$successCount.' Lazada SKU/s.');
         }
 
-        if(count($errorList) > 0){
-            Log::channel('lazada2.item_master')->error("Update Stock - ".count($errorList)." SKUs have issues while updating the stock: "."\n".implode("\n",$errorList));
+        if(count($finalErrorList) > 0){
+            Log::channel('lazada2.item_master')->error("Update Stock - ".count($finalErrorList)." SKUs have issues while updating the stock: "."\n".implode("\n",$finalErrorList));
         }
 
         $success = array(
@@ -842,18 +836,18 @@ class Lazada2UIController extends Controller
 
         $danger = array(
             'danger_title' => 'Error: ',
-            'danger_message' => 'Problems encountered while updating the stock of <b>'.count($errorList).'</b> SKU/s. Please check the logs for further details.'
+            'danger_message' => 'Problems encountered while updating the stock of <b>'.count($finalErrorList).'</b> SKU/s. Please check the logs for further details.'
         );
 
-        if($successCount > 0 && count($errorList) > 0){
+        if($successCount > 0 && count($finalErrorList) > 0){
             
             return response()->json(array_merge($success,$danger));
         
-        }else if($successCount > 0 && count($errorList) == 0){
+        }else if($successCount > 0 && count($finalErrorList) == 0){
 
             return response()->json($success);
 
-        }else if($successCount == 0 && count($errorList) > 0){
+        }else if($successCount == 0 && count($finalErrorList) > 0){
 
             return response()->json($danger);
         }else{
