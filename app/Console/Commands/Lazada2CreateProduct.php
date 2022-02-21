@@ -211,10 +211,10 @@ class Lazada2CreateProduct extends Command
             }
 
             if(count($addedList) > 0){
-                Log::channel('lazada2.item_master')->info('Create Product - '.count($addedList).' new product/s added: '.implode(",",$addedList));
+                Log::channel('lazada2.item_master')->info('Create Product - '.count($addedList).' new product/s added: '."\n".implode("\n",$addedList));
             }
             if(count($updatedList) > 0){
-                Log::channel('lazada2.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '.implode(",",$updatedList));
+                Log::channel('lazada2.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '."\n".implode("\n",$updatedList));
             }
             if(count($errorList) > 0){
                 Log::channel('lazada2.item_master')->error('Create Product - '.count($errorList). ' SKU/s have problems: '."\n".implode("\n",$errorList));
