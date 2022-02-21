@@ -145,7 +145,7 @@ class Lazada2UIController extends Controller
                 $createProductPayload = "
                     <Request>
                         <Product>
-                            <PrimaryCategory>".$primaryCategory->U_VALUE."</PrimaryCategory>
+                            <PrimaryCategory><![CDATA[".$item['itemName']."]]></PrimaryCategory>
                             <Attributes>
                                 <name>".$item['itemName']."</name>
                                 <brand>".$brand->U_VALUE."</brand>

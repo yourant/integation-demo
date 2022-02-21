@@ -99,7 +99,7 @@ class LazadaCreateProduct extends Command
                         <Product>
                             <PrimaryCategory>".$primaryCategory->U_VALUE."</PrimaryCategory>
                             <Attributes>
-                                <name>".$item['itemName']."</name>
+                                <name><![CDATA[".$item['itemName']."]]></name>
                                 <brand>".$brand->U_VALUE."</brand>
                                 <delivery_option_sof>".$deliveryOption->U_VALUE."</delivery_option_sof>
                                 <warranty_type>".$warrantyType->U_VALUE."</warranty_type>
@@ -117,7 +117,7 @@ class LazadaCreateProduct extends Command
                             </Skus>
                         </Product>
                     </Request>";
-                
+
                 $lazadaAPI = new LazadaAPIController();
                 
                 $response = $lazadaAPI->createProduct($createProductPayload);
