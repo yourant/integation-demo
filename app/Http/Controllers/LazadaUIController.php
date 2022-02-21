@@ -265,21 +265,21 @@ class LazadaUIController extends Controller
 
             if(count($addedList) > 0 && count($updatedList) == 0){
                 
-                Log::channel('lazada.item_master')->info('Create Product - '.count($addedList).' new product/s added: '.implode(",",$addedList));
+                Log::channel('lazada.item_master')->info('Create Product - '.count($addedList).' new product/s added: '."\n".implode("\n",$addedList));
                 
                 $successMessage = count($addedList).' new product/s added: '.implode(",",$addedList);
             
             }else if(count($addedList) == 0 && count($updatedList) > 0){
                 
-                Log::channel('lazada.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '.implode(",",$updatedList));
+                Log::channel('lazada.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '."\n".implode("\n",$updatedList));
                 
                 $successMessage = count($updatedList).' SKU/s status updated: '.implode(",",$updatedList);
             
             }else if(count($addedList) > 0 && count($updatedList) > 0){
                 
-                Log::channel('lazada.item_master')->info('Create Product - '.count($addedList).' new product/s added: '.implode(",",$addedList));
+                Log::channel('lazada.item_master')->info('Create Product - '.count($addedList).' new product/s added: '."\n".implode("\n",$addedList));
 
-                Log::channel('lazada.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '.implode(",",$updatedList));
+                Log::channel('lazada.item_master')->info('Create Product - '.count($updatedList).' SKU/s status updated: '."\n".implode("\n",$updatedList));
                 
                 $successMessage = count($addedList).' new product/s added: '.implode(",",$addedList)."\n".count($updatedList).' SKU/s status updated: '.implode(",",$updatedList);
             
