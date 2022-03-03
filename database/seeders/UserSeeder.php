@@ -19,26 +19,26 @@ class UserSeeder extends Seeder
         DB::table('users')->insert([
             [
                 'username' => 'shopee-admin',
-                'password' => Hash::make('shopeeteckcheong@88'),
+                'password' => Hash::make('Password'),
                 'platform' => 'shopee',
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
             ], [
                 'username' => 'lazada-admin',
-                'password' => Hash::make('lazadateckcheong@88'),
+                'password' => Hash::make('Password'),
                 'platform' => 'lazada',
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
             ], [
                 'username' => 'shopee-test',
-                'password' => Hash::make('test@acct'),
+                'password' => Hash::make('Password'),
                 'platform' => 'shopee',
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
             ],
             [
                 'username' => 'tchub-admin',
-                'password' => Hash::make('tchub@88'),
+                'password' => Hash::make('Password'),
                 'platform' => 'tchub',
                 'created_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' =>  Carbon::now()->format('Y-m-d H:i:s'),
