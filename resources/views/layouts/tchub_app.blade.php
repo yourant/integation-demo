@@ -23,7 +23,7 @@
 
             <div class="container">
                 <a class="navbar-brand" href="{{ route('tchub.dashboard') }}">
-                    <img src="{{ asset('images/logo.png') }}" height="30" alt=""> <!-- remove logo on demo branch -->
+                    <!--<img src="{{ asset('images/logo.png') }}" height="30" alt="">--> <!-- remove logo on demo branch -->
                 </a>
             
                 <!-- Right Side Of Navbar -->
