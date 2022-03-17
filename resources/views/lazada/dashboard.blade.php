@@ -33,11 +33,11 @@
             <div class="card">
                 <div class="card-header">
                     <div class="float-left font-weight-bold">
-                       Lazada Account 1(TC) Dashboard
+                       Lazada Account 1 Dashboard
                    </div>
                    <div class="float-right">
                         <button class="btn btn-primary" id="refresh-token-btn">Manual Refresh Tokens</button>
-                        <a href="{{ route('lazada2.dashboard') }}" class="btn btn-primary">Switch to Lazada Account 2(MSG)</a>
+                        <a href="{{ route('lazada2.dashboard') }}" class="btn btn-primary">Switch to Lazada Account 2</a>
                    </div>
                </div>
 
