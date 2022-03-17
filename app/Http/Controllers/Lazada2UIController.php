@@ -871,6 +871,8 @@ class Lazada2UIController extends Controller
         $lazadaLog = new LazadaLogService('lazada2.sales_order');
 
         $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA2_CUSTOMER')->first();
+        $sellerVoucher = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','SELLER_VOUCHER')->first();
+        $shippingFee = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','SHIPPING_FEE')->first();
         $taxCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','TAX_CODE')->first();
         $percentage = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','PERCENTAGE')->first();
         $whsCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','WAREHOUSE_CODE')->first();
@@ -922,8 +924,28 @@ class Lazada2UIController extends Controller
                         'U_Basic_Information' => 'Customer Name: '.$customerName."\n".'Receiver Phone: '.$receiverPhone,
                         'U_Shipping_Address' => $shippingAddress,
                         'U_Billing_Address' => $billingAddress,
-                        'DocTotal' => $order['price']
+                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
+
+                    if($order['shipping_fee'] != 0.00){
+                        $fees[$orderId][] = [
+                            'ItemCode' => $shippingFee->Name,
+                            'Quantity' => 1,
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['shipping_fee'] / $percentage->Name,
+                            'WarehouseCode' => $whsCode->Name
+                        ];
+                    }
+
+                    if($order['voucher'] != 0.00){
+                        $fees[$orderId][] = [
+                            'ItemCode' => $sellerVoucher->Name,
+                            'Quantity' => -1,
+                            'VatGroup' => $taxCode->Name,
+                            'UnitPrice' => $order['voucher'] / $percentage->Name,
+                            'WarehouseCode' => $whsCode->Name
+                        ];
+                    }
 
                 }
 
@@ -969,6 +991,12 @@ class Lazada2UIController extends Controller
                             'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
                             'WarehouseCode' => $whsCode->Name
                         ];
+                    }
+
+                    if(!empty($fees[$orderId])){
+                        $tempSO[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                    }else{
+                        $tempSO[$orderId]['DocumentLines'] = $items[$orderId];
                     }
                     
                 }
@@ -1248,7 +1276,9 @@ class Lazada2UIController extends Controller
         $odataClient = new SapService();
         $lazadaLog = new LazadaLogService('lazada2.credit_memo');
 
-        $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA2_CUSTOMER')->first();
+        $lazadaCustomer = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','LAZADA1_CUSTOMER')->first();
+        $sellerVoucher = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','SELLER_VOUCHER')->first();
+        $shippingFee = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','SHIPPING_FEE')->first();
         $taxCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','TAX_CODE')->first();
         $percentage = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','PERCENTAGE')->first();
         $whsCode = $odataClient->getOdataClient()->from('U_MPS_ECOMMERCE')->where('Code','WAREHOUSE_CODE')->first();
@@ -1299,6 +1329,7 @@ class Lazada2UIController extends Controller
                         'U_Basic_Information' => 'Customer Name: '.$customerName."\n".'Receiver Phone: '.$receiverPhone,
                         'U_Shipping_Address' => $shippingAddress,
                         'U_Billing_Address' => $billingAddress,
+                        'DocTotal' => ($order['price'] + $order['shipping_fee']) - $order['voucher']
                     ];
                 
                 }
@@ -1327,36 +1358,20 @@ class Lazada2UIController extends Controller
                 $subTotal = 0;
                 
                 foreach($item['order_items'] as $orderItem){
-                    if($orderItem['status'] == 'returned'){
 
-                        try {
-                            $result = $odataClient->getOdataClient()->from('Items')
-                                            ->select('ItemCode','ItemName')
-                                            ->where('U_LAZ2_SELLER_SKU',$orderItem['sku'])
-                                            ->first();
-                        } catch (ClientException $e) {
-                            $msg = "Item ".$orderItem['sku']." on order ".$orderId." has problem".
-                            $lazadaLog->writeSapLog($e,$msg);
-                        }
-                        
-                        if(isset($result)){
-                            $items[$orderId][] = [
-                                'ItemCode' => $result->ItemCode,
-                                'Quantity' => 1,
-                                'VatGroup' => $taxCode->Name,
-                                'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
-                                'WarehouseCode' => $whsCode->Name
-                            ];
-
-                            $subTotal += $orderItem['item_price'];
-                        }
-                        
-                    }
+                    $items[$orderId][] = [
+                        'ItemCode' => $orderItem['sku'],
+                        'Quantity' => 1,
+                        'VatGroup' => $taxCode->Name,
+                        'UnitPrice' => $orderItem['item_price'] / $percentage->Name,
+                        'WarehouseCode' => $whsCode->Name
+                    ];
                     
                 }
                 
-                if(isset($items[$orderId])){
-                    $tempCM[$orderId]['DocTotal'] = $subTotal;
+                if(!empty($fees[$orderId])){
+                    $tempCM[$orderId]['DocumentLines'] = array_merge($items[$orderId],$fees[$orderId]);
+                }else{
                     $tempCM[$orderId]['DocumentLines'] = $items[$orderId];
                 }
                 
